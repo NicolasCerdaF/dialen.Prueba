@@ -73,33 +73,33 @@ function EmbudoPage() {
 
   // Unread + conversation aggregate per customer, subscribed to realtime.
   const [unread, setUnread] = useState<UnreadMap>({});
+  const [insights, setInsights] = useState<Record<string, { probability: number | null; intent: string | null; churn_risk: number | null }>>({});
   useEffect(() => {
     let cancel = false;
     async function load() {
-      const { data } = await supabase
-        .from("conversations")
-        .select("customer_id, unread_count");
-      if (cancel || !data) return;
+      const [convosRes, insRes] = await Promise.all([
+        supabase.from("conversations").select("customer_id, unread_count"),
+        supabase.from("ai_insights").select("customer_id, probability, intent, churn_risk"),
+      ]);
+      if (cancel) return;
       const map: UnreadMap = {};
-      for (const c of data as { customer_id: string | null; unread_count: number | null }[]) {
+      for (const c of (convosRes.data ?? []) as { customer_id: string | null; unread_count: number | null }[]) {
         if (!c.customer_id) continue;
         map[c.customer_id] = (map[c.customer_id] ?? 0) + (c.unread_count ?? 0);
       }
       setUnread(map);
+      const imap: typeof insights = {};
+      for (const i of (insRes.data ?? []) as any[]) {
+        imap[i.customer_id] = { probability: i.probability, intent: i.intent, churn_risk: i.churn_risk };
+      }
+      setInsights(imap);
     }
     load();
     const ch = supabase
       .channel("pipeline-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "customers" },
-        () => refetch(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "conversations" },
-        () => load(),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => refetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ai_insights" }, () => load())
       .subscribe();
     return () => {
       cancel = true;
