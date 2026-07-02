@@ -45,6 +45,7 @@ import {
   markConversationRead,
 } from "@/lib/inbox.functions";
 import { useAuth } from "@/lib/auth-context";
+import { analyzeConversation, setSuggestionStatus } from "@/lib/ai-agents.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
