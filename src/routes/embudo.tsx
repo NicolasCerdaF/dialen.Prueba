@@ -281,8 +281,6 @@ function CustomerCard({
   insight,
   topReco,
   onOpen,
-  onDragStart,
-  onDragEnd,
   stagnantThreshold,
 }: {
   customer: CrmCustomer;
@@ -291,8 +289,6 @@ function CustomerCard({
   insight?: { probability: number | null; intent: string | null; churn_risk: number | null };
   topReco?: { name: string; price: number; currency: string; reason_code: string | null };
   onOpen: () => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
   stagnantThreshold?: number;
 }) {
   const initials = (customer.name ?? customer.phone).slice(0, 2).toUpperCase();
@@ -310,9 +306,6 @@ function CustomerCard({
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
       onClick={onOpen}
       className={cn(
         "group mb-2 cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md",
