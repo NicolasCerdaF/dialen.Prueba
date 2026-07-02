@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
+import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
@@ -35,6 +36,11 @@ const EmbudoRoute = EmbudoRouteImport.update({
 const CotizacionesRoute = CotizacionesRouteImport.update({
   id: '/cotizaciones',
   path: '/cotizaciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConocimientoRoute = ConocimientoRouteImport.update({
+  id: '/conocimiento',
+  path: '/conocimiento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfiguracionRoute = ConfiguracionRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
+  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
+  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
+  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
+    | '/conocimiento'
     | '/cotizaciones'
     | '/embudo'
     | '/login'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
+    | '/conocimiento'
     | '/cotizaciones'
     | '/embudo'
     | '/login'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
+    | '/conocimiento'
     | '/cotizaciones'
     | '/embudo'
     | '/login'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
+  ConocimientoRoute: typeof ConocimientoRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/cotizaciones'
       fullPath: '/cotizaciones'
       preLoaderRoute: typeof CotizacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conocimiento': {
+      id: '/conocimiento'
+      path: '/conocimiento'
+      fullPath: '/conocimiento'
+      preLoaderRoute: typeof ConocimientoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracion': {
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
+  ConocimientoRoute: ConocimientoRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,

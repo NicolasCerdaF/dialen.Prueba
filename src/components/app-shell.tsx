@@ -10,20 +10,26 @@ import {
   Zap,
   Package,
   FileText,
+  BookOpen,
 } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
-  to: "/" | "/embudo" | "/clientes" | "/catalogo" | "/cotizaciones" | "/automatizaciones" | "/configuracion";
+  to:
+    | "/"
+    | "/embudo"
+    | "/clientes"
+    | "/catalogo"
+    | "/cotizaciones"
+    | "/automatizaciones"
+    | "/conocimiento"
+    | "/configuracion";
   label: string;
   icon: typeof MessageSquare;
 };
 
-// Sidebar enfocado en ventas por WhatsApp. Módulos secundarios (IA,
-// Conocimiento, Modo demo, Métricas) siguen accesibles por URL directa
-// pero no ocupan espacio en la navegación principal.
 const navItems: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquare },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
@@ -31,6 +37,7 @@ const navItems: NavItem[] = [
   { to: "/catalogo", label: "Catálogo", icon: Package },
   { to: "/cotizaciones", label: "Cotizaciones", icon: FileText },
   { to: "/automatizaciones", label: "Automatizaciones", icon: Zap },
+  { to: "/conocimiento", label: "Conocimiento", icon: BookOpen },
   { to: "/configuracion", label: "Configuración", icon: Settings },
 ];
 

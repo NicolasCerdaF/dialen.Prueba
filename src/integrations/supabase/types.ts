@@ -734,6 +734,51 @@ export type Database = {
           },
         ]
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          company_id: string
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string
+          id: string
+        }
+        Insert: {
+          chunk_index: number
+          company_id: string
+          content: string
+          created_at?: string
+          document_id: string
+          embedding: string
+          id?: string
+        }
+        Update: {
+          chunk_index?: number
+          company_id?: string
+          content?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_documents: {
         Row: {
           company_id: string
@@ -1502,6 +1547,32 @@ export type Database = {
       is_member: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
+      }
+      match_knowledge: {
+        Args: {
+          _company_id: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          document_id: string
+          similarity: number
+        }[]
+      }
+      match_knowledge_admin: {
+        Args: {
+          _company_id: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          document_id: string
+          similarity: number
+        }[]
       }
     }
     Enums: {
