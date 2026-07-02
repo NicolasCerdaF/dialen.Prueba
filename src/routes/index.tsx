@@ -117,18 +117,27 @@ function InboxPage() {
   const orchestrateTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
+    // Debounce list invalidations so a burst of postgres_changes fires one refetch.
+    let listTimer: ReturnType<typeof setTimeout> | null = null;
+    const invalidateList = () => {
+      if (listTimer) return;
+      listTimer = setTimeout(() => {
+        listTimer = null;
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+      }, 400);
+    };
     const ch = supabase
       .channel("inbox-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations" },
-        () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+        invalidateList,
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          qc.invalidateQueries({ queryKey: ["conversations"] });
+          invalidateList();
           const row = payload.new as any;
           const convId = row?.conversation_id;
           if (convId) qc.invalidateQueries({ queryKey: ["messages", convId] });
@@ -162,13 +171,9 @@ function InboxPage() {
           }
         },
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "customers" },
-        () => qc.invalidateQueries({ queryKey: ["conversations"] }),
-      )
       .subscribe((status) => setRtOk(status === "SUBSCRIBED"));
     return () => {
+      if (listTimer) clearTimeout(listTimer);
       supabase.removeChannel(ch);
       for (const t of Object.values(orchestrateTimers.current)) clearTimeout(t);
       orchestrateTimers.current = {};
