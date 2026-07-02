@@ -870,6 +870,9 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       {/* AI Panel — Agente de Ventas + Motor de Análisis */}
       <AiPanel conversationId={conversationId} customerId={customer.id} />
 
+      {/* AI Recommendation Engine — Productos recomendados en este momento */}
+      <RecommendedProducts customerId={customer.id} conversationId={conversationId} />
+
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
