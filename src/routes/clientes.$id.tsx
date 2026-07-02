@@ -41,6 +41,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { listQuotes as listQuotesForTab, generateQuoteDraft as generateQuoteDraftFn } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/clientes/$id")({
