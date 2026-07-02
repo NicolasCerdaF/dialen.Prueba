@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AgentType } from "@/lib/ai-agents/registry";
+
 
 // ---------- Analyze conversation with the Sales+Analysis agents ----------
 export const analyzeConversation = createServerFn({ method: "POST" })
