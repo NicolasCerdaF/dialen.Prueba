@@ -97,6 +97,8 @@ export const TRIGGERS: TriggerEntry[] = [
     label: "Cotización rechazada", description: "Cuando el cliente rechaza la cotización." },
   { type: "quote_expired", kind: "trigger", category: "Ventas", icon: "Clock",
     label: "Cotización expirada", description: "Cuando una cotización vence sin respuesta." },
+  { type: "quote_sent_from_conversation", kind: "trigger", category: "Ventas", icon: "Send",
+    label: "Cotización enviada desde chat", description: "Cuando una cotización se entrega dentro de una conversación de WhatsApp desde la Bandeja Unificada." },
   // Placeholders — futuras integraciones
   { type: "order_created", kind: "trigger", category: "Ventas", icon: "ShoppingCart", soon: true,
     label: "Pedido creado", description: "Cuando se registre un pedido nuevo." },

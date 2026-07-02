@@ -55,6 +55,10 @@ import {
   type ReasonCode,
 } from "@/lib/recommender.functions";
 import { linkProductToCustomer } from "@/lib/catalog.functions";
+import {
+  sendQuoteFromConversation,
+  draftQuoteFromMessage,
+} from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -909,6 +913,10 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       {/* AI Recommendation Engine — Productos recomendados en este momento */}
       <RecommendedProducts customerId={customer.id} conversationId={conversationId} />
 
+      {/* Cotizaciones dentro del chat — canal de cierre */}
+      <ConversationQuotes customerId={customer.id} conversationId={conversationId} />
+
+
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
@@ -1022,7 +1030,7 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       <Section icon={<Sparkles className="h-3.5 w-3.5" />} title="Acciones comerciales">
         <div className="grid grid-cols-2 gap-1.5">
           <ComingSoon icon={<ShoppingBag className="h-3 w-3" />} label="Nuevo pedido" />
-          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Cotización" />
+          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Factura" />
           <ComingSoon icon={<Calendar className="h-3 w-3" />} label="Agendar" />
           <ComingSoon icon={<Building2 className="h-3 w-3" />} label="Oportunidad" />
         </div>
@@ -1534,3 +1542,263 @@ function RecommendedProducts({
     </Section>
   );
 }
+
+// ================= Conversation Quotes (canal de cierre) =================
+type ConvQuote = {
+  id: string;
+  number: string;
+  title: string | null;
+  status: "draft" | "sent" | "viewed" | "accepted" | "rejected" | "expired";
+  currency: string;
+  total: number;
+  sent_at: string | null;
+  viewed_at: string | null;
+  accepted_at: string | null;
+  rejected_at: string | null;
+  created_at: string;
+  ai_generated: boolean;
+  conversation_id: string | null;
+};
+
+const QUOTE_STATUS_STYLES: Record<ConvQuote["status"], { label: string; cls: string }> = {
+  draft: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
+  sent: { label: "Enviada", cls: "bg-sky-500/15 text-sky-600" },
+  viewed: { label: "Vista", cls: "bg-indigo-500/15 text-indigo-600" },
+  accepted: { label: "Aceptada", cls: "bg-emerald-500/15 text-emerald-600" },
+  rejected: { label: "Rechazada", cls: "bg-rose-500/15 text-rose-600" },
+  expired: { label: "Expirada", cls: "bg-amber-500/15 text-amber-700" },
+};
+
+function ConversationQuotes({
+  customerId,
+  conversationId,
+}: {
+  customerId: string;
+  conversationId: string;
+}) {
+  const qc = useQueryClient();
+  const sendFn = useServerFn(sendQuoteFromConversation);
+  const draftFn = useServerFn(draftQuoteFromMessage);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const { data: quotes = [] } = useQuery({
+    queryKey: ["conv-quotes", customerId],
+    queryFn: async (): Promise<ConvQuote[]> => {
+      const { data } = await supabase
+        .from("quotes")
+        .select(
+          "id, number, title, status, currency, total, sent_at, viewed_at, accepted_at, rejected_at, created_at, ai_generated, conversation_id",
+        )
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return (data as any) ?? [];
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`conv-quotes-${customerId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "quotes", filter: `customer_id=eq.${customerId}` },
+        () => qc.invalidateQueries({ queryKey: ["conv-quotes", customerId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [customerId, qc]);
+
+  async function sendQuote(quoteId: string) {
+    setBusy(quoteId);
+    try {
+      const res = await sendFn({
+        data: {
+          conversation_id: conversationId,
+          quote_id: quoteId,
+          origin:
+            typeof window !== "undefined" ? window.location.origin : undefined,
+        },
+      });
+      toast.success(
+        res.status === "sent" ? "Cotización entregada por WhatsApp" : "Reenviada",
+      );
+      qc.invalidateQueries({ queryKey: ["conv-quotes", customerId] });
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo enviar");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function generateAndSend() {
+    setBusy("__new");
+    try {
+      const res = await sendFn({
+        data: {
+          conversation_id: conversationId,
+          auto_draft: true,
+          origin:
+            typeof window !== "undefined" ? window.location.origin : undefined,
+        },
+      });
+      toast.success("Cotización IA enviada por WhatsApp");
+      qc.invalidateQueries({ queryKey: ["conv-quotes", customerId] });
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+      return res;
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo generar");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function convertMessageToQuote() {
+    setBusy("__convert");
+    try {
+      await draftFn({ data: { conversation_id: conversationId } });
+      toast.success("Borrador creado desde la conversación");
+      qc.invalidateQueries({ queryKey: ["conv-quotes", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo crear el borrador");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Section icon={<FileText className="h-3.5 w-3.5 text-primary" />} title="Cotizaciones">
+      <div className="space-y-2">
+        {quotes.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <Sparkles className="h-3 w-3" />
+              <span>Cerrar dentro del chat</span>
+            </div>
+            <p className="mt-1 text-[10.5px] leading-relaxed">
+              Genera una propuesta con IA a partir de las recomendaciones activas y envíala por WhatsApp en un solo toque.
+            </p>
+          </div>
+        ) : (
+          quotes.map((q) => {
+            const style = QUOTE_STATUS_STYLES[q.status];
+            const isThisChat = q.conversation_id === conversationId;
+            return (
+              <div
+                key={q.id}
+                className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        to="/cotizaciones/$id"
+                        params={{ id: q.id }}
+                        className="truncate text-[12px] font-semibold hover:underline"
+                      >
+                        {q.number}
+                      </Link>
+                      {q.ai_generated && (
+                        <span className="rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold text-primary">
+                          IA
+                        </span>
+                      )}
+                    </div>
+                    {q.title && (
+                      <div className="truncate text-[10px] text-muted-foreground">
+                        {q.title}
+                      </div>
+                    )}
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      {q.currency} {Number(q.total ?? 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
+                      style.cls,
+                    )}
+                    title={
+                      q.status === "viewed" && q.viewed_at
+                        ? `Vista ${new Date(q.viewed_at).toLocaleString()}`
+                        : q.status === "sent" && q.sent_at
+                          ? `Enviada ${new Date(q.sent_at).toLocaleString()}`
+                          : undefined
+                    }
+                  >
+                    {style.label}
+                  </span>
+                </div>
+                {isThisChat && q.status !== "draft" && (
+                  <div className="text-[9px] text-muted-foreground">
+                    📎 entregada en este chat
+                  </div>
+                )}
+                <div className="flex gap-1 pt-0.5">
+                  {q.status === "draft" || q.status === "sent" || q.status === "viewed" ? (
+                    <button
+                      onClick={() => sendQuote(q.id)}
+                      disabled={busy === q.id}
+                      className="flex-1 rounded-md bg-primary py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                    >
+                      {busy === q.id ? (
+                        <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+                      ) : q.status === "draft" ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Send className="h-3 w-3" /> Enviar por WhatsApp
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Send className="h-3 w-3" /> Reenviar
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/cotizaciones/$id"
+                      params={{ id: q.id }}
+                      className="flex-1 rounded-md border border-border py-1 text-center text-[10px] font-medium hover:bg-secondary"
+                    >
+                      Abrir
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        <div className="flex gap-1 pt-1">
+          <button
+            onClick={generateAndSend}
+            disabled={busy !== null}
+            className="flex-1 rounded-md border border-primary/40 bg-primary/10 py-1.5 text-[10px] font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
+          >
+            {busy === "__new" ? (
+              <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+            ) : (
+              <span className="inline-flex items-center justify-center gap-1">
+                <Sparkles className="h-3 w-3" /> Nueva por IA y enviar
+              </span>
+            )}
+          </button>
+          <button
+            onClick={convertMessageToQuote}
+            disabled={busy !== null}
+            className="rounded-md border border-border px-2 py-1.5 text-[10px] font-medium text-muted-foreground hover:bg-secondary disabled:opacity-60"
+            title="Convertir la conversación en un borrador de cotización"
+          >
+            {busy === "__convert" ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Plus className="h-3 w-3" />
+            )}
+          </button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
