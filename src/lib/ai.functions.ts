@@ -66,6 +66,8 @@ const SaveInput = z.object({
   style: z.enum(["formal", "cercano", "vendedor", "soporte"]),
   autoReply: z.boolean(),
   customPrompt: z.string().max(2000).optional().nullable(),
+  followUpEnabled: z.boolean().optional(),
+  followUpHours: z.number().int().min(1).max(720).optional(),
 });
 
 export const saveAiSettings = createServerFn({ method: "POST" })
@@ -76,13 +78,16 @@ export const saveAiSettings = createServerFn({ method: "POST" })
     const { data: profile } = await supabase
       .from("profiles").select("company_id").eq("id", userId).maybeSingle();
     if (!profile?.company_id) throw new Error("No se encontró la empresa");
+    const update: Record<string, unknown> = {
+      ai_response_style: data.style,
+      ai_auto_reply: data.autoReply,
+      ai_custom_prompt: data.customPrompt ?? null,
+    };
+    if (typeof data.followUpEnabled === "boolean") update.follow_up_enabled = data.followUpEnabled;
+    if (typeof data.followUpHours === "number") update.follow_up_hours = data.followUpHours;
     const { error } = await supabase
       .from("companies")
-      .update({
-        ai_response_style: data.style,
-        ai_auto_reply: data.autoReply,
-        ai_custom_prompt: data.customPrompt ?? null,
-      })
+      .update(update)
       .eq("id", profile.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };
