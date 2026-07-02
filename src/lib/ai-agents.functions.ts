@@ -109,7 +109,17 @@ export const analyzeConversation = createServerFn({ method: "POST" })
     if (!parsed) throw new Error("La IA devolvió un formato inesperado");
 
     // Persist as ai_suggestion (Sales agent)
+    // last message id (required by schema)
+    const { data: lastMsg } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("conversation_id", data.conversation_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     const insertSuggestion = supabase.from("ai_suggestions").insert({
+      message_id: lastMsg?.id ?? data.conversation_id, // fallback for legacy schema
       conversation_id: data.conversation_id,
       customer_id: convo.customer_id,
       company_id: convo.company_id,
@@ -124,7 +134,7 @@ export const analyzeConversation = createServerFn({ method: "POST" })
       status: "pending" as any,
       payload: parsed as any,
       actor_id: userId,
-    });
+    } as any);
 
     // Upsert ai_insights (Analysis engine)
     const upsertInsight = supabase.from("ai_insights").upsert(
