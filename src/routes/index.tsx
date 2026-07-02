@@ -55,6 +55,10 @@ import {
   type ReasonCode,
 } from "@/lib/recommender.functions";
 import { linkProductToCustomer } from "@/lib/catalog.functions";
+import {
+  sendQuoteFromConversation,
+  draftQuoteFromMessage,
+} from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
