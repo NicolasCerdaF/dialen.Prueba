@@ -613,6 +613,305 @@ export const getQuotesOverview = createServerFn({ method: "POST" })
       wonCount,
       sentCount,
       conversion,
-      avgTicket: Number(avgTicket.toFixed(2)),
     };
   });
+
+// ---------- Format WhatsApp message body for a quote ----------
+function formatQuoteMessage(args: {
+  quote: {
+    number: string;
+    title: string | null;
+    currency: string;
+    subtotal: number;
+    discount_total: number;
+    tax_total: number;
+    total: number;
+    valid_until: string | null;
+    notes: string | null;
+    share_token: string | null;
+    id: string;
+  };
+  items: Array<Pick<QuoteItem, "name" | "quantity" | "unit_price" | "line_total">>;
+  customer_name: string | null;
+  origin: string;
+}) {
+  const { quote, items, customer_name, origin } = args;
+  const fmt = (n: number) =>
+    `${quote.currency} ${Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const lines: string[] = [];
+  lines.push(`*Cotización ${quote.number}*`);
+  if (quote.title) lines.push(`_${quote.title}_`);
+  lines.push("");
+  lines.push(`Hola${customer_name ? ` ${customer_name}` : ""}, aquí tienes tu propuesta:`);
+  lines.push("");
+  const shown = items.slice(0, 8);
+  for (const it of shown) {
+    const qty = Number(it.quantity ?? 1);
+    lines.push(`• ${it.name} — ${qty} × ${fmt(Number(it.unit_price ?? 0))} = ${fmt(Number(it.line_total ?? 0))}`);
+  }
+  if (items.length > shown.length) {
+    lines.push(`… y ${items.length - shown.length} producto(s) más`);
+  }
+  lines.push("");
+  if (quote.discount_total > 0) lines.push(`Descuento: -${fmt(quote.discount_total)}`);
+  if (quote.tax_total > 0) lines.push(`Impuestos: ${fmt(quote.tax_total)}`);
+  lines.push(`*Total: ${fmt(quote.total)}*`);
+  if (quote.valid_until) {
+    lines.push(`Válida hasta: ${new Date(quote.valid_until).toLocaleDateString()}`);
+  }
+  if (quote.notes) {
+    lines.push("");
+    lines.push(quote.notes);
+  }
+  if (quote.share_token && origin) {
+    lines.push("");
+    lines.push(`Ver y aceptar: ${origin}/cotizaciones/${quote.id}?t=${quote.share_token}`);
+  }
+  return lines.join("\n");
+}
+
+// ---------- Send a quote from the Unified Inbox ----------
+const SendFromConvInput = z.object({
+  conversation_id: z.string().uuid(),
+  quote_id: z.string().uuid().optional(),
+  auto_draft: z.boolean().default(false), // if true and no quote_id, build via AI recommendations
+  origin: z.string().url().optional(), // browser origin for share link
+});
+
+export const sendQuoteFromConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => SendFromConvInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const company_id = await getCompanyId(supabase, userId);
+
+    // 1) Load conversation + customer + channel
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("id, company_id, customer_id, channel_id, is_demo")
+      .eq("id", data.conversation_id)
+      .maybeSingle();
+    if (!convo) throw new Error("Conversación no encontrada");
+
+    // 2) Resolve quote_id — reuse existing or build a fresh AI draft
+    let quoteId = data.quote_id;
+    if (!quoteId && data.auto_draft) {
+      const draftFn: any = (await import("./quotes.functions")).generateQuoteDraft;
+      const res = await draftFn.handler({
+        data: { customer_id: convo.customer_id, conversation_id: convo.id, max_items: 4 },
+        context,
+      });
+      quoteId = res.id;
+    }
+    if (!quoteId) throw new Error("Debes indicar una cotización o activar el borrador automático");
+
+    // 3) Load quote + items + customer
+    const [{ data: quote }, { data: items }, { data: customer }] = await Promise.all([
+      supabase.from("quotes").select("*").eq("id", quoteId).maybeSingle(),
+      supabase.from("quote_items").select("*").eq("quote_id", quoteId).order("position", { ascending: true }),
+      supabase.from("customers").select("id, name, phone").eq("id", convo.customer_id).maybeSingle(),
+    ]);
+    if (!quote) throw new Error("Cotización no encontrada");
+    if (quote.company_id !== company_id) throw new Error("Cotización de otra empresa");
+
+    // 4) Build message body
+    const body = formatQuoteMessage({
+      quote: quote as any,
+      items: (items ?? []) as any,
+      customer_name: customer?.name ?? null,
+      origin: data.origin ?? "",
+    });
+
+    // 5) Deliver via WhatsApp (or persist in demo)
+    let wa_message_id: string | null = null;
+    if (convo.is_demo) {
+      await supabase.from("messages").insert({
+        conversation_id: convo.id,
+        company_id,
+        direction: "outbound",
+        body,
+        status: "sent",
+        sender_id: userId,
+      });
+    } else {
+      if (!customer?.phone) throw new Error("Cliente sin teléfono");
+      const { data: channel } = await supabase
+        .from("whatsapp_channels")
+        .select("phone_number_id, access_token, status")
+        .eq("id", convo.channel_id ?? "")
+        .maybeSingle();
+      if (!channel?.access_token || !channel.phone_number_id || channel.status !== "connected") {
+        throw new Error("Canal de WhatsApp no conectado");
+      }
+      const graph = `https://graph.facebook.com/${process.env.META_GRAPH_API_VERSION || "v21.0"}`;
+      const res = await fetch(`${graph}/${channel.phone_number_id}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${channel.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: customer.phone.replace(/^\+/, ""),
+          type: "text",
+          text: { body, preview_url: true },
+        }),
+      });
+      const payload: any = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error?.message ?? `Error ${res.status}`);
+      wa_message_id = payload?.messages?.[0]?.id ?? null;
+      await supabase.from("messages").insert({
+        conversation_id: convo.id,
+        company_id,
+        direction: "outbound",
+        body,
+        status: "sent",
+        wa_message_id,
+        sender_id: userId,
+      });
+    }
+
+    const now = new Date().toISOString();
+    await supabase
+      .from("conversations")
+      .update({ last_message_at: now, updated_at: now })
+      .eq("id", convo.id);
+
+    // 6) Mark quote as sent + link to conversation
+    const wasDraft = (quote as any).status === "draft";
+    const patch: any = { conversation_id: convo.id };
+    if (wasDraft) {
+      patch.status = "sent";
+      patch.sent_at = now;
+    }
+    await supabase.from("quotes").update(patch).eq("id", quoteId);
+
+    // 7) Structured events across CRM, Conversation, Quote timelines
+    await Promise.all([
+      supabase.from("quote_events").insert({
+        quote_id: quoteId,
+        company_id,
+        actor_id: userId,
+        event_type: "sent_from_conversation",
+        payload: {
+          conversation_id: convo.id,
+          customer_id: convo.customer_id,
+          wa_message_id,
+          total: (quote as any).total,
+          number: (quote as any).number,
+        },
+      }),
+      supabase.from("conversation_events").insert({
+        conversation_id: convo.id,
+        company_id,
+        actor_id: userId,
+        event_type: "quote_sent",
+        payload: {
+          quote_id: quoteId,
+          number: (quote as any).number,
+          total: (quote as any).total,
+          currency: (quote as any).currency,
+        },
+      }),
+      supabase.from("customer_events").insert({
+        customer_id: convo.customer_id,
+        company_id,
+        actor_id: userId,
+        event_type: "quote_sent_from_conversation",
+        payload: {
+          quote_id: quoteId,
+          conversation_id: convo.id,
+          number: (quote as any).number,
+          total: (quote as any).total,
+        },
+      }),
+    ]);
+
+    // 8) Bump probability signal + fire automations
+    try {
+      const { data: insight } = await supabase
+        .from("ai_insights")
+        .select("id, probability")
+        .eq("customer_id", convo.customer_id)
+        .maybeSingle();
+      const nextProb = Math.min(0.95, Math.max(Number(insight?.probability ?? 0.4), 0.65));
+      if (insight?.id) {
+        await supabase.from("ai_insights").update({ probability: nextProb }).eq("id", insight.id);
+      }
+    } catch {
+      /* non-critical */
+    }
+
+    try {
+      const { runAutomationForCustomer } = await import("@/lib/automations.functions");
+      const triggers = wasDraft
+        ? ["quote_sent", "quote_sent_from_conversation"]
+        : ["quote_sent_from_conversation"];
+      for (const trig of triggers) {
+        (runAutomationForCustomer as any).handler?.({
+          data: {
+            customer_id: convo.customer_id,
+            trigger: trig,
+            payload: { quote_id: quoteId, conversation_id: convo.id },
+          },
+          context: { supabase, userId },
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return {
+      ok: true,
+      quote_id: quoteId,
+      wa_message_id,
+      status: wasDraft ? "sent" : (quote as any).status,
+    };
+  });
+
+// ---------- Convert an arbitrary chat message into a quote draft ----------
+export const draftQuoteFromMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        conversation_id: z.string().uuid(),
+        message_id: z.string().uuid().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("id, customer_id")
+      .eq("id", data.conversation_id)
+      .maybeSingle();
+    if (!convo) throw new Error("Conversación no encontrada");
+
+    let seed = "";
+    if (data.message_id) {
+      const { data: m } = await supabase
+        .from("messages")
+        .select("body")
+        .eq("id", data.message_id)
+        .maybeSingle();
+      seed = m?.body ?? "";
+    }
+
+    // Reuse the AI draft engine which sources from active recommendations.
+    const draftFn: any = (await import("./quotes.functions")).generateQuoteDraft;
+    const res = await draftFn.handler({
+      data: { customer_id: convo.customer_id, conversation_id: convo.id, max_items: 4 },
+      context,
+    });
+
+    if (seed) {
+      await supabase
+        .from("quotes")
+        .update({ notes: seed.slice(0, 800) })
+        .eq("id", res.id);
+    }
+    return res;
+  });
+
