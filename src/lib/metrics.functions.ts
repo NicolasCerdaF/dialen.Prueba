@@ -205,12 +205,33 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
     const unrespondedConversations = convoList.filter(
       (c) => c.status === "open" && lastByConv.get(c.id) === "inbound",
     ).length;
+    const unassignedConversations = convoList.filter(
+      (c) => c.status === "open" && !c.assignee_id,
+    ).length;
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const waitingTooLong = convoList.filter(
+      (c) =>
+        c.status === "open" &&
+        lastByConv.get(c.id) === "inbound" &&
+        c.last_message_at &&
+        new Date(c.last_message_at).getTime() < oneHourAgo,
+    ).length;
 
     // Clientes
     const totalCustomers = customerList.length;
     const newCustomers = customerList.filter(
       (c) => new Date(c.created_at).getTime() >= since.getTime(),
     ).length;
+    const vipCustomers = customerList.filter((c) =>
+      (c.tags ?? []).some((t: string) => t?.toLowerCase() === "vip"),
+    ).length;
+    const activeCustomerIds = new Set<string>();
+    for (const c of convoList) {
+      if (c.last_message_at && new Date(c.last_message_at).getTime() >= since.getTime()) {
+        activeCustomerIds.add(c.customer_id);
+      }
+    }
+    const inactiveCustomers = Math.max(0, totalCustomers - activeCustomerIds.size);
     const convosPerCustomer = new Map<string, number>();
     for (const c of convoList) {
       convosPerCustomer.set(
