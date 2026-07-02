@@ -1284,21 +1284,24 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
             </div>
           </div>
         ) : (
-          <button
-            onClick={analyze}
-            disabled={analyzing}
-            className="w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
-          >
-            {analyzing ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" /> Analizando conversación…
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3" /> Analizar con IA
-              </span>
-            )}
-          </button>
+          <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <Sparkles className="h-3 w-3" />
+              <span>IA en modo automático</span>
+            </div>
+            <p className="mt-1 text-[10.5px] leading-relaxed">
+              La inteligencia se actualiza sola con cada mensaje del cliente y cambios del embudo. No hace falta pulsar nada.
+            </p>
+            <button
+              onClick={analyze}
+              disabled={analyzing}
+              className="mt-2 inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10px] font-medium hover:bg-secondary disabled:opacity-50"
+              title="Forzar un análisis ahora"
+            >
+              {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Forzar análisis
+            </button>
+          </div>
         )}
 
         <Link
