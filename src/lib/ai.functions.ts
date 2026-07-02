@@ -87,7 +87,7 @@ export const saveAiSettings = createServerFn({ method: "POST" })
     if (typeof data.followUpHours === "number") update.follow_up_hours = data.followUpHours;
     const { error } = await supabase
       .from("companies")
-      .update(update)
+      .update(update as any)
       .eq("id", profile.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };
