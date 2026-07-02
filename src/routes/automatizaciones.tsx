@@ -61,6 +61,8 @@ function AutomationsPage() {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [tab, setTab] = useState<"recipes" | "builder">("recipes");
+
 
   const kpis = useMemo(() => {
     const active = automations.filter((a) => a.status === "active").length;
