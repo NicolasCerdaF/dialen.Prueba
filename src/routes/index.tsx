@@ -106,6 +106,10 @@ function InboxPage() {
     },
   });
 
+  const orchestrateFn = useServerFn(orchestrateCustomer);
+  // Per-conversation debounce so a burst of inbound messages fires one AI run.
+  const orchestrateTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   useEffect(() => {
     const ch = supabase
       .channel("inbox-realtime")
@@ -119,8 +123,37 @@ function InboxPage() {
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
           qc.invalidateQueries({ queryKey: ["conversations"] });
-          const convId = (payload.new as any)?.conversation_id;
+          const row = payload.new as any;
+          const convId = row?.conversation_id;
           if (convId) qc.invalidateQueries({ queryKey: ["messages", convId] });
+          // Event-driven AI: only trigger on inbound (customer) messages.
+          if (row?.direction === "inbound" && convId) {
+            const key = String(convId);
+            const prev = orchestrateTimers.current[key];
+            if (prev) clearTimeout(prev);
+            orchestrateTimers.current[key] = setTimeout(() => {
+              (async () => {
+                const { data: c } = await supabase
+                  .from("conversations")
+                  .select("customer_id")
+                  .eq("id", convId)
+                  .maybeSingle();
+                if (c?.customer_id) {
+                  try {
+                    await orchestrateFn({
+                      data: {
+                        customer_id: c.customer_id,
+                        conversation_id: convId,
+                        trigger: "message_received",
+                      },
+                    });
+                  } catch {
+                    /* silent — this is background intelligence */
+                  }
+                }
+              })();
+            }, 5000); // 5s debounce: absorb typing bursts
+          }
         },
       )
       .on(
@@ -131,8 +164,10 @@ function InboxPage() {
       .subscribe((status) => setRtOk(status === "SUBSCRIBED"));
     return () => {
       supabase.removeChannel(ch);
+      for (const t of Object.values(orchestrateTimers.current)) clearTimeout(t);
+      orchestrateTimers.current = {};
     };
-  }, [qc]);
+  }, [qc, orchestrateFn]);
 
   const counts = useMemo(() => {
     const c = { all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0 };
