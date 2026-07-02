@@ -252,7 +252,7 @@ export const getAiOverview = createServerFn({ method: "GET" })
     const total = suggestions.length;
     const used = suggestions.filter((s) => s.status === "used").length;
     const pending = suggestions.filter((s) => s.status === "pending").length;
-    const dismissed = suggestions.filter((s) => s.status === "dismissed").length;
+    const dismissed = suggestions.filter((s) => s.status === "discarded").length;
     const avgProbability =
       insights.length > 0
         ? insights.reduce((acc, r) => acc + (Number(r.probability) || 0), 0) / insights.length
