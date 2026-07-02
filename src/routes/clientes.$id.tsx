@@ -986,6 +986,7 @@ function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged:
 
   return (
     <div className="space-y-4">
+      <ActiveRecommendations customerId={customerId} onChanged={onChanged} />
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-medium">Productos vinculados</div>
