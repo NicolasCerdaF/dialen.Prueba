@@ -3,6 +3,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, type AiStyle } from "@/lib/ai-styles";
+import { aiFetch } from "@/lib/ai-fetch";
+import { log } from "@/lib/logger";
 
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -82,19 +84,24 @@ export async function maybeAutoReply(opts: {
       return;
     }
 
-    const aiRes = await fetch(AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ model: MODEL, messages }),
-    });
-    if (!aiRes.ok) {
-      const txt = await aiRes.text().catch(() => "");
-      console.error("[ai-reply] AI gateway error", aiRes.status, txt.slice(0, 300));
-      return;
+    let aiRes: Response;
+    try {
+      aiRes = await aiFetch(
+        AI_GATEWAY,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Lovable-API-Key": apiKey,
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ model: MODEL, messages }),
+        },
+        { scope: "ai-reply", companyId },
+      );
+    } catch (e) {
+      log.error("ai-reply", "ai_gateway_failed", { company_id: companyId, err: e });
+      return; // fail-safe: no auto-reply, chat keeps working
     }
     const aiJson: any = await aiRes.json();
     const reply: string = aiJson?.choices?.[0]?.message?.content?.trim() ?? "";
@@ -102,22 +109,32 @@ export async function maybeAutoReply(opts: {
 
     // 4) Enviar por WhatsApp Cloud API
     const toClean = customerPhone.replace(/^\+/, "").replace(/[^0-9]/g, "");
-    const sendRes = await fetch(`${graphBase}/${channel.phone_number_id}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${channel.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: toClean,
-        type: "text",
-        text: { body: reply, preview_url: false },
-      }),
-    });
+    let sendRes: Response;
+    try {
+      sendRes = await fetch(`${graphBase}/${channel.phone_number_id}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${channel.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: toClean,
+          type: "text",
+          text: { body: reply, preview_url: false },
+        }),
+      });
+    } catch (e) {
+      log.error("ai-reply", "whatsapp_send_network", { company_id: companyId, err: e });
+      return;
+    }
     const sendJson: any = await sendRes.json().catch(() => ({}));
     if (!sendRes.ok) {
-      console.error("[ai-reply] WhatsApp send error", sendRes.status, sendJson?.error);
+      log.error("ai-reply", "whatsapp_send_error", {
+        company_id: companyId,
+        status: sendRes.status,
+        error_code: sendJson?.error?.code ?? null,
+      });
       return;
     }
     const waId: string | undefined = sendJson?.messages?.[0]?.id;
@@ -141,6 +158,6 @@ export async function maybeAutoReply(opts: {
       })
       .eq("id", conversationId);
   } catch (e) {
-    console.error("[ai-reply] uncaught", e);
+    log.error("ai-reply", "uncaught", { err: e });
   }
 }
