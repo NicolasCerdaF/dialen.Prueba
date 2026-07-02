@@ -250,8 +250,6 @@ function EmbudoPage() {
                           insight={insights[c.id]}
                           topReco={topReco[c.id]}
                           onOpen={() => setOpenCustomerId(c.id)}
-                          onDragStart={() => setDragId(c.id)}
-                          onDragEnd={() => setDragId(null)}
                           stagnantThreshold={stagnantThreshold}
                         />
                       ))
