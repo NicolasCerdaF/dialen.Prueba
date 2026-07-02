@@ -57,6 +57,8 @@ function AiStyleSection({ isAdmin }: { isAdmin: boolean }) {
 
   const [style, setStyle] = useState<AiStyle>("cercano");
   const [autoReply, setAutoReply] = useState(false);
+  const [followUpEnabled, setFollowUpEnabled] = useState(false);
+  const [followUpHours, setFollowUpHours] = useState(24);
   const [preview, setPreview] = useState<string>(AI_STYLES.cercano.example);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,6 +67,8 @@ function AiStyleSection({ isAdmin }: { isAdmin: boolean }) {
     if (settings) {
       setStyle(settings.style);
       setAutoReply(settings.autoReply);
+      setFollowUpEnabled((settings as any).followUpEnabled ?? false);
+      setFollowUpHours((settings as any).followUpHours ?? 24);
       setPreview(AI_STYLES[settings.style].example);
     }
   }, [settings]);
@@ -86,8 +90,8 @@ function AiStyleSection({ isAdmin }: { isAdmin: boolean }) {
   async function save() {
     setSaving(true);
     try {
-      await saveFn({ data: { style, autoReply, customPrompt: null } });
-      toast.success("Estilo guardado");
+      await saveFn({ data: { style, autoReply, customPrompt: null, followUpEnabled, followUpHours } });
+      toast.success("Ajustes guardados");
       qc.invalidateQueries({ queryKey: ["ai-settings"] });
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo guardar");
