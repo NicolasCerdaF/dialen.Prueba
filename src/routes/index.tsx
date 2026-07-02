@@ -1701,13 +1701,26 @@ function ConversationQuotes({
           quotes.map((q) => {
             const style = QUOTE_STATUS_STYLES[q.status];
             const isThisChat = q.conversation_id === conversationId;
+            const isAutoDraft =
+              q.status === "draft" &&
+              (q.ai_context as any)?.source === "ai_auto";
             return (
               <div
                 key={q.id}
-                className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2"
+                className={cn(
+                  "space-y-1.5 rounded-lg border p-2",
+                  isAutoDraft
+                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/40"
+                    : "border-border/60 bg-background",
+                )}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                {isAutoDraft && (
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                    <Sparkles className="h-3 w-3" />
+                    IA generó una cotización — envíala en 1 click
+                  </div>
+                )}
+                <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <Link
                         to="/cotizaciones/$id"
