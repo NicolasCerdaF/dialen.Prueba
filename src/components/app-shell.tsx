@@ -2,13 +2,10 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   MessageSquare,
   Users,
-  BookOpen,
-  BarChart3,
   Settings,
   Sparkles,
   CircleDot,
   LogOut,
-  Wand2,
   TrendingUp,
   Zap,
   Package,
@@ -19,22 +16,21 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
-  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/ia" | "/catalogo" | "/cotizaciones" | "/conocimiento" | "/metricas" | "/configuracion";
+  to: "/" | "/embudo" | "/clientes" | "/catalogo" | "/cotizaciones" | "/automatizaciones" | "/configuracion";
   label: string;
   icon: typeof MessageSquare;
 };
 
+// Sidebar enfocado en ventas por WhatsApp. Módulos secundarios (IA,
+// Conocimiento, Modo demo, Métricas) siguen accesibles por URL directa
+// pero no ocupan espacio en la navegación principal.
 const navItems: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquare },
-  { to: "/demo-chat", label: "Modo demo", icon: Wand2 },
-  { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
+  { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/catalogo", label: "Catálogo", icon: Package },
   { to: "/cotizaciones", label: "Cotizaciones", icon: FileText },
   { to: "/automatizaciones", label: "Automatizaciones", icon: Zap },
-  { to: "/ia", label: "IA", icon: Sparkles },
-  { to: "/conocimiento", label: "Conocimiento", icon: BookOpen },
-  { to: "/metricas", label: "Métricas", icon: BarChart3 },
   { to: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
