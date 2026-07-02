@@ -310,6 +310,7 @@ function CustomerCard({
   team,
   unread,
   insight,
+  topReco,
   onOpen,
   onDragStart,
   onDragEnd,
@@ -319,6 +320,7 @@ function CustomerCard({
   team: { id: string; full_name: string | null; email: string | null }[];
   unread: number;
   insight?: { probability: number | null; intent: string | null; churn_risk: number | null };
+  topReco?: { name: string; price: number; currency: string; reason_code: string | null };
   onOpen: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
