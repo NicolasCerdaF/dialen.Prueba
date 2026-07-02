@@ -842,7 +842,7 @@ const SALES_RECIPES: Recipe[] = [
   {
     id: "quote-unopened",
     name: "Cotización sin abrir",
-    description: "Recuérdale al cliente su cotización enviada si no la ha visto.",
+    description: "Si el cliente no abre la cotización, deja un follow-up sugerido en bandeja listo para enviar en 1 click.",
     icon: AlertCircle,
     flow: {
       trigger: { type: "quote_sent" },
@@ -850,8 +850,8 @@ const SALES_RECIPES: Recipe[] = [
         { type: "wait_days", op: "eq", config: { value: "2" } },
       ],
       actions: [
-        { type: "send_whatsapp_message", config: {
-          message: "Hola {{customer.name}}, ¿pudiste revisar la cotización que te enviamos?",
+        { type: "create_note", config: {
+          body: "📌 Follow-up sugerido — Hola {{customer.name}}, ¿pudiste revisar la cotización que te enviamos?",
         } },
       ],
     },
