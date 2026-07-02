@@ -35,7 +35,7 @@ import {
   listTeamMembers,
   type CrmCustomer,
 } from "@/lib/crm.functions";
-import { orchestrateCustomer } from "@/lib/ai-orchestrator.functions";
+
 import { STAGES, normalizeStage, stageStyle, getStage, STAGNANT_DAYS_BY_STAGE } from "@/lib/pipeline";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -60,8 +60,7 @@ function EmbudoPage() {
   const qc = useQueryClient();
   const listFn = useServerFn(listCustomers);
   const teamFn = useServerFn(listTeamMembers);
-  const update = useServerFn(updateCrmCustomer);
-  const orchestrate = useServerFn(orchestrateCustomer);
+  // Embudo es solo espejo: la mutación de stage vive en CRM/quotes/orquestador.
 
   const { data: customers = [], refetch } = useQuery({
     queryKey: ["pipeline-customers"],
@@ -156,31 +155,9 @@ function EmbudoPage() {
     return { open: open.length, won: won.length, lost: lost.length, pipelineValue, wonValue, conversion, avgTicket };
   }, [customers]);
 
-  // Drag & drop
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
-  async function moveTo(customerId: string, newStage: string) {
-    const c = customers.find((x) => x.id === customerId);
-    if (!c) return;
-    const current = normalizeStage(c.stage);
-    if (current === newStage) return;
-    // Optimistic update
-    qc.setQueryData<CrmCustomer[]>(["pipeline-customers"], (prev) =>
-      (prev ?? []).map((x) => (x.id === customerId ? { ...x, stage: newStage } : x)),
-    );
-    try {
-      await update({ data: { id: customerId, stage: newStage } });
-      toast.success(`Movido a ${getStage(newStage)?.label}`);
-      // Event-driven AI: stage change is a strong trigger — orchestrator will
-      // re-score recommendations and refresh the insight without debounce.
-      orchestrate({
-        data: { customer_id: customerId, trigger: "stage_changed", force: true },
-      }).catch(() => {});
-    } catch (e) {
-      toast.error((e as Error).message);
-      refetch();
-    }
-  }
+  // Embudo = espejo del CRM. El stage se mueve solo por eventos comerciales
+  // (cotización aceptada, mensajes, orquestador). Sin drag & drop.
+
 
   const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
 
@@ -230,21 +207,7 @@ function EmbudoPage() {
               return (
                 <div
                   key={stage.key}
-                  className={cn(
-                    "flex h-full w-[290px] shrink-0 flex-col rounded-xl border bg-card/40 transition-colors",
-                    dragOver === stage.key && "ring-2 ring-primary/60 bg-primary/5",
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(stage.key);
-                  }}
-                  onDragLeave={() => setDragOver((v) => (v === stage.key ? null : v))}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOver(null);
-                    if (dragId) moveTo(dragId, stage.key);
-                    setDragId(null);
-                  }}
+                  className="flex h-full w-[290px] shrink-0 flex-col rounded-xl border bg-card/40"
                 >
                   <div className={cn("h-1 rounded-t-xl", style.bar)} />
                   <div className="border-b p-3">
@@ -286,8 +249,6 @@ function EmbudoPage() {
                           insight={insights[c.id]}
                           topReco={topReco[c.id]}
                           onOpen={() => setOpenCustomerId(c.id)}
-                          onDragStart={() => setDragId(c.id)}
-                          onDragEnd={() => setDragId(null)}
                           stagnantThreshold={stagnantThreshold}
                         />
                       ))
@@ -319,8 +280,6 @@ function CustomerCard({
   insight,
   topReco,
   onOpen,
-  onDragStart,
-  onDragEnd,
   stagnantThreshold,
 }: {
   customer: CrmCustomer;
@@ -329,8 +288,6 @@ function CustomerCard({
   insight?: { probability: number | null; intent: string | null; churn_risk: number | null };
   topReco?: { name: string; price: number; currency: string; reason_code: string | null };
   onOpen: () => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
   stagnantThreshold?: number;
 }) {
   const initials = (customer.name ?? customer.phone).slice(0, 2).toUpperCase();
@@ -348,9 +305,6 @@ function CustomerCard({
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
       onClick={onOpen}
       className={cn(
         "group mb-2 cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md",

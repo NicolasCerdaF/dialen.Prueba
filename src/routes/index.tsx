@@ -796,6 +796,21 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
     },
   });
 
+  // Fire orchestrator when opening the conversation so intent / recommendation
+  // are ready even before the customer sends a new message.
+  const orchestrateOnOpen = useServerFn(orchestrateCustomer);
+  useEffect(() => {
+    const cid = (convo as any)?.customer_id;
+    if (!cid) return;
+    orchestrateOnOpen({
+      data: {
+        customer_id: cid,
+        conversation_id: conversationId,
+        trigger: "manual",
+      },
+    }).catch(() => {});
+  }, [conversationId, (convo as any)?.customer_id, orchestrateOnOpen]);
+
   useEffect(() => {
     const ch = supabase
       .channel(`conv-ctx-${conversationId}`)
@@ -1557,6 +1572,7 @@ type ConvQuote = {
   rejected_at: string | null;
   created_at: string;
   ai_generated: boolean;
+  ai_context: any;
   conversation_id: string | null;
 };
 
@@ -1587,7 +1603,7 @@ function ConversationQuotes({
       const { data } = await supabase
         .from("quotes")
         .select(
-          "id, number, title, status, currency, total, sent_at, viewed_at, accepted_at, rejected_at, created_at, ai_generated, conversation_id",
+          "id, number, title, status, currency, total, sent_at, viewed_at, accepted_at, rejected_at, created_at, ai_generated, ai_context, conversation_id",
         )
         .eq("customer_id", customerId)
         .order("created_at", { ascending: false })
@@ -1685,11 +1701,25 @@ function ConversationQuotes({
           quotes.map((q) => {
             const style = QUOTE_STATUS_STYLES[q.status];
             const isThisChat = q.conversation_id === conversationId;
+            const isAutoDraft =
+              q.status === "draft" &&
+              (q.ai_context as any)?.source === "ai_auto";
             return (
               <div
                 key={q.id}
-                className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2"
+                className={cn(
+                  "space-y-1.5 rounded-lg border p-2",
+                  isAutoDraft
+                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/40"
+                    : "border-border/60 bg-background",
+                )}
               >
+                {isAutoDraft && (
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                    <Sparkles className="h-3 w-3" />
+                    IA generó una cotización — envíala en 1 click
+                  </div>
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">

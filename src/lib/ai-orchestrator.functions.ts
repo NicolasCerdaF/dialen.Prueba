@@ -207,6 +207,68 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
       error = e?.message ?? "orchestration_failed";
     }
 
+    // 4b. Auto-draft: high-intent + recommendations + no recent quote → build
+    // a WhatsApp-ready draft. The vendor closes with 1 click from the inbox.
+    let autoDraftId: string | null = null;
+    try {
+      const prob = Number(analysis?.probability ?? 0);
+      const recCount = Number(recs?.recommendations?.length ?? 0);
+      if (
+        !error &&
+        data.trigger === "message_received" &&
+        prob >= 0.7 &&
+        recCount > 0
+      ) {
+        const cutoff = new Date(Date.now() - 48 * 3600_000).toISOString();
+        const { data: recentQuote } = await supabase
+          .from("quotes")
+          .select("id, status")
+          .eq("customer_id", data.customer_id)
+          .in("status", ["draft", "sent", "viewed"])
+          .gte("created_at", cutoff)
+          .limit(1)
+          .maybeSingle();
+        if (!recentQuote) {
+          const { generateQuoteDraft } = await import("@/lib/quotes.functions");
+          const res: any = await (generateQuoteDraft as any).handler({
+            data: {
+              customer_id: data.customer_id,
+              conversation_id: conversationId,
+              max_items: 3,
+            },
+            context: { supabase, userId },
+          });
+          autoDraftId = res?.id ?? null;
+          if (autoDraftId) {
+            // Tag the quote as an AI auto-draft so the inbox can highlight it.
+            await supabase
+              .from("quotes")
+              .update({
+                ai_context: {
+                  source: "ai_auto",
+                  probability: prob,
+                  trigger: data.trigger,
+                },
+              })
+              .eq("id", autoDraftId);
+            await supabase.from("customer_events").insert({
+              customer_id: data.customer_id,
+              company_id: customer.company_id,
+              actor_id: userId,
+              event_type: "quote_auto_drafted",
+              payload: {
+                quote_id: autoDraftId,
+                probability: prob,
+                conversation_id: conversationId,
+              } as any,
+            });
+          }
+        }
+      }
+    } catch {
+      /* non-critical — never block orchestration on auto-draft */
+    }
+
     // 5. Stamp the signature on the (now-updated) insight so future events can
     // debounce against it, and log a single orchestration audit event.
     await supabase
@@ -262,6 +324,7 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
           }
         : null,
       recommendations: recs?.recommendations?.length ?? 0,
+      auto_draft_id: autoDraftId,
       error,
     };
   });
