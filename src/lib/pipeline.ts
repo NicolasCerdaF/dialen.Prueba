@@ -1,34 +1,43 @@
-// Sales pipeline configuration.
-// Single source of truth for stage keys used across CRM, Inbox, Kanban and Dashboard.
-// Designed so an admin can later persist these in a `pipeline_stages` table without
-// touching UI code — just replace `STAGES` with a Realtime query.
+// Sales pipeline configuration — enfocado en ventas por WhatsApp.
+// Se redujo a 5 etapas operativas + Perdido (archivo). Todas las llaves
+// legacy siguen mapeándose para no romper datos existentes.
 
 export type PipelineStage = {
   key: string;
   label: string;
   color: string; // tailwind hue token
-  kind: "open" | "won" | "lost" | "post";
+  kind: "open" | "won" | "lost";
   order: number;
 };
 
 export const STAGES: PipelineStage[] = [
-  { key: "nuevo_lead",      label: "Nuevo Lead",         color: "sky",     kind: "open", order: 1 },
-  { key: "primer_contacto", label: "Primer Contacto",    color: "indigo",  kind: "open", order: 2 },
-  { key: "calificado",      label: "Calificado",         color: "violet",  kind: "open", order: 3 },
-  { key: "propuesta",       label: "Propuesta Enviada",  color: "amber",   kind: "open", order: 4 },
-  { key: "negociacion",     label: "Negociación",        color: "orange",  kind: "open", order: 5 },
-  { key: "ganado",          label: "Venta Ganada",       color: "emerald", kind: "won",  order: 6 },
-  { key: "perdido",         label: "Venta Perdida",      color: "rose",    kind: "lost", order: 7 },
-  { key: "postventa",       label: "Postventa",          color: "teal",    kind: "post", order: 8 },
+  { key: "nuevo_lead",  label: "Nuevo",       color: "sky",     kind: "open", order: 1 },
+  { key: "interesado",  label: "Interesado",  color: "indigo",  kind: "open", order: 2 },
+  { key: "cotizado",    label: "Cotizado",    color: "amber",   kind: "open", order: 3 },
+  { key: "negociando",  label: "Negociando",  color: "orange",  kind: "open", order: 4 },
+  { key: "ganado",      label: "Ganado",      color: "emerald", kind: "won",  order: 5 },
+  { key: "perdido",     label: "Perdido",     color: "rose",    kind: "lost", order: 6 },
 ];
 
-// Legacy stage keys that existed before the pipeline module was introduced.
+// Legacy stage keys → nuevas etapas. Cubre datos previos al reenfoque.
 const LEGACY: Record<string, string> = {
   nuevo: "nuevo_lead",
-  contactado: "primer_contacto",
-  propuesta_enviada: "propuesta",
+  lead: "nuevo_lead",
+  contactado: "interesado",
+  primer_contacto: "interesado",
+  calificado: "interesado",
+  contact: "interesado",
+  qualified: "interesado",
+  propuesta: "cotizado",
+  propuesta_enviada: "cotizado",
+  proposal: "cotizado",
+  negociacion: "negociando",
+  negotiation: "negociando",
   venta_ganada: "ganado",
+  won: "ganado",
+  postventa: "ganado",
   venta_perdida: "perdido",
+  lost: "perdido",
 };
 
 export function normalizeStage(raw: string | null | undefined): string {
@@ -63,8 +72,7 @@ export function stageStyle(stageKey: string) {
 // Stagnation threshold in days: an open card older than this raises a visual alert.
 export const STAGNANT_DAYS_BY_STAGE: Record<string, number> = {
   nuevo_lead: 2,
-  primer_contacto: 3,
-  calificado: 5,
-  propuesta: 7,
-  negociacion: 7,
+  interesado: 4,
+  cotizado: 5,
+  negociando: 7,
 };
