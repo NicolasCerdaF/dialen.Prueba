@@ -1,6 +1,5 @@
 // Server-only helper para inyectar contexto de la base de conocimiento
-// en el auto-reply. Usa el admin client (webhook) para evitar RLS y filtra
-// por company_id explícitamente.
+// en el auto-reply del webhook. Fail-safe: nunca lanza.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { aiFetch } from "@/lib/ai-fetch";
@@ -41,21 +40,16 @@ async function embedQuery(query: string, companyId: string): Promise<number[] | 
   }
 }
 
-/**
- * Devuelve un bloque de texto con fragmentos relevantes o null si no hay
- * base de conocimiento cargada / falla la búsqueda. Fail-safe: nunca lanza.
- */
 export async function fetchKnowledgeContext(opts: {
   supabase: AdminClient;
   companyId: string;
   query: string;
   limit?: number;
-  minSimilarity?: number;
 }): Promise<string | null> {
   const { supabase, companyId, query } = opts;
   if (!query || query.trim().length < 3) return null;
   try {
-    // Fast-check: ¿hay chunks para esta empresa?
+    // Fast-check antes de gastar en embeddings
     const { count } = await supabase
       .from("knowledge_chunks")
       .select("id", { count: "exact", head: true })
@@ -66,35 +60,15 @@ export async function fetchKnowledgeContext(opts: {
     const emb = await embedQuery(query, companyId);
     if (!emb) return null;
 
-    // Nota: la RPC filtra por is_member(auth.uid()), así que aquí usamos
-    // una consulta directa con service role para tener acceso desde webhook.
-    const { data, error } = await supabase
-      .from("knowledge_chunks")
-      .select("content, document_id")
-      .eq("company_id", companyId)
-      .order("embedding <=> " + JSON.stringify(emb) as any, { ascending: true } as any)
-      .limit(opts.limit ?? 4);
+    const { data: rows, error } = await supabase.rpc("match_knowledge_admin", {
+      _company_id: companyId,
+      query_embedding: emb as unknown as string,
+      match_count: opts.limit ?? 4,
+    });
+    if (error || !rows?.length) return null;
 
-    // Fallback: si el order-by con operador vectorial no está soportado en select builder,
-    // usamos la RPC pública mediante admin client (bypasea is_member al usar service_role).
-    let rows: Array<{ content: string; document_id: string }> = [];
-    if (error || !data) {
-      const { data: rpcRows } = await supabase.rpc("match_knowledge", {
-        _company_id: companyId,
-        query_embedding: emb as unknown as string,
-        match_count: opts.limit ?? 4,
-      });
-      rows = (rpcRows ?? []).map((r: any) => ({
-        content: r.content,
-        document_id: r.document_id,
-      }));
-    } else {
-      rows = data as any;
-    }
-
-    if (!rows.length) return null;
     const snippet = rows
-      .map((r, i) => `[${i + 1}] ${r.content.trim()}`)
+      .map((r: any, i: number) => `[${i + 1}] ${String(r.content).trim()}`)
       .join("\n---\n")
       .slice(0, 4000);
     return snippet;
