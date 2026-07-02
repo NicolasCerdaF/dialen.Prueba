@@ -84,6 +84,199 @@ export type Database = {
           },
         ]
       }
+      automation_runs: {
+        Row: {
+          actions_result: Json
+          automation_id: string
+          company_id: string
+          conversation_id: string | null
+          customer_id: string | null
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          skip_reason: string | null
+          started_at: string
+          status: string
+          trigger_payload: Json | null
+          triggered_by: string
+        }
+        Insert: {
+          actions_result?: Json
+          automation_id: string
+          company_id: string
+          conversation_id?: string | null
+          customer_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          skip_reason?: string | null
+          started_at?: string
+          status: string
+          trigger_payload?: Json | null
+          triggered_by: string
+        }
+        Update: {
+          actions_result?: Json
+          automation_id?: string
+          company_id?: string
+          conversation_id?: string | null
+          customer_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          skip_reason?: string | null
+          started_at?: string
+          status?: string
+          trigger_payload?: Json | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_runs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_versions: {
+        Row: {
+          automation_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          automation_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          automation_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_versions_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_versions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automations: {
+        Row: {
+          actions: Json
+          avg_duration_ms: number | null
+          company_id: string
+          conditions: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          error_count: number
+          id: string
+          last_error: string | null
+          last_run_at: string | null
+          name: string
+          run_count: number
+          status: string
+          trigger: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          actions?: Json
+          avg_duration_ms?: number | null
+          company_id: string
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          name: string
+          run_count?: number
+          status?: string
+          trigger?: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          actions?: Json
+          avg_duration_ms?: number | null
+          company_id?: string
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          name?: string
+          run_count?: number
+          status?: string
+          trigger?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           ai_auto_reply: boolean

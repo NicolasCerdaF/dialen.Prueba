@@ -10,13 +10,14 @@ import {
   LogOut,
   Wand2,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
-  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/conocimiento" | "/metricas" | "/configuracion";
+  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/conocimiento" | "/metricas" | "/configuracion";
   label: string;
   icon: typeof MessageSquare;
 };
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { to: "/demo-chat", label: "Modo demo", icon: Wand2 },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
+  { to: "/automatizaciones", label: "Automatizaciones", icon: Zap },
   { to: "/conocimiento", label: "Conocimiento", icon: BookOpen },
   { to: "/metricas", label: "Métricas", icon: BarChart3 },
   { to: "/configuracion", label: "Configuración", icon: Settings },
