@@ -46,6 +46,7 @@ import {
 } from "@/lib/inbox.functions";
 import { useAuth } from "@/lib/auth-context";
 import { analyzeConversation, setSuggestionStatus } from "@/lib/ai-agents.functions";
+import { orchestrateCustomer } from "@/lib/ai-orchestrator.functions";
 import {
   generateRecommendations,
   listRecommendations,
