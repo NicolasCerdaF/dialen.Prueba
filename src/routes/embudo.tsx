@@ -289,6 +289,7 @@ function CustomerCard({
   customer,
   team,
   unread,
+  insight,
   onOpen,
   onDragStart,
   onDragEnd,
@@ -297,6 +298,7 @@ function CustomerCard({
   customer: CrmCustomer;
   team: { id: string; full_name: string | null; email: string | null }[];
   unread: number;
+  insight?: { probability: number | null; intent: string | null; churn_risk: number | null };
   onOpen: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -308,6 +310,12 @@ function CustomerCard({
   const stagnant = stagnantThreshold ? daysInStage > stagnantThreshold : false;
   const priority = customer.priority ?? "normal";
   const isVip = (customer.tags ?? []).includes("vip");
+  const hot =
+    insight &&
+    (insight.intent === "high_intent" ||
+      insight.intent === "ready_to_close" ||
+      (insight.probability != null && Number(insight.probability) >= 0.7));
+  const atRisk = insight && insight.churn_risk != null && Number(insight.churn_risk) >= 0.6;
 
   return (
     <div
