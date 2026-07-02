@@ -355,7 +355,8 @@ function ProductDialog({
     ai_recommendable: product?.ai_recommendable ?? true,
     active: product?.active ?? true,
   });
-  const [saving, setSaving] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
