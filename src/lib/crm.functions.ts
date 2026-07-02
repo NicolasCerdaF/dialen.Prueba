@@ -148,7 +148,7 @@ export const updateCrmCustomer = createServerFn({ method: "POST" })
       if (data[k] !== undefined) patch[k] = data[k] as unknown;
     }
 
-    const { error } = await supabase.from("customers").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("customers").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     // Log a customer_event for the diff
