@@ -111,10 +111,12 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
         .limit(10000),
       supabase
         .from("conversations")
-        .select("id, status, ai_paused, last_message_at, customer_id"),
+        .select("id, status, ai_paused, last_message_at, customer_id, assignee_id")
+        .eq("company_id", companyId),
       supabase
         .from("customers")
-        .select("id, created_at"),
+        .select("id, created_at, tags")
+        .eq("company_id", companyId),
       supabase
         .from("user_roles")
         .select("user_id", { count: "exact", head: true })
@@ -125,6 +127,23 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
         .eq("company_id", companyId)
         .maybeSingle(),
     ]);
+
+    // AI suggestions stats (últimos 30d)
+    const { data: aiSug } = await supabase
+      .from("ai_suggestions")
+      .select("status, confidence")
+      .eq("company_id", companyId)
+      .gte("created_at", sinceIso);
+    const aiSugList = aiSug ?? [];
+    const aiSuggestions = aiSugList.length;
+    const aiAccepted = aiSugList.filter((s) => s.status === "accepted").length;
+    const confidences = aiSugList
+      .map((s) => (typeof s.confidence === "number" ? s.confidence : Number(s.confidence)))
+      .filter((n) => !Number.isNaN(n) && n > 0);
+    const aiAvgConfidence =
+      confidences.length > 0
+        ? Math.round((confidences.reduce((a, b) => a + b, 0) / confidences.length) * 100)
+        : 0;
 
     const msgList = msgs ?? [];
     const convoList = convos ?? [];
