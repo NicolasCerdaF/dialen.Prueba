@@ -1720,7 +1720,8 @@ function ConversationQuotes({
                     IA generó una cotización — envíala en 1 click
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <Link
                         to="/cotizaciones/$id"
