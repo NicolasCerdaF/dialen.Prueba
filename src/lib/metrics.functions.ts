@@ -14,6 +14,8 @@ export type DashboardMetrics = {
   unrespondedConversations: number;
   aiPausedConversations: number;
   aiActiveConversations: number;
+  unassignedConversations: number;
+  waitingTooLong: number;
   // Mensajes
   inbound: number;
   outbound: number;
@@ -25,19 +27,22 @@ export type DashboardMetrics = {
   newCustomers: number;
   recurringCustomers: number;
   totalCustomers: number;
+  vipCustomers: number;
+  inactiveCustomers: number;
   // Equipo / IA
   teamMembers: number;
   channelConnected: boolean;
-  // Ventas (placeholders — módulo de ventas próximo)
+  aiSuggestions: number;
+  aiAccepted: number;
+  aiAvgConfidence: number;
+  // Ventas (placeholders — módulo próximo)
   salesToday: number;
   salesMonth: number;
   ordersToday: number;
   ordersMonth: number;
   averageTicket: number;
   conversionRate: number;
-  // Serie diaria
   series: DayPoint[];
-  // Ranking
   sellers: SellerRank[];
 };
 
