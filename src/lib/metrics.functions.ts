@@ -14,6 +14,8 @@ export type DashboardMetrics = {
   unrespondedConversations: number;
   aiPausedConversations: number;
   aiActiveConversations: number;
+  unassignedConversations: number;
+  waitingTooLong: number;
   // Mensajes
   inbound: number;
   outbound: number;
@@ -25,19 +27,22 @@ export type DashboardMetrics = {
   newCustomers: number;
   recurringCustomers: number;
   totalCustomers: number;
+  vipCustomers: number;
+  inactiveCustomers: number;
   // Equipo / IA
   teamMembers: number;
   channelConnected: boolean;
-  // Ventas (placeholders — módulo de ventas próximo)
+  aiSuggestions: number;
+  aiAccepted: number;
+  aiAvgConfidence: number;
+  // Ventas (placeholders — módulo próximo)
   salesToday: number;
   salesMonth: number;
   ordersToday: number;
   ordersMonth: number;
   averageTicket: number;
   conversionRate: number;
-  // Serie diaria
   series: DayPoint[];
-  // Ranking
   sellers: SellerRank[];
 };
 
@@ -56,6 +61,8 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       unrespondedConversations: 0,
       aiPausedConversations: 0,
       aiActiveConversations: 0,
+      unassignedConversations: 0,
+      waitingTooLong: 0,
       inbound: 0,
       outbound: 0,
       outboundAi: 0,
@@ -65,8 +72,13 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       newCustomers: 0,
       recurringCustomers: 0,
       totalCustomers: 0,
+      vipCustomers: 0,
+      inactiveCustomers: 0,
       teamMembers: 0,
       channelConnected: false,
+      aiSuggestions: 0,
+      aiAccepted: 0,
+      aiAvgConfidence: 0,
       salesToday: 0,
       salesMonth: 0,
       ordersToday: 0,
@@ -99,10 +111,12 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
         .limit(10000),
       supabase
         .from("conversations")
-        .select("id, status, ai_paused, last_message_at, customer_id"),
+        .select("id, status, ai_paused, last_message_at, customer_id, assignee_id")
+        .eq("company_id", companyId),
       supabase
         .from("customers")
-        .select("id, created_at"),
+        .select("id, created_at, tags")
+        .eq("company_id", companyId),
       supabase
         .from("user_roles")
         .select("user_id", { count: "exact", head: true })
@@ -113,6 +127,23 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
         .eq("company_id", companyId)
         .maybeSingle(),
     ]);
+
+    // AI suggestions stats (últimos 30d)
+    const { data: aiSug } = await supabase
+      .from("ai_suggestions")
+      .select("status, confidence")
+      .eq("company_id", companyId)
+      .gte("created_at", sinceIso);
+    const aiSugList = aiSug ?? [];
+    const aiSuggestions = aiSugList.length;
+    const aiAccepted = aiSugList.filter((s) => s.status === "used").length;
+    const confidences = aiSugList
+      .map((s) => (typeof s.confidence === "number" ? s.confidence : Number(s.confidence)))
+      .filter((n) => !Number.isNaN(n) && n > 0);
+    const aiAvgConfidence =
+      confidences.length > 0
+        ? Math.round((confidences.reduce((a, b) => a + b, 0) / confidences.length) * 100)
+        : 0;
 
     const msgList = msgs ?? [];
     const convoList = convos ?? [];
@@ -174,12 +205,33 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
     const unrespondedConversations = convoList.filter(
       (c) => c.status === "open" && lastByConv.get(c.id) === "inbound",
     ).length;
+    const unassignedConversations = convoList.filter(
+      (c) => c.status === "open" && !c.assignee_id,
+    ).length;
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const waitingTooLong = convoList.filter(
+      (c) =>
+        c.status === "open" &&
+        lastByConv.get(c.id) === "inbound" &&
+        c.last_message_at &&
+        new Date(c.last_message_at).getTime() < oneHourAgo,
+    ).length;
 
     // Clientes
     const totalCustomers = customerList.length;
     const newCustomers = customerList.filter(
       (c) => new Date(c.created_at).getTime() >= since.getTime(),
     ).length;
+    const vipCustomers = customerList.filter((c) =>
+      (c.tags ?? []).some((t: string) => t?.toLowerCase() === "vip"),
+    ).length;
+    const activeCustomerIds = new Set<string>();
+    for (const c of convoList) {
+      if (c.last_message_at && new Date(c.last_message_at).getTime() >= since.getTime()) {
+        activeCustomerIds.add(c.customer_id);
+      }
+    }
+    const inactiveCustomers = Math.max(0, totalCustomers - activeCustomerIds.size);
     const convosPerCustomer = new Map<string, number>();
     for (const c of convoList) {
       convosPerCustomer.set(
@@ -241,6 +293,8 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       unrespondedConversations,
       aiPausedConversations,
       aiActiveConversations,
+      unassignedConversations,
+      waitingTooLong,
       inbound,
       outbound,
       outboundAi,
@@ -250,8 +304,13 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       newCustomers,
       recurringCustomers,
       totalCustomers,
+      vipCustomers,
+      inactiveCustomers,
       teamMembers: teamCount ?? 0,
       channelConnected: channel?.status === "connected",
+      aiSuggestions,
+      aiAccepted,
+      aiAvgConfidence,
       salesToday: 0,
       salesMonth: 0,
       ordersToday: 0,
