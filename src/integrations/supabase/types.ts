@@ -1116,6 +1116,248 @@ export type Database = {
           },
         ]
       }
+      quote_events: {
+        Row: {
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          quote_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          quote_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          quote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_events_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_items: {
+        Row: {
+          ai_suggested: boolean
+          created_at: string
+          description: string | null
+          discount_pct: number
+          id: string
+          line_total: number
+          margin: number
+          name: string
+          position: number
+          product_id: string | null
+          quantity: number
+          quote_id: string
+          recommendation_id: string | null
+          sku: string | null
+          tax_pct: number
+          unit_cost: number
+          unit_price: number
+        }
+        Insert: {
+          ai_suggested?: boolean
+          created_at?: string
+          description?: string | null
+          discount_pct?: number
+          id?: string
+          line_total?: number
+          margin?: number
+          name: string
+          position?: number
+          product_id?: string | null
+          quantity?: number
+          quote_id: string
+          recommendation_id?: string | null
+          sku?: string | null
+          tax_pct?: number
+          unit_cost?: number
+          unit_price?: number
+        }
+        Update: {
+          ai_suggested?: boolean
+          created_at?: string
+          description?: string | null
+          discount_pct?: number
+          id?: string
+          line_total?: number
+          margin?: number
+          name?: string
+          position?: number
+          product_id?: string | null
+          quantity?: number
+          quote_id?: string
+          recommendation_id?: string | null
+          sku?: string | null
+          tax_pct?: number
+          unit_cost?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "product_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          accepted_at: string | null
+          ai_context: Json
+          ai_generated: boolean
+          company_id: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          discount_total: number
+          expired_at: string | null
+          id: string
+          margin_total: number
+          notes: string | null
+          number: string
+          rejected_at: string | null
+          sent_at: string | null
+          share_token: string | null
+          stage: string | null
+          status: string
+          subtotal: number
+          tax_total: number
+          terms: string | null
+          title: string | null
+          total: number
+          updated_at: string
+          valid_until: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          ai_context?: Json
+          ai_generated?: boolean
+          company_id: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id: string
+          discount_total?: number
+          expired_at?: string | null
+          id?: string
+          margin_total?: number
+          notes?: string | null
+          number: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          share_token?: string | null
+          stage?: string | null
+          status?: string
+          subtotal?: number
+          tax_total?: number
+          terms?: string | null
+          title?: string | null
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          ai_context?: Json
+          ai_generated?: boolean
+          company_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          discount_total?: number
+          expired_at?: string | null
+          id?: string
+          margin_total?: number
+          notes?: string | null
+          number?: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          share_token?: string | null
+          stage?: string | null
+          status?: string
+          subtotal?: number
+          tax_total?: number
+          terms?: string | null
+          title?: string | null
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_links: {
         Row: {
           company_id: string
