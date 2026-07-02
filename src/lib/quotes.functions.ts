@@ -472,6 +472,27 @@ export const generateQuoteDraft = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const company_id = await getCompanyId(supabase, userId);
 
+    // Uniqueness rule: 1 active quote per conversation. If one exists,
+    // return it instead of creating a duplicate — callers should edit it.
+    if (data.conversation_id) {
+      const { data: existing } = await supabase
+        .from("quotes")
+        .select("id, number, total")
+        .eq("conversation_id", data.conversation_id)
+        .in("status", ["draft", "sent", "viewed"])
+        .limit(1)
+        .maybeSingle();
+      if (existing) {
+        return {
+          id: existing.id as string,
+          number: existing.number,
+          total: Number(existing.total ?? 0),
+          items: 0,
+          reused: true as const,
+        };
+      }
+    }
+
     // Pull active recommendations w/ product info, sorted by score
     const { data: recos } = await supabase
       .from("product_recommendations")
@@ -487,6 +508,7 @@ export const generateQuoteDraft = createServerFn({ method: "POST" })
     if (list.length === 0) {
       throw new Error("No hay recomendaciones activas de IA para este cliente. Genera recomendaciones primero.");
     }
+
 
     const currency = (list[0] as any).product?.currency ?? "USD";
     const items = list.map((r: any, idx: number) => ({

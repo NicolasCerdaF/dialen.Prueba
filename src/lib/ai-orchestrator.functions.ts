@@ -217,18 +217,20 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
         !error &&
         data.trigger === "message_received" &&
         prob >= 0.7 &&
-        recCount > 0
+        recCount > 0 &&
+        conversationId
       ) {
-        const cutoff = new Date(Date.now() - 48 * 3600_000).toISOString();
-        const { data: recentQuote } = await supabase
+        // Uniqueness rule: 1 active quote per conversation.
+        // If a draft/sent/viewed quote already exists on this conversation,
+        // never create a second one — the operator edits the existing one.
+        const { data: activeQuote } = await supabase
           .from("quotes")
           .select("id, status")
-          .eq("customer_id", data.customer_id)
+          .eq("conversation_id", conversationId)
           .in("status", ["draft", "sent", "viewed"])
-          .gte("created_at", cutoff)
           .limit(1)
           .maybeSingle();
-        if (!recentQuote) {
+        if (!activeQuote) {
           const { generateQuoteDraft } = await import("@/lib/quotes.functions");
           const res: any = await (generateQuoteDraft as any).handler({
             data: {
@@ -240,7 +242,6 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
           });
           autoDraftId = res?.id ?? null;
           if (autoDraftId) {
-            // Tag the quote as an AI auto-draft so the inbox can highlight it.
             await supabase
               .from("quotes")
               .update({
@@ -263,11 +264,14 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
               } as any,
             });
           }
+        } else {
+          autoDraftId = activeQuote.id;
         }
       }
     } catch {
       /* non-critical — never block orchestration on auto-draft */
     }
+
 
     // 5. Stamp the signature on the (now-updated) insight so future events can
     // debounce against it, and log a single orchestration audit event.

@@ -776,14 +776,14 @@ const SALES_RECIPES: Recipe[] = [
   {
     id: "followup-no-response",
     name: "Seguimiento sin respuesta",
-    description: "Envía un WhatsApp automático a clientes que llevan 60 minutos sin responder.",
+    description: "Deja un follow-up sugerido en bandeja cuando un cliente lleva 60 minutos sin responder. El envío siempre es humano.",
     icon: Clock,
     flow: {
       trigger: { type: "no_response_for", config: { minutes: 60 } },
       conditions: [],
       actions: [
-        { type: "send_whatsapp_message", config: {
-          message: "Hola {{customer.name}} 👋 ¿Podemos ayudarte a avanzar con tu compra?",
+        { type: "create_note", config: {
+          body: "📌 Follow-up sugerido — Hola {{customer.name}} 👋 ¿Podemos ayudarte a avanzar con tu compra?",
         } },
       ],
     },
@@ -808,7 +808,7 @@ const SALES_RECIPES: Recipe[] = [
   {
     id: "cold-reengage",
     name: "Reenganche frío",
-    description: "Reactiva clientes sin interacción hace más de 14 días con un mensaje personalizado.",
+    description: "Deja un mensaje sugerido en bandeja para reactivar clientes sin interacción hace más de 14 días.",
     icon: Activity,
     flow: {
       trigger: { type: "manual" },
@@ -816,13 +816,14 @@ const SALES_RECIPES: Recipe[] = [
         { type: "last_interaction_days", op: "gte", config: { value: "14" } },
       ],
       actions: [
-        { type: "send_whatsapp_message", config: {
-          message: "Hola {{customer.name}}, hace tiempo no hablamos. ¿Sigue en pie tu interés?",
+        { type: "create_note", config: {
+          body: "📌 Reenganche sugerido — Hola {{customer.name}}, hace tiempo no hablamos. ¿Sigue en pie tu interés?",
         } },
         { type: "add_tag", config: { tag: "reenganche" } },
       ],
     },
   },
+
   {
     id: "post-sale",
     name: "Post-venta (agradecimiento)",
