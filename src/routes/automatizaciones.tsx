@@ -762,3 +762,183 @@ function ArchitectureNote() {
     </div>
   );
 }
+
+// ============ Recipes Tab ============
+type Recipe = {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  flow: FlowDefinition;
+};
+
+const SALES_RECIPES: Recipe[] = [
+  {
+    id: "followup-no-response",
+    name: "Seguimiento sin respuesta",
+    description: "Envía un WhatsApp automático a clientes que llevan 60 minutos sin responder.",
+    icon: Clock,
+    flow: {
+      trigger: { type: "no_response_for", config: { minutes: 60 } },
+      conditions: [],
+      actions: [
+        { type: "send_whatsapp_message", config: {
+          message: "Hola {{customer.name}} 👋 ¿Podemos ayudarte a avanzar con tu compra?",
+        } },
+      ],
+    },
+  },
+  {
+    id: "hot-lead",
+    name: "Lead caliente (IA)",
+    description: "Cuando la IA detecta alta intención de compra: prioridad alta y nota interna.",
+    icon: Sparkles,
+    flow: {
+      trigger: { type: "ai_high_intent" },
+      conditions: [],
+      actions: [
+        { type: "set_priority", config: { priority: "high" } },
+        { type: "add_tag", config: { tag: "hot-lead" } },
+        { type: "create_note", config: {
+          body: "🔥 Lead caliente detectado por IA. Contactar cuanto antes.",
+        } },
+      ],
+    },
+  },
+  {
+    id: "cold-reengage",
+    name: "Reenganche frío",
+    description: "Reactiva clientes sin interacción hace más de 14 días con un mensaje personalizado.",
+    icon: Activity,
+    flow: {
+      trigger: { type: "manual" },
+      conditions: [
+        { type: "last_interaction_days", op: "gte", value: "14" },
+      ],
+      actions: [
+        { type: "send_whatsapp_message", config: {
+          message: "Hola {{customer.name}}, hace tiempo no hablamos. ¿Sigue en pie tu interés?",
+        } },
+        { type: "add_tag", config: { tag: "reenganche" } },
+      ],
+    },
+  },
+  {
+    id: "post-sale",
+    name: "Post-venta (agradecimiento)",
+    description: "Envía un mensaje de agradecimiento al aceptar una cotización.",
+    icon: CheckCircle2,
+    flow: {
+      trigger: { type: "quote_accepted" },
+      conditions: [],
+      actions: [
+        { type: "send_whatsapp_message", config: {
+          message: "¡Gracias por confiar en nosotros, {{customer.name}}! Coordinamos los siguientes pasos.",
+        } },
+        { type: "add_tag", config: { tag: "cliente-activo" } },
+      ],
+    },
+  },
+  {
+    id: "quote-unopened",
+    name: "Cotización sin abrir",
+    description: "Recuérdale al cliente su cotización enviada si no la ha visto.",
+    icon: AlertCircle,
+    flow: {
+      trigger: { type: "quote_sent" },
+      conditions: [
+        { type: "wait_days", op: "eq", value: "2" },
+      ],
+      actions: [
+        { type: "send_whatsapp_message", config: {
+          message: "Hola {{customer.name}}, ¿pudiste revisar la cotización que te enviamos?",
+        } },
+      ],
+    },
+  },
+  {
+    id: "cross-sell-ai",
+    name: "Cross-sell con IA",
+    description: "Cuando la IA recomienda un producto, deja nota y sugiere al agente ofrecerlo.",
+    icon: Sparkles,
+    flow: {
+      trigger: { type: "ai_recommendation_created", config: { min_score: 0.5 } },
+      conditions: [],
+      actions: [
+        { type: "create_note", config: {
+          body: "💡 IA recomienda un producto. Considera ofrecerlo en la próxima interacción.",
+        } },
+      ],
+    },
+  },
+];
+
+function RecipesTab({ onCreated }: { onCreated: (id: string) => void }) {
+  const imp = useServerFn(importAutomation);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function useRecipe(r: Recipe) {
+    setBusy(r.id);
+    try {
+      const a = await imp({
+        data: {
+          name: r.name,
+          description: r.description,
+          flow: r.flow,
+        },
+      });
+      toast.success(`"${r.name}" creada como borrador. Ajusta y activa cuando quieras.`);
+      onCreated(a.id);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div>
+          <div className="font-medium">Recetas listas para vender más por WhatsApp</div>
+          <p className="text-xs text-muted-foreground">
+            Plantillas pre-configuradas que usan el mismo motor de automatización. Elige una, ajústala y actívala.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {SALES_RECIPES.map((r) => {
+          const Icon = r.icon;
+          const isBusy = busy === r.id;
+          return (
+            <div key={r.id} className="group flex flex-col rounded-xl border bg-card p-4 shadow-sm transition hover:border-primary/40">
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-4 w-4" />
+              </div>
+              <h3 className="font-medium">{r.name}</h3>
+              <p className="mt-1 flex-1 text-xs text-muted-foreground">{r.description}</p>
+              <div className="mt-3 flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="rounded bg-secondary px-1.5 py-0.5">
+                  {TRIGGER_BY_TYPE[r.flow.trigger.type]?.label ?? r.flow.trigger.type}
+                </span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="rounded bg-secondary px-1.5 py-0.5">{r.flow.actions.length} acc.</span>
+              </div>
+              <Button
+                size="sm"
+                className="mt-3 w-full gap-1"
+                disabled={isBusy}
+                onClick={() => useRecipe(r)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {isBusy ? "Creando…" : "Usar receta"}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
