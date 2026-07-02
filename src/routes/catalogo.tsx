@@ -356,8 +356,9 @@ function ProductDialog({
     active: product?.active ?? true,
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
-
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
   async function submit() {
     setSaving(true);
