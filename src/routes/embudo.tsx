@@ -195,9 +195,9 @@ function EmbudoPage() {
                 Vista comercial del CRM · Arrastra tarjetas para actualizar la etapa en tiempo real
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-emerald-500">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>IA comercial · Próximamente</span>
+              <span>IA en modo automático · Recomendaciones vivas por etapa</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
