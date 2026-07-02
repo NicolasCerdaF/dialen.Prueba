@@ -79,7 +79,7 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as CrmCustomer[];
+    return (rows ?? []) as unknown as CrmCustomer[];
   });
 
 // ---------- Get one customer ----------
@@ -94,7 +94,7 @@ export const getCustomer = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return (row ?? null) as CrmCustomer | null;
+    return (row ?? null) as unknown as CrmCustomer | null;
   });
 
 // ---------- Update customer (full) ----------
@@ -128,7 +128,7 @@ export const updateCrmCustomer = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!before) throw new Error("Cliente no encontrado");
 
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
     for (const k of [
       "name",
       "email",
@@ -165,7 +165,7 @@ export const updateCrmCustomer = createServerFn({ method: "POST" })
         company_id: before.company_id,
         actor_id: userId,
         event_type: "updated",
-        payload: { changes: changed },
+        payload: { changes: changed } as any,
       });
     }
     return { ok: true };
@@ -361,7 +361,7 @@ export const getCustomerTimeline = createServerFn({ method: "POST" })
     });
 
     items.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-    return items.slice(0, data.limit);
+    return items.slice(0, data.limit) as unknown as TimelineItem[];
   });
 
 // ---------- Team members (for assignment dropdown) ----------
