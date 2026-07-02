@@ -22,6 +22,7 @@ import {
   User,
   Send,
   Trash2,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -120,6 +121,7 @@ function CustomerDetailPage() {
             <div className="border-b px-6">
               <TabsList className="h-10">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
+                <TabsTrigger value="products">Productos</TabsTrigger>
                 <TabsTrigger value="conversations">Conversaciones</TabsTrigger>
                 <TabsTrigger value="activity">Actividad</TabsTrigger>
                 <TabsTrigger value="notes">Notas</TabsTrigger>
@@ -133,6 +135,9 @@ function CustomerDetailPage() {
             <div className="flex-1 overflow-auto p-6">
               <TabsContent value="summary" className="mt-0">
                 <SummaryTab customer={customer} team={team} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
+              </TabsContent>
+              <TabsContent value="products" className="mt-0">
+                <ProductsTab customerId={customer.id} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
               </TabsContent>
               <TabsContent value="conversations" className="mt-0">
                 <ConversationsTab customerId={customer.id} />
@@ -156,6 +161,7 @@ function CustomerDetailPage() {
                 <SoonGrid />
               </TabsContent>
             </div>
+
           </Tabs>
         </div>
       </div>
@@ -913,3 +919,140 @@ function SoonGrid() {
     </div>
   );
 }
+
+// ------------------- ProductsTab -------------------
+import {
+  listProducts as listProductsFn,
+  listCustomerProducts,
+  linkProductToCustomer,
+  unlinkProductFromCustomer,
+  type Product as CatalogProduct,
+  type ProductLink,
+} from "@/lib/catalog.functions";
+
+function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
+  const listCustomerP = useServerFn(listCustomerProducts);
+  const listAll = useServerFn(listProductsFn);
+  const link = useServerFn(linkProductToCustomer);
+  const unlink = useServerFn(unlinkProductFromCustomer);
+  const qc = useQueryClient();
+
+  const { data: links = [] } = useQuery({
+    queryKey: ["customer-products", customerId],
+    queryFn: () => listCustomerP({ data: { customer_id: customerId } }),
+  });
+
+  const [picking, setPicking] = useState(false);
+  const [search, setSearch] = useState("");
+  const { data: available = [] } = useQuery({
+    queryKey: ["catalog-pick", search],
+    queryFn: () => listAll({ data: { search: search || undefined, active: true } }),
+    enabled: picking,
+  });
+
+  async function onLink(p: CatalogProduct, ctx: "interested" | "quoted" | "purchased") {
+    await link({
+      data: {
+        product_id: p.id,
+        customer_id: customerId,
+        context: ctx,
+        quantity: 1,
+      },
+    });
+    qc.invalidateQueries({ queryKey: ["customer-products", customerId] });
+    qc.invalidateQueries({ queryKey: ["crm-customer", customerId] });
+    onChanged();
+    setPicking(false);
+  }
+
+  async function onUnlink(l: ProductLink) {
+    if (!confirm("¿Quitar este producto del cliente?")) return;
+    await unlink({ data: { id: l.id } });
+    qc.invalidateQueries({ queryKey: ["customer-products", customerId] });
+    qc.invalidateQueries({ queryKey: ["crm-customer", customerId] });
+    onChanged();
+  }
+
+  const total = links.reduce((s, l) => s + Number(l.estimated_value ?? 0), 0);
+  const money = (n: number) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-medium">Productos vinculados</div>
+          <div className="text-xs text-muted-foreground">
+            {links.length} vinculados · valor estimado {money(total)}
+          </div>
+        </div>
+        <Button size="sm" onClick={() => setPicking((v) => !v)}>
+          <Plus className="mr-1 h-4 w-4" /> Vincular producto
+        </Button>
+      </div>
+
+      {picking && (
+        <div className="rounded-lg border bg-card p-3 space-y-2">
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar en catálogo…" />
+          <div className="max-h-72 space-y-1 overflow-auto">
+            {available.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">Sin resultados</div>}
+            {available.map((p) => (
+              <div key={p.id} className="flex items-center justify-between rounded border p-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {p.sku ?? "—"} · {money(Number(p.price))}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => onLink(p, "interested")}>
+                    Interés
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => onLink(p, "quoted")}>
+                    Cotizado
+                  </Button>
+                  <Button size="sm" onClick={() => onLink(p, "purchased")}>
+                    Comprado
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {links.length === 0 && !picking && (
+        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <Package className="mx-auto mb-2 h-6 w-6 opacity-40" />
+          Aún no hay productos vinculados a este cliente. Vincula productos del catálogo para reflejar valor en el embudo.
+        </div>
+      )}
+
+      {links.map((l) => (
+        <div key={l.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" />
+              <span className="font-medium">{l.product?.name ?? "Producto"}</span>
+              <span className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] uppercase",
+                l.context === "purchased" && "bg-emerald-500/15 text-emerald-600",
+                l.context === "quoted" && "bg-blue-500/15 text-blue-600",
+                l.context === "interested" && "bg-amber-500/15 text-amber-600",
+                l.context === "recommended" && "bg-primary/15 text-primary",
+              )}>
+                {l.context}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {l.quantity} × {money(Number(l.unit_price ?? 0))} = <b>{money(Number(l.estimated_value ?? 0))}</b>
+            </div>
+          </div>
+          <Button size="icon" variant="ghost" onClick={() => onUnlink(l)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+

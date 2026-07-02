@@ -11,13 +11,14 @@ import {
   Wand2,
   TrendingUp,
   Zap,
+  Package,
 } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
-  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/ia" | "/conocimiento" | "/metricas" | "/configuracion";
+  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/ia" | "/catalogo" | "/conocimiento" | "/metricas" | "/configuracion";
   label: string;
   icon: typeof MessageSquare;
 };
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { to: "/demo-chat", label: "Modo demo", icon: Wand2 },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
+  { to: "/catalogo", label: "Catálogo", icon: Package },
   { to: "/automatizaciones", label: "Automatizaciones", icon: Zap },
   { to: "/ia", label: "IA", icon: Sparkles },
   { to: "/conocimiento", label: "Conocimiento", icon: BookOpen },

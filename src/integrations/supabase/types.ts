@@ -832,6 +832,240 @@ export type Database = {
           },
         ]
       }
+      product_customers: {
+        Row: {
+          company_id: string
+          context: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          estimated_value: number | null
+          id: string
+          metadata: Json
+          notes: string | null
+          product_id: string
+          quantity: number
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          context?: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          estimated_value?: number | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          context?: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          estimated_value?: number | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_customers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_customers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_customers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recommendations: {
+        Row: {
+          agent_type: string
+          company_id: string
+          conversation_id: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          probability: number | null
+          product_id: string
+          reason: string | null
+          resolved_at: string | null
+          signals: Json
+          status: string
+        }
+        Insert: {
+          agent_type?: string
+          company_id: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          probability?: number | null
+          product_id: string
+          reason?: string | null
+          resolved_at?: string | null
+          signals?: Json
+          status?: string
+        }
+        Update: {
+          agent_type?: string
+          company_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          probability?: number | null
+          product_id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          signals?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recommendations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recommendations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recommendations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          ai_recommendable: boolean
+          category: string | null
+          company_id: string
+          cost: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          custom_fields: Json
+          description: string | null
+          id: string
+          images: Json
+          low_stock_threshold: number | null
+          name: string
+          price: number
+          sku: string | null
+          stock: number | null
+          tags: string[]
+          track_stock: boolean
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          active?: boolean
+          ai_recommendable?: boolean
+          category?: string | null
+          company_id: string
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          custom_fields?: Json
+          description?: string | null
+          id?: string
+          images?: Json
+          low_stock_threshold?: number | null
+          name: string
+          price?: number
+          sku?: string | null
+          stock?: number | null
+          tags?: string[]
+          track_stock?: boolean
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          active?: boolean
+          ai_recommendable?: boolean
+          category?: string | null
+          company_id?: string
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          custom_fields?: Json
+          description?: string | null
+          id?: string
+          images?: Json
+          low_stock_threshold?: number | null
+          name?: string
+          price?: number
+          sku?: string | null
+          stock?: number | null
+          tags?: string[]
+          track_stock?: boolean
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

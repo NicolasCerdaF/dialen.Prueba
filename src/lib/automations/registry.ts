@@ -70,6 +70,12 @@ export const TRIGGERS: TriggerEntry[] = [
     fields: [{ key: "threshold", label: "Umbral (0-1)", type: "number", placeholder: "0.6" }] },
   { type: "ai_objection_detected", kind: "trigger", category: "IA", icon: "MessageSquare", soon: true,
     label: "IA detecta objeción", description: "Cuando el Agente de Ventas identifica una objeción específica (próximamente enlazable con secuencias de rebatimiento)." },
+  // Disparadores de Catálogo
+  { type: "product_linked", kind: "trigger", category: "Catálogo", icon: "Package",
+    label: "Producto vinculado al cliente", description: "Se dispara cuando un producto se vincula a un cliente desde Bandeja o CRM.",
+    fields: [{ key: "product_id", label: "Producto (opcional)", type: "text", placeholder: "uuid del producto" }] },
+  { type: "product_low_stock", kind: "trigger", category: "Catálogo", icon: "AlertTriangle", soon: true,
+    label: "Producto en bajo stock", description: "Cuando un producto con seguimiento de stock cruza su umbral mínimo." },
   // Placeholders — futuras integraciones
   { type: "quote_sent", kind: "trigger", category: "Ventas", icon: "FileText", soon: true,
     label: "Cotización enviada", description: "Cuando el módulo de Cotizaciones envíe una cotización." },

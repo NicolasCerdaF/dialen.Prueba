@@ -17,6 +17,7 @@ import { Route as DemoChatRouteImport } from './routes/demo-chat'
 import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AutomatizacionesRouteImport } from './routes/automatizaciones'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
@@ -64,6 +65,11 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogoRoute = CatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AutomatizacionesRoute = AutomatizacionesRouteImport.update({
   id: '/automatizaciones',
   path: '/automatizaciones',
@@ -99,6 +105,7 @@ const ApiPublicWhatsappWebhookRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/automatizaciones'
+    | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/automatizaciones'
+    | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/automatizaciones'
+    | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AutomatizacionesRoute: typeof AutomatizacionesRoute
+  CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogo': {
+      id: '/catalogo'
+      path: '/catalogo'
+      fullPath: '/catalogo'
+      preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/automatizaciones': {
       id: '/automatizaciones'
       path: '/automatizaciones'
@@ -330,6 +350,7 @@ const ClientesRouteWithChildren = ClientesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AutomatizacionesRoute: AutomatizacionesRoute,
+  CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
