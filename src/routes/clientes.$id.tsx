@@ -929,6 +929,14 @@ import {
   type Product as CatalogProduct,
   type ProductLink,
 } from "@/lib/catalog.functions";
+import {
+  generateRecommendations,
+  listRecommendations,
+  setRecommendationStatus,
+  REASON_CODES,
+  type ReasonCode,
+} from "@/lib/recommender.functions";
+import { Sparkles, RefreshCw, X as XIcon } from "lucide-react";
 
 function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
   const listCustomerP = useServerFn(listCustomerProducts);
