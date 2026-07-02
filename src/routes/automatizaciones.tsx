@@ -137,10 +137,35 @@ function AutomationsPage() {
             <Kpi icon={Activity} label="Ejecuciones" value={String(kpis.totalRuns)} />
             <Kpi icon={AlertCircle} label="Errores" value={String(kpis.totalErrors)} accent="text-rose-400" />
           </div>
+          <div className="mt-3 flex items-center gap-1 border-b border-transparent">
+            {([
+              { id: "recipes", label: "Recetas de venta" },
+              { id: "builder", label: "Constructor avanzado" },
+            ] as const).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition",
+                  tab === t.id ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         <div className="flex-1 overflow-auto p-6">
-          {automations.length === 0 ? (
+          {tab === "recipes" ? (
+            <RecipesTab
+              onCreated={(id) => {
+                qc.invalidateQueries({ queryKey: ["automations"] });
+                setOpenId(id);
+                setTab("builder");
+              }}
+            />
+          ) : automations.length === 0 ? (
             <EmptyState onCreate={handleCreate} />
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -169,9 +194,10 @@ function AutomationsPage() {
             </div>
           )}
 
-          <ArchitectureNote />
+          {tab === "builder" && <ArchitectureNote />}
         </div>
       </div>
+
 
       {openId && (
         <AutomationEditor
