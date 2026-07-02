@@ -103,6 +103,7 @@ function QuoteDetailPage() {
   const [terms, setTerms] = useState("");
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
 
   useEffect(() => {
     if (!quote) return;
@@ -110,8 +111,10 @@ function QuoteDetailPage() {
     setValidUntil(quote.valid_until ?? "");
     setNotes(quote.notes ?? "");
     setTerms(quote.terms ?? "");
+    const qItems = quote.items ?? [];
+    setGlobalTaxPct(Number(qItems[0]?.tax_pct ?? 0));
     setItems(
-      (quote.items ?? []).map((it) => ({
+      qItems.map((it) => ({
         id: it.id,
         product_id: it.product_id,
         recommendation_id: it.recommendation_id,
@@ -132,7 +135,6 @@ function QuoteDetailPage() {
   const totals = useMemo(() => {
     let subtotal = 0;
     let discount = 0;
-    let tax = 0;
     let margin = 0;
     for (const it of items) {
       const gross = (it.quantity || 0) * (it.unit_price || 0);
@@ -140,11 +142,13 @@ function QuoteDetailPage() {
       const afterDisc = gross - disc;
       subtotal += gross;
       discount += disc;
-      tax += afterDisc * ((it.tax_pct || 0) / 100);
       margin += afterDisc - (it.quantity || 0) * (it.unit_cost || 0);
     }
-    return { subtotal, discount, tax, margin, total: subtotal - discount + tax };
-  }, [items]);
+    const taxable = subtotal - discount;
+    const tax = taxable * ((globalTaxPct || 0) / 100);
+    return { subtotal, discount, tax, margin, total: taxable + tax };
+  }, [items, globalTaxPct]);
+
 
   const readonly = quote && quote.status !== "draft";
 
