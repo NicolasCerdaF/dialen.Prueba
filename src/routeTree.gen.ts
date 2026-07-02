@@ -9,37 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as MetricasRouteImport } from './routes/metricas'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as IaRouteImport } from './routes/ia'
 import { Route as EmbudoRouteImport } from './routes/embudo'
-import { Route as DemoChatRouteImport } from './routes/demo-chat'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
-import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AutomatizacionesRouteImport } from './routes/automatizaciones'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
-import { Route as DebugWhatsappRouteImport } from './routes/debug.whatsapp'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 
-const MetricasRoute = MetricasRouteImport.update({
-  id: '/metricas',
-  path: '/metricas',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IaRoute = IaRouteImport.update({
-  id: '/ia',
-  path: '/ia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmbudoRoute = EmbudoRouteImport.update({
@@ -47,19 +32,9 @@ const EmbudoRoute = EmbudoRouteImport.update({
   path: '/embudo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoChatRoute = DemoChatRouteImport.update({
-  id: '/demo-chat',
-  path: '/demo-chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CotizacionesRoute = CotizacionesRouteImport.update({
   id: '/cotizaciones',
   path: '/cotizaciones',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConocimientoRoute = ConocimientoRouteImport.update({
-  id: '/conocimiento',
-  path: '/conocimiento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfiguracionRoute = ConfiguracionRouteImport.update({
@@ -92,11 +67,6 @@ const OnboardingWhatsappRoute = OnboardingWhatsappRouteImport.update({
   path: '/onboarding/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugWhatsappRoute = DebugWhatsappRouteImport.update({
-  id: '/debug/whatsapp',
-  path: '/debug/whatsapp',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CotizacionesIdRoute = CotizacionesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -120,16 +90,11 @@ export interface FileRoutesByFullPath {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
-  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
-  '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
-  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
-  '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
-  '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -139,16 +104,11 @@ export interface FileRoutesByTo {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
-  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
-  '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
-  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
-  '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
-  '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -159,16 +119,11 @@ export interface FileRoutesById {
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
-  '/conocimiento': typeof ConocimientoRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
-  '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
-  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
-  '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
-  '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -180,16 +135,11 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
-    | '/conocimiento'
     | '/cotizaciones'
-    | '/demo-chat'
     | '/embudo'
-    | '/ia'
     | '/login'
-    | '/metricas'
     | '/clientes/$id'
     | '/cotizaciones/$id'
-    | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -199,16 +149,11 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
-    | '/conocimiento'
     | '/cotizaciones'
-    | '/demo-chat'
     | '/embudo'
-    | '/ia'
     | '/login'
-    | '/metricas'
     | '/clientes/$id'
     | '/cotizaciones/$id'
-    | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
   id:
@@ -218,16 +163,11 @@ export interface FileRouteTypes {
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
-    | '/conocimiento'
     | '/cotizaciones'
-    | '/demo-chat'
     | '/embudo'
-    | '/ia'
     | '/login'
-    | '/metricas'
     | '/clientes/$id'
     | '/cotizaciones/$id'
-    | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
   fileRoutesById: FileRoutesById
@@ -238,39 +178,20 @@ export interface RootRouteChildren {
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
-  ConocimientoRoute: typeof ConocimientoRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
-  DemoChatRoute: typeof DemoChatRoute
   EmbudoRoute: typeof EmbudoRoute
-  IaRoute: typeof IaRoute
   LoginRoute: typeof LoginRoute
-  MetricasRoute: typeof MetricasRoute
-  DebugWhatsappRoute: typeof DebugWhatsappRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/metricas': {
-      id: '/metricas'
-      path: '/metricas'
-      fullPath: '/metricas'
-      preLoaderRoute: typeof MetricasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ia': {
-      id: '/ia'
-      path: '/ia'
-      fullPath: '/ia'
-      preLoaderRoute: typeof IaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/embudo': {
@@ -280,25 +201,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbudoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo-chat': {
-      id: '/demo-chat'
-      path: '/demo-chat'
-      fullPath: '/demo-chat'
-      preLoaderRoute: typeof DemoChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cotizaciones': {
       id: '/cotizaciones'
       path: '/cotizaciones'
       fullPath: '/cotizaciones'
       preLoaderRoute: typeof CotizacionesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/conocimiento': {
-      id: '/conocimiento'
-      path: '/conocimiento'
-      fullPath: '/conocimiento'
-      preLoaderRoute: typeof ConocimientoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracion': {
@@ -341,13 +248,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/whatsapp'
       fullPath: '/onboarding/whatsapp'
       preLoaderRoute: typeof OnboardingWhatsappRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug/whatsapp': {
-      id: '/debug/whatsapp'
-      path: '/debug/whatsapp'
-      fullPath: '/debug/whatsapp'
-      preLoaderRoute: typeof DebugWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cotizaciones/$id': {
@@ -404,14 +304,9 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
-  ConocimientoRoute: ConocimientoRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
-  DemoChatRoute: DemoChatRoute,
   EmbudoRoute: EmbudoRoute,
-  IaRoute: IaRoute,
   LoginRoute: LoginRoute,
-  MetricasRoute: MetricasRoute,
-  DebugWhatsappRoute: DebugWhatsappRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
