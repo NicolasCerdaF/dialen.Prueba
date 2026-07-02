@@ -211,7 +211,7 @@ function QuoteDetailPage() {
             unit_price: Number(it.unit_price) || 0,
             unit_cost: Number(it.unit_cost) || 0,
             discount_pct: Number(it.discount_pct) || 0,
-            tax_pct: Number(it.tax_pct) || 0,
+            tax_pct: Number(globalTaxPct) || 0,
             position: i,
             ai_suggested: it.ai_suggested,
           })),
