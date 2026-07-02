@@ -61,6 +61,7 @@ function EmbudoPage() {
   const listFn = useServerFn(listCustomers);
   const teamFn = useServerFn(listTeamMembers);
   const update = useServerFn(updateCrmCustomer);
+  const orchestrate = useServerFn(orchestrateCustomer);
 
   const { data: customers = [], refetch } = useQuery({
     queryKey: ["pipeline-customers"],
