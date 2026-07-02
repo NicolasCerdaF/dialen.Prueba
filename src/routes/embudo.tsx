@@ -171,6 +171,11 @@ function EmbudoPage() {
     try {
       await update({ data: { id: customerId, stage: newStage } });
       toast.success(`Movido a ${getStage(newStage)?.label}`);
+      // Event-driven AI: stage change is a strong trigger — orchestrator will
+      // re-score recommendations and refresh the insight without debounce.
+      orchestrate({
+        data: { customer_id: customerId, trigger: "stage_changed", force: true },
+      }).catch(() => {});
     } catch (e) {
       toast.error((e as Error).message);
       refetch();
