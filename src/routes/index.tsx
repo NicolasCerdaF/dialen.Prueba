@@ -1030,7 +1030,7 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       <Section icon={<Sparkles className="h-3.5 w-3.5" />} title="Acciones comerciales">
         <div className="grid grid-cols-2 gap-1.5">
           <ComingSoon icon={<ShoppingBag className="h-3 w-3" />} label="Nuevo pedido" />
-          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Cotización" />
+          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Factura" />
           <ComingSoon icon={<Calendar className="h-3 w-3" />} label="Agendar" />
           <ComingSoon icon={<Building2 className="h-3 w-3" />} label="Oportunidad" />
         </div>
