@@ -103,6 +103,7 @@ function QuoteDetailPage() {
   const [terms, setTerms] = useState("");
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
 
   useEffect(() => {
     if (!quote) return;
@@ -110,8 +111,10 @@ function QuoteDetailPage() {
     setValidUntil(quote.valid_until ?? "");
     setNotes(quote.notes ?? "");
     setTerms(quote.terms ?? "");
+    const qItems = quote.items ?? [];
+    setGlobalTaxPct(Number(qItems[0]?.tax_pct ?? 0));
     setItems(
-      (quote.items ?? []).map((it) => ({
+      qItems.map((it) => ({
         id: it.id,
         product_id: it.product_id,
         recommendation_id: it.recommendation_id,
@@ -132,7 +135,6 @@ function QuoteDetailPage() {
   const totals = useMemo(() => {
     let subtotal = 0;
     let discount = 0;
-    let tax = 0;
     let margin = 0;
     for (const it of items) {
       const gross = (it.quantity || 0) * (it.unit_price || 0);
@@ -140,11 +142,13 @@ function QuoteDetailPage() {
       const afterDisc = gross - disc;
       subtotal += gross;
       discount += disc;
-      tax += afterDisc * ((it.tax_pct || 0) / 100);
       margin += afterDisc - (it.quantity || 0) * (it.unit_cost || 0);
     }
-    return { subtotal, discount, tax, margin, total: subtotal - discount + tax };
-  }, [items]);
+    const taxable = subtotal - discount;
+    const tax = taxable * ((globalTaxPct || 0) / 100);
+    return { subtotal, discount, tax, margin, total: taxable + tax };
+  }, [items, globalTaxPct]);
+
 
   const readonly = quote && quote.status !== "draft";
 
@@ -207,7 +211,7 @@ function QuoteDetailPage() {
             unit_price: Number(it.unit_price) || 0,
             unit_cost: Number(it.unit_cost) || 0,
             discount_pct: Number(it.discount_pct) || 0,
-            tax_pct: Number(it.tax_pct) || 0,
+            tax_pct: Number(globalTaxPct) || 0,
             position: i,
             ai_suggested: it.ai_suggested,
           })),
@@ -374,7 +378,7 @@ function QuoteDetailPage() {
                     return (
                       <div key={idx} className="p-3">
                         <div className="grid grid-cols-12 gap-2">
-                          <div className="col-span-5">
+                          <div className="col-span-6">
                             {!readonly ? (
                               <>
                                 <select
@@ -436,16 +440,6 @@ function QuoteDetailPage() {
                               onChange={(e) => updateItem(idx, { discount_pct: Number(e.target.value) })}
                             />
                           </div>
-                          <div className="col-span-1">
-                            <label className="text-[10px] text-muted-foreground">IVA %</label>
-                            <Input
-                              type="number"
-                              className="h-8"
-                              value={it.tax_pct}
-                              disabled={!!readonly}
-                              onChange={(e) => updateItem(idx, { tax_pct: Number(e.target.value) })}
-                            />
-                          </div>
                           <div className="col-span-2 flex items-end justify-end gap-2 pb-1">
                             <div className="text-right text-sm">
                               <div className="font-medium">{money(line, quote.currency)}</div>
@@ -469,16 +463,27 @@ function QuoteDetailPage() {
                 </div>
                 {/* Totals */}
                 <div className="border-t border-border/60 bg-secondary/20 p-4">
-                  <div className="ml-auto max-w-xs space-y-1 text-sm">
+                  <div className="ml-auto max-w-xs space-y-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs text-muted-foreground">IVA global %</label>
+                      <Input
+                        type="number"
+                        className="h-8 w-24 text-right"
+                        value={globalTaxPct}
+                        disabled={!!readonly}
+                        onChange={(e) => setGlobalTaxPct(Number(e.target.value))}
+                      />
+                    </div>
                     <Row label="Subtotal" value={money(totals.subtotal, quote.currency)} />
                     <Row label="Descuento" value={`- ${money(totals.discount, quote.currency)}`} />
-                    <Row label="Impuestos" value={money(totals.tax, quote.currency)} />
+                    <Row label={`IVA (${globalTaxPct || 0}%)`} value={money(totals.tax, quote.currency)} />
                     <Row label="Margen" value={money(totals.margin, quote.currency)} muted />
                     <div className="mt-2 flex justify-between border-t border-border/60 pt-2 text-base font-semibold">
                       <span>Total</span>
                       <span>{money(totals.total, quote.currency)}</span>
                     </div>
                   </div>
+
                 </div>
               </div>
 

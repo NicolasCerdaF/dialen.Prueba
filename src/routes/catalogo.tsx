@@ -355,8 +355,10 @@ function ProductDialog({
     ai_recommendable: product?.ai_recommendable ?? true,
     active: product?.active ?? true,
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
   async function submit() {
     setSaving(true);
@@ -399,69 +401,89 @@ function ProductDialog({
           <DialogTitle>{product ? "Editar producto" : "Nuevo producto"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Nombre">
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej. Consultoría premium" />
-          </Field>
-          <Field label="SKU">
-            <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" />
-          </Field>
-          <Field label="Categoría">
-            <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Servicios" />
-          </Field>
-          <Field label="Etiquetas (separadas por coma)">
-            <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="destacado, upsell" />
-          </Field>
+          <div className="md:col-span-2">
+            <Field label="Nombre">
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej. Consultoría premium" />
+            </Field>
+          </div>
           <Field label="Precio">
             <Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
           </Field>
-          <Field label="Costo">
-            <Input type="number" step="0.01" value={form.cost} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
+          <Field label="Etiquetas (coma)">
+            <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="destacado, upsell" />
           </Field>
-          <Field label="Moneda">
-            <Input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} maxLength={3} />
-          </Field>
-          <div className="md:col-span-2">
-            <Field label="Descripción">
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </Field>
-          </div>
           <div className="md:col-span-2 flex flex-wrap items-center gap-6 rounded-md border bg-muted/30 p-3">
             <label className="flex items-center gap-2 text-sm">
-              <Switch checked={form.track_stock} onCheckedChange={(v) => setForm({ ...form, track_stock: v })} />
-              Controlar stock
+              <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+              Disponible
             </label>
-            {form.track_stock && (
-              <>
-                <div className="flex items-center gap-2 text-sm">
-                  Stock:
-                  <Input
-                    type="number"
-                    className="h-8 w-24"
-                    value={form.stock}
-                    onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  Umbral bajo:
-                  <Input
-                    type="number"
-                    className="h-8 w-24"
-                    value={form.low_stock_threshold}
-                    onChange={(e) => setForm({ ...form, low_stock_threshold: Number(e.target.value) })}
-                  />
-                </div>
-              </>
-            )}
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={form.ai_recommendable} onCheckedChange={(v) => setForm({ ...form, ai_recommendable: v })} />
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> IA puede recomendarlo
+            </label>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={form.ai_recommendable} onCheckedChange={(v) => setForm({ ...form, ai_recommendable: v })} />
-            IA puede recomendarlo
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
-            Activo
-          </label>
+
+          <div className="md:col-span-2">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showAdvanced ? "− Ocultar" : "+ Más opciones"} (SKU, descripción, costo, stock, categoría)
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <>
+              <Field label="SKU">
+                <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" />
+              </Field>
+              <Field label="Categoría">
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Servicios" />
+              </Field>
+              <Field label="Costo">
+                <Input type="number" step="0.01" value={form.cost} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
+              </Field>
+              <Field label="Moneda">
+                <Input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} maxLength={3} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Descripción">
+                  <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </Field>
+              </div>
+              <div className="md:col-span-2 flex flex-wrap items-center gap-6 rounded-md border bg-muted/30 p-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch checked={form.track_stock} onCheckedChange={(v) => setForm({ ...form, track_stock: v })} />
+                  Controlar stock
+                </label>
+                {form.track_stock && (
+                  <>
+                    <div className="flex items-center gap-2 text-sm">
+                      Stock:
+                      <Input
+                        type="number"
+                        className="h-8 w-24"
+                        value={form.stock}
+                        onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Umbral bajo:
+                      <Input
+                        type="number"
+                        className="h-8 w-24"
+                        value={form.low_stock_threshold}
+                        onChange={(e) => setForm({ ...form, low_stock_threshold: Number(e.target.value) })}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
+
         {error && <div className="rounded bg-red-500/10 px-3 py-2 text-sm text-red-600">{error}</div>}
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
