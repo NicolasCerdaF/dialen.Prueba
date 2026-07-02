@@ -1572,6 +1572,7 @@ type ConvQuote = {
   rejected_at: string | null;
   created_at: string;
   ai_generated: boolean;
+  ai_context: any;
   conversation_id: string | null;
 };
 
