@@ -136,7 +136,7 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       .gte("created_at", sinceIso);
     const aiSugList = aiSug ?? [];
     const aiSuggestions = aiSugList.length;
-    const aiAccepted = aiSugList.filter((s) => s.status === "accepted").length;
+    const aiAccepted = aiSugList.filter((s) => s.status === "used").length;
     const confidences = aiSugList
       .map((s) => (typeof s.confidence === "number" ? s.confidence : Number(s.confidence)))
       .filter((n) => !Number.isNaN(n) && n > 0);
