@@ -3,6 +3,7 @@
 // same logic without going through the client RPC boundary.
 
 import { SALES_AGENT_PROMPT, type AgentType } from "@/lib/ai-agents/registry";
+import { aiFetch, AiGatewayError } from "@/lib/ai-fetch";
 
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -71,29 +72,36 @@ export async function runSalesAnalysis(
   const apiKey = process.env.LOVABLE_API_KEY;
   if (!apiKey) throw new Error("La IA no está configurada en el servidor");
 
-  const res = await fetch(AI_GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: SALES_AGENT_PROMPT },
-        {
-          role: "user",
-          content: `Cliente: ${convo.customers?.name ?? "sin nombre"} · etapa actual: ${convo.customers?.stage ?? "—"}\n\nConversación:\n${transcript}`,
+  let res: Response;
+  try {
+    res = await aiFetch(
+      AI_GATEWAY,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Lovable-API-Key": apiKey,
+          Authorization: `Bearer ${apiKey}`,
         },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("La IA está saturada. Reintenta en 1 minuto.");
-    if (res.status === 402) throw new Error("Sin créditos de IA. Recarga en Configuración.");
-    throw new Error(`IA falló (${res.status}): ${t.slice(0, 200)}`);
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: "system", content: SALES_AGENT_PROMPT },
+            {
+              role: "user",
+              content: `Cliente: ${convo.customers?.name ?? "sin nombre"} · etapa actual: ${convo.customers?.stage ?? "—"}\n\nConversación:\n${transcript}`,
+            },
+          ],
+        }),
+      },
+      { scope: "ai-agents", companyId: convo.company_id },
+    );
+  } catch (e: any) {
+    if (e instanceof AiGatewayError) {
+      if (e.status === 429) throw new Error("La IA está saturada. Reintenta en 1 minuto.");
+      if (e.status === 402) throw new Error("Sin créditos de IA. Recarga en Configuración.");
+    }
+    throw new Error(e?.message ?? "IA no disponible");
   }
   const json: any = await res.json();
   const raw: string = json?.choices?.[0]?.message?.content ?? "";
