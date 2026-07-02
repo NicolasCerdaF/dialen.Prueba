@@ -1,0 +1,3 @@
+ALTER TABLE public.companies
+  ADD COLUMN IF NOT EXISTS follow_up_enabled BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS follow_up_hours INTEGER NOT NULL DEFAULT 24;

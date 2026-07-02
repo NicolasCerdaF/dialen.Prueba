@@ -48,7 +48,7 @@ export const getAiSettings = createServerFn({ method: "GET" })
     if (!profile?.company_id) throw new Error("No se encontró la empresa");
     const { data } = await supabase
       .from("companies")
-      .select("ai_response_style, ai_auto_reply, ai_custom_prompt, name")
+      .select("ai_response_style, ai_auto_reply, ai_custom_prompt, name, follow_up_enabled, follow_up_hours")
       .eq("id", profile.company_id)
       .maybeSingle();
     return {
@@ -56,6 +56,8 @@ export const getAiSettings = createServerFn({ method: "GET" })
       autoReply: Boolean(data?.ai_auto_reply),
       customPrompt: data?.ai_custom_prompt ?? "",
       companyName: data?.name ?? null,
+      followUpEnabled: Boolean((data as any)?.follow_up_enabled),
+      followUpHours: Number((data as any)?.follow_up_hours ?? 24),
     };
   });
 
@@ -64,6 +66,8 @@ const SaveInput = z.object({
   style: z.enum(["formal", "cercano", "vendedor", "soporte"]),
   autoReply: z.boolean(),
   customPrompt: z.string().max(2000).optional().nullable(),
+  followUpEnabled: z.boolean().optional(),
+  followUpHours: z.number().int().min(1).max(720).optional(),
 });
 
 export const saveAiSettings = createServerFn({ method: "POST" })
@@ -74,13 +78,16 @@ export const saveAiSettings = createServerFn({ method: "POST" })
     const { data: profile } = await supabase
       .from("profiles").select("company_id").eq("id", userId).maybeSingle();
     if (!profile?.company_id) throw new Error("No se encontró la empresa");
+    const update: Record<string, unknown> = {
+      ai_response_style: data.style,
+      ai_auto_reply: data.autoReply,
+      ai_custom_prompt: data.customPrompt ?? null,
+    };
+    if (typeof data.followUpEnabled === "boolean") update.follow_up_enabled = data.followUpEnabled;
+    if (typeof data.followUpHours === "number") update.follow_up_hours = data.followUpHours;
     const { error } = await supabase
       .from("companies")
-      .update({
-        ai_response_style: data.style,
-        ai_auto_reply: data.autoReply,
-        ai_custom_prompt: data.customPrompt ?? null,
-      })
+      .update(update as any)
       .eq("id", profile.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };

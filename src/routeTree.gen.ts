@@ -22,6 +22,7 @@ import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.what
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
+import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -89,6 +90,12 @@ const ApiPublicWhatsappWebhookRoute =
     path: '/api/public/whatsapp/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksFollowUpCheckRoute =
+  ApiPublicHooksFollowUpCheckRouteImport.update({
+    id: '/api/public/hooks/follow-up-check',
+    path: '/api/public/hooks/follow-up-check',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +126,7 @@ export interface FileRoutesByTo {
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
@@ -134,6 +143,7 @@ export interface FileRoutesById {
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   id:
     | '__root__'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +208,7 @@ export interface RootRouteChildren {
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
+  ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
@@ -291,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/follow-up-check': {
+      id: '/api/public/hooks/follow-up-check'
+      path: '/api/public/hooks/follow-up-check'
+      fullPath: '/api/public/hooks/follow-up-check'
+      preLoaderRoute: typeof ApiPublicHooksFollowUpCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -329,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
+  ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
