@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Pause,
   Play,
-  Wand2,
+  
   Search,
   UserPlus,
   UserCheck,
