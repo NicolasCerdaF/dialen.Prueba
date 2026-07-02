@@ -1561,6 +1561,19 @@ export type Database = {
           similarity: number
         }[]
       }
+      match_knowledge_admin: {
+        Args: {
+          _company_id: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          document_id: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       ai_personality:
