@@ -156,31 +156,9 @@ function EmbudoPage() {
     return { open: open.length, won: won.length, lost: lost.length, pipelineValue, wonValue, conversion, avgTicket };
   }, [customers]);
 
-  // Drag & drop
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
-  async function moveTo(customerId: string, newStage: string) {
-    const c = customers.find((x) => x.id === customerId);
-    if (!c) return;
-    const current = normalizeStage(c.stage);
-    if (current === newStage) return;
-    // Optimistic update
-    qc.setQueryData<CrmCustomer[]>(["pipeline-customers"], (prev) =>
-      (prev ?? []).map((x) => (x.id === customerId ? { ...x, stage: newStage } : x)),
-    );
-    try {
-      await update({ data: { id: customerId, stage: newStage } });
-      toast.success(`Movido a ${getStage(newStage)?.label}`);
-      // Event-driven AI: stage change is a strong trigger — orchestrator will
-      // re-score recommendations and refresh the insight without debounce.
-      orchestrate({
-        data: { customer_id: customerId, trigger: "stage_changed", force: true },
-      }).catch(() => {});
-    } catch (e) {
-      toast.error((e as Error).message);
-      refetch();
-    }
-  }
+  // Embudo = espejo del CRM. El stage se mueve solo por eventos comerciales
+  // (cotización aceptada, mensajes, orquestador). Sin drag & drop.
+
 
   const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
 
