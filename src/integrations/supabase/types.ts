@@ -129,6 +129,96 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_events: {
+        Row: {
+          actor_id: string | null
+          company_id: string
+          conversation_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          company_id: string
+          conversation_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          company_id?: string
+          conversation_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          company_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          company_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          company_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           ai_paused: boolean
