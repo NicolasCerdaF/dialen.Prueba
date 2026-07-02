@@ -121,6 +121,7 @@ function CustomerDetailPage() {
             <div className="border-b px-6">
               <TabsList className="h-10">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
+                <TabsTrigger value="products">Productos</TabsTrigger>
                 <TabsTrigger value="conversations">Conversaciones</TabsTrigger>
                 <TabsTrigger value="activity">Actividad</TabsTrigger>
                 <TabsTrigger value="notes">Notas</TabsTrigger>
@@ -134,6 +135,9 @@ function CustomerDetailPage() {
             <div className="flex-1 overflow-auto p-6">
               <TabsContent value="summary" className="mt-0">
                 <SummaryTab customer={customer} team={team} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
+              </TabsContent>
+              <TabsContent value="products" className="mt-0">
+                <ProductsTab customerId={customer.id} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
               </TabsContent>
               <TabsContent value="conversations" className="mt-0">
                 <ConversationsTab customerId={customer.id} />
@@ -157,6 +161,7 @@ function CustomerDetailPage() {
                 <SoonGrid />
               </TabsContent>
             </div>
+
           </Tabs>
         </div>
       </div>
