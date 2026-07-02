@@ -74,12 +74,19 @@ function EmbudoPage() {
   // Unread + conversation aggregate per customer, subscribed to realtime.
   const [unread, setUnread] = useState<UnreadMap>({});
   const [insights, setInsights] = useState<Record<string, { probability: number | null; intent: string | null; churn_risk: number | null }>>({});
+  const [topReco, setTopReco] = useState<Record<string, { name: string; price: number; currency: string; reason_code: string | null } | undefined>>({});
   useEffect(() => {
     let cancel = false;
     async function load() {
-      const [convosRes, insRes] = await Promise.all([
+      const [convosRes, insRes, recoRes] = await Promise.all([
         supabase.from("conversations").select("customer_id, unread_count"),
         supabase.from("ai_insights").select("customer_id, probability, intent, churn_risk"),
+        supabase
+          .from("product_recommendations")
+          .select("customer_id, score, reason_code, product:products(name, price, currency)")
+          .eq("status", "pending")
+          .order("score", { ascending: false })
+          .limit(500),
       ]);
       if (cancel) return;
       const map: UnreadMap = {};
@@ -93,6 +100,17 @@ function EmbudoPage() {
         imap[i.customer_id] = { probability: i.probability, intent: i.intent, churn_risk: i.churn_risk };
       }
       setInsights(imap);
+      const rmap: typeof topReco = {};
+      for (const r of (recoRes.data ?? []) as any[]) {
+        if (!r.customer_id || rmap[r.customer_id] || !r.product) continue;
+        rmap[r.customer_id] = {
+          name: r.product.name,
+          price: Number(r.product.price ?? 0),
+          currency: r.product.currency ?? "USD",
+          reason_code: r.reason_code ?? null,
+        };
+      }
+      setTopReco(rmap);
     }
     load();
     const ch = supabase
@@ -100,6 +118,7 @@ function EmbudoPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "ai_insights" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_recommendations" }, () => load())
       .subscribe();
     return () => {
       cancel = true;
