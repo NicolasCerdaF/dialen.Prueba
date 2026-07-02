@@ -813,7 +813,7 @@ const SALES_RECIPES: Recipe[] = [
     flow: {
       trigger: { type: "manual" },
       conditions: [
-        { type: "last_interaction_days", op: "gte", value: "14" },
+        { type: "last_interaction_days", op: "gte", config: { value: "14" } },
       ],
       actions: [
         { type: "send_whatsapp_message", config: {
@@ -847,7 +847,7 @@ const SALES_RECIPES: Recipe[] = [
     flow: {
       trigger: { type: "quote_sent" },
       conditions: [
-        { type: "wait_days", op: "eq", value: "2" },
+        { type: "wait_days", op: "eq", config: { value: "2" } },
       ],
       actions: [
         { type: "send_whatsapp_message", config: {
