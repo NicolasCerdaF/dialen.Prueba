@@ -423,6 +423,18 @@ async function executeAction(
           .order("last_message_at", { ascending: false, nullsFirst: false })
           .limit(1)
           .maybeSingle();
+        // Uniqueness rule: 1 active quote per conversation. Skip silently
+        // if one already exists — never create duplicates from automations.
+        if (convo?.id) {
+          const { data: active } = await supabase
+            .from("quotes")
+            .select("id")
+            .eq("conversation_id", convo.id)
+            .in("status", ["draft", "sent", "viewed"])
+            .limit(1)
+            .maybeSingle();
+          if (active) return;
+        }
         const { generateQuoteDraft } = await import("@/lib/quotes.functions");
         await (generateQuoteDraft as any).handler({
           data: { customer_id: customerId, conversation_id: convo?.id ?? null, max_items },
@@ -437,6 +449,7 @@ async function executeAction(
       }
       return;
     }
+
     default:
       throw new Error(`Acción no ejecutable en runtime: ${a.type}`);
   }
