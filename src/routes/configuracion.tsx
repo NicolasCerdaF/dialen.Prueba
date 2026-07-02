@@ -173,6 +173,76 @@ function AiStyleSection({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </label>
 
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-2">
+                <Clock className="mt-0.5 h-4 w-4 text-primary" />
+                <div>
+                  <div className="font-medium">Recordatorio de seguimiento</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Si un cliente no responde, la IA te avisará con una nota para recontactarle.
+                  </div>
+                </div>
+              </div>
+              <label className="relative shrink-0 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={followUpEnabled}
+                  onChange={(e) => setFollowUpEnabled(e.target.checked)}
+                />
+                <div className="h-6 w-11 rounded-full bg-secondary peer-checked:bg-primary" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-background shadow transition peer-checked:translate-x-5" />
+              </label>
+            </div>
+
+            {followUpEnabled && (
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="mb-2 text-xs font-medium text-muted-foreground">
+                  Recordarme si no responden en:
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { h: 2, label: "2 horas" },
+                    { h: 6, label: "6 horas" },
+                    { h: 24, label: "1 día" },
+                    { h: 48, label: "2 días" },
+                    { h: 72, label: "3 días" },
+                    { h: 168, label: "1 semana" },
+                  ].map((opt) => {
+                    const active = followUpHours === opt.h;
+                    return (
+                      <button
+                        key={opt.h}
+                        type="button"
+                        onClick={() => setFollowUpHours(opt.h)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>O personaliza (horas):</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={720}
+                    value={followUpHours}
+                    onChange={(e) => setFollowUpHours(Math.max(1, Math.min(720, Number(e.target.value) || 1)))}
+                    className="w-20 rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+
           <button
             onClick={save}
             disabled={saving}
