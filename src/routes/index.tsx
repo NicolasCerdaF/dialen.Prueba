@@ -1603,7 +1603,7 @@ function ConversationQuotes({
       const { data } = await supabase
         .from("quotes")
         .select(
-          "id, number, title, status, currency, total, sent_at, viewed_at, accepted_at, rejected_at, created_at, ai_generated, conversation_id",
+          "id, number, title, status, currency, total, sent_at, viewed_at, accepted_at, rejected_at, created_at, ai_generated, ai_context, conversation_id",
         )
         .eq("customer_id", customerId)
         .order("created_at", { ascending: false })
