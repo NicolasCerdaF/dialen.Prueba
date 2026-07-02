@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IaRouteImport } from './routes/ia'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as DemoChatRouteImport } from './routes/demo-chat'
+import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
 import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ClientesRouteImport } from './routes/clientes'
@@ -48,6 +49,11 @@ const EmbudoRoute = EmbudoRouteImport.update({
 const DemoChatRoute = DemoChatRouteImport.update({
   id: '/demo-chat',
   path: '/demo-chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CotizacionesRoute = CotizacionesRouteImport.update({
+  id: '/cotizaciones',
+  path: '/cotizaciones',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConocimientoRoute = ConocimientoRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/cotizaciones': typeof CotizacionesRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
   '/ia': typeof IaRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/cotizaciones': typeof CotizacionesRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
   '/ia': typeof IaRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/cotizaciones': typeof CotizacionesRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
   '/ia': typeof IaRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/cotizaciones'
     | '/demo-chat'
     | '/embudo'
     | '/ia'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/cotizaciones'
     | '/demo-chat'
     | '/embudo'
     | '/ia'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/cotizaciones'
     | '/demo-chat'
     | '/embudo'
     | '/ia'
@@ -215,6 +227,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
+  CotizacionesRoute: typeof CotizacionesRoute
   DemoChatRoute: typeof DemoChatRoute
   EmbudoRoute: typeof EmbudoRoute
   IaRoute: typeof IaRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/demo-chat'
       fullPath: '/demo-chat'
       preLoaderRoute: typeof DemoChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cotizaciones': {
+      id: '/cotizaciones'
+      path: '/cotizaciones'
+      fullPath: '/cotizaciones'
+      preLoaderRoute: typeof CotizacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conocimiento': {
@@ -354,6 +374,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
+  CotizacionesRoute: CotizacionesRoute,
   DemoChatRoute: DemoChatRoute,
   EmbudoRoute: EmbudoRoute,
   IaRoute: IaRoute,
