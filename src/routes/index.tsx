@@ -796,6 +796,21 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
     },
   });
 
+  // Fire orchestrator when opening the conversation so intent / recommendation
+  // are ready even before the customer sends a new message.
+  const orchestrateOnOpen = useServerFn(orchestrateCustomer);
+  useEffect(() => {
+    const cid = (convo as any)?.customer_id;
+    if (!cid) return;
+    orchestrateOnOpen({
+      data: {
+        customer_id: cid,
+        conversation_id: conversationId,
+        trigger: "manual",
+      },
+    }).catch(() => {});
+  }, [conversationId, (convo as any)?.customer_id, orchestrateOnOpen]);
+
   useEffect(() => {
     const ch = supabase
       .channel(`conv-ctx-${conversationId}`)
