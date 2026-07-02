@@ -613,6 +613,7 @@ export const getQuotesOverview = createServerFn({ method: "POST" })
       wonCount,
       sentCount,
       conversion,
+      avgTicket: Number(avgTicket.toFixed(2)),
     };
   });
 
