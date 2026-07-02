@@ -60,8 +60,7 @@ function EmbudoPage() {
   const qc = useQueryClient();
   const listFn = useServerFn(listCustomers);
   const teamFn = useServerFn(listTeamMembers);
-  const update = useServerFn(updateCrmCustomer);
-  const orchestrate = useServerFn(orchestrateCustomer);
+  // Embudo es solo espejo: la mutación de stage vive en CRM/quotes/orquestador.
 
   const { data: customers = [], refetch } = useQuery({
     queryKey: ["pipeline-customers"],
