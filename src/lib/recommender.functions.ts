@@ -120,7 +120,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
       product: any;
       score: number;
       reason_code: ReasonCode;
-      signals: Record<string, unknown>;
+      signals: Record<string, any>;
     };
     const scored: Scored[] = [];
 
