@@ -365,7 +365,7 @@ export const getTopRecommendationsForCustomers = createServerFn({ method: "POST"
       .order("score", { ascending: false });
     const map: Record<string, any> = {};
     for (const r of rows ?? []) {
-      if (!map[r.customer_id]) map[r.customer_id] = r;
+      if (r.customer_id && !map[r.customer_id]) map[r.customer_id] = r;
     }
     return map;
   });
