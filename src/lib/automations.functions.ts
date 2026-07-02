@@ -413,6 +413,31 @@ async function executeAction(
       }
       return;
     }
+    case "create_quote": {
+      const max_items = Number(cfg.max_items ?? 4) || 4;
+      try {
+        const { data: convo } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("customer_id", customerId)
+          .order("last_message_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+        const { generateQuoteDraft } = await import("@/lib/quotes.functions");
+        await (generateQuoteDraft as any).handler({
+          data: { customer_id: customerId, conversation_id: convo?.id ?? null, max_items },
+          context: { supabase, userId },
+        });
+      } catch (e: any) {
+        await supabase.from("customer_events").insert({
+          customer_id: customerId, company_id: companyId, actor_id: userId,
+          event_type: "quote_generation_failed",
+          payload: { error: e?.message ?? String(e) } as any,
+        });
+      }
+      return;
+    }
+    default:
       throw new Error(`Acción no ejecutable en runtime: ${a.type}`);
   }
 }
