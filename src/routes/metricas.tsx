@@ -371,13 +371,11 @@ function Section({
   title,
   icon,
   source,
-  comingSoon,
   children,
 }: {
   title: string;
   icon?: React.ReactNode;
   source?: NavTarget;
-  comingSoon?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -392,11 +390,6 @@ function Section({
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {title}
           </h2>
-          {comingSoon && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              <Lock className="h-3 w-3" /> Próximamente
-            </span>
-          )}
         </div>
         {source && (
           <Link
