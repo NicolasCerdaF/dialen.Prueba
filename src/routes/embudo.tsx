@@ -257,6 +257,7 @@ function EmbudoPage() {
                           customer={c}
                           team={team}
                           unread={unread[c.id] ?? 0}
+                          insight={insights[c.id]}
                           onOpen={() => setOpenCustomerId(c.id)}
                           onDragStart={() => setDragId(c.id)}
                           onDragEnd={() => setDragId(null)}
