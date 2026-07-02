@@ -195,17 +195,17 @@ export const listSuggestions = createServerFn({ method: "POST" })
     return rows ?? [];
   });
 
-// ---------- Mark a suggestion as used / dismissed ----------
+// ---------- Mark a suggestion as used / discarded ----------
 export const setSuggestionStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; status: "used" | "dismissed" }) =>
-    z.object({ id: z.string().uuid(), status: z.enum(["used", "dismissed"]) }).parse(d),
+  .inputValidator((d: { id: string; status: "used" | "discarded" }) =>
+    z.object({ id: z.string().uuid(), status: z.enum(["used", "discarded"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const patch: Record<string, unknown> = { status: data.status };
     if (data.status === "used") patch.used_at = new Date().toISOString();
-    const { error } = await supabase.from("ai_suggestions").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("ai_suggestions").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
