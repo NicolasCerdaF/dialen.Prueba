@@ -35,6 +35,7 @@ import {
   listTeamMembers,
   type CrmCustomer,
 } from "@/lib/crm.functions";
+import { orchestrateCustomer } from "@/lib/ai-orchestrator.functions";
 import { STAGES, normalizeStage, stageStyle, getStage, STAGNANT_DAYS_BY_STAGE } from "@/lib/pipeline";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ function EmbudoPage() {
   const listFn = useServerFn(listCustomers);
   const teamFn = useServerFn(listTeamMembers);
   const update = useServerFn(updateCrmCustomer);
+  const orchestrate = useServerFn(orchestrateCustomer);
 
   const { data: customers = [], refetch } = useQuery({
     queryKey: ["pipeline-customers"],
@@ -169,6 +171,11 @@ function EmbudoPage() {
     try {
       await update({ data: { id: customerId, stage: newStage } });
       toast.success(`Movido a ${getStage(newStage)?.label}`);
+      // Event-driven AI: stage change is a strong trigger — orchestrator will
+      // re-score recommendations and refresh the insight without debounce.
+      orchestrate({
+        data: { customer_id: customerId, trigger: "stage_changed", force: true },
+      }).catch(() => {});
     } catch (e) {
       toast.error((e as Error).message);
       refetch();
@@ -188,9 +195,9 @@ function EmbudoPage() {
                 Vista comercial del CRM · Arrastra tarjetas para actualizar la etapa en tiempo real
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-emerald-500">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>IA comercial · Próximamente</span>
+              <span>IA en modo automático · Recomendaciones vivas por etapa</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-6">

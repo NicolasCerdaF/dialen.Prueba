@@ -378,7 +378,41 @@ async function executeAction(
       if (error) throw new Error(error.message);
       return;
     }
-    default:
+    case "run_ai_orchestration": {
+      const force = cfg.force === true || String(cfg.force) === "true";
+      // Load helpers inside the handler — server-only modules.
+      const [{ runSalesAnalysis }, { runGenerateRecommendations }] = await Promise.all([
+        import("@/lib/ai-agents.server"),
+        import("@/lib/recommender.server"),
+      ]);
+      const { data: convo } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("customer_id", customerId)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      try {
+        if (convo?.id) await runSalesAnalysis(supabase, userId, convo.id);
+        await runGenerateRecommendations(supabase, userId, {
+          customer_id: customerId,
+          conversation_id: convo?.id ?? null,
+        });
+        await supabase.from("customer_events").insert({
+          customer_id: customerId, company_id: companyId, actor_id: userId,
+          event_type: "ai_orchestration",
+          payload: { trigger: "automation", force, conversation_id: convo?.id ?? null } as any,
+        });
+      } catch (e: any) {
+        // Non-fatal for the automation run; surface as event.
+        await supabase.from("customer_events").insert({
+          customer_id: customerId, company_id: companyId, actor_id: userId,
+          event_type: "ai_orchestration_failed",
+          payload: { trigger: "automation", error: e?.message ?? String(e) } as any,
+        });
+      }
+      return;
+    }
       throw new Error(`Acción no ejecutable en runtime: ${a.type}`);
   }
 }
