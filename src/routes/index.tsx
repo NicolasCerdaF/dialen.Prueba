@@ -444,15 +444,17 @@ function ChatView({ conversationId }: { conversationId: string }) {
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async (): Promise<Message[]> => {
+      // Fetch last 80 messages (recent first), then reverse to render oldest → newest.
       const { data, error } = await supabase
         .from("messages")
         .select("id, body, direction, created_at, status, sender_id")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-        .limit(500);
+        .order("created_at", { ascending: false })
+        .limit(80);
       if (error) throw error;
-      return (data as any) ?? [];
+      return (((data as any) ?? []) as Message[]).slice().reverse();
     },
+    staleTime: 5_000,
   });
 
   const { data: convo } = useQuery({
