@@ -104,10 +104,12 @@ function InboxPage() {
         .select(
           "id, customer_id, last_message_at, unread_count, status, is_demo, ai_paused, assignee_id, customers(name, phone, tags, stage)",
         )
-        .order("last_message_at", { ascending: false, nullsFirst: false });
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(100);
       if (error) throw error;
       return (data as any) ?? [];
     },
+    staleTime: 15_000,
   });
 
   const orchestrateFn = useServerFn(orchestrateCustomer);
