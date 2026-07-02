@@ -1272,3 +1272,77 @@ function ActiveRecommendations({
 }
 
 
+
+// ------------------- QuotesTab -------------------
+function QuotesTab({ customerId }: { customerId: string }) {
+  const list = useServerFn(listQuotesForTab);
+  const draft = useServerFn(generateQuoteDraftFn);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const { data: quotes = [], refetch, isFetching } = useQuery({
+    queryKey: ["customer-quotes", customerId],
+    queryFn: () => list({ data: { customer_id: customerId, limit: 50 } }),
+  });
+
+  async function onGenerate() {
+    try {
+      const res = await draft({ data: { customer_id: customerId } });
+      toast.success(`Borrador ${res.number} creado`);
+      navigate({ to: "/cotizaciones/$id", params: { id: res.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error generando cotización");
+    }
+    refetch();
+    qc.invalidateQueries({ queryKey: ["crm-customer", customerId] });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-lg font-semibold">Cotizaciones</h2>
+          <p className="text-sm text-muted-foreground">
+            Propuestas comerciales de este cliente. La IA puede generar un borrador.
+          </p>
+        </div>
+        <Button onClick={onGenerate}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Nueva por IA
+        </Button>
+      </div>
+
+      {isFetching && quotes.length === 0 ? (
+        <div className="text-sm text-muted-foreground">Cargando…</div>
+      ) : quotes.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+          Sin cotizaciones aún.
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border/60 divide-y divide-border/60">
+          {quotes.map((q: any) => (
+            <button
+              key={q.id}
+              onClick={() => navigate({ to: "/cotizaciones/$id", params: { id: q.id } })}
+              className="flex w-full items-center justify-between p-3 text-left hover:bg-secondary/40"
+            >
+              <div>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {q.ai_generated && <span className="text-primary">✨</span>}
+                  {q.number}
+                  <span className="text-xs text-muted-foreground">· {q.title ?? "Sin título"}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(q.created_at).toLocaleDateString("es-ES")} · {q.status}
+                </div>
+              </div>
+              <div className="text-sm font-semibold">
+                {new Intl.NumberFormat("es-ES", { style: "currency", currency: q.currency ?? "USD", maximumFractionDigits: 0 }).format(q.total ?? 0)}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
