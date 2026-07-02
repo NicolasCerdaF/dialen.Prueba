@@ -331,7 +331,7 @@ export const setRecommendationStatus = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
 
-    if (reco) {
+    if (reco && reco.customer_id && reco.company_id) {
       await supabase.from("customer_events").insert({
         customer_id: reco.customer_id,
         company_id: reco.company_id,
