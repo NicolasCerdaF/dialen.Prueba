@@ -48,7 +48,7 @@ export const getAiSettings = createServerFn({ method: "GET" })
     if (!profile?.company_id) throw new Error("No se encontró la empresa");
     const { data } = await supabase
       .from("companies")
-      .select("ai_response_style, ai_auto_reply, ai_custom_prompt, name")
+      .select("ai_response_style, ai_auto_reply, ai_custom_prompt, name, follow_up_enabled, follow_up_hours")
       .eq("id", profile.company_id)
       .maybeSingle();
     return {
@@ -56,6 +56,8 @@ export const getAiSettings = createServerFn({ method: "GET" })
       autoReply: Boolean(data?.ai_auto_reply),
       customPrompt: data?.ai_custom_prompt ?? "",
       companyName: data?.name ?? null,
+      followUpEnabled: Boolean((data as any)?.follow_up_enabled),
+      followUpHours: Number((data as any)?.follow_up_hours ?? 24),
     };
   });
 
