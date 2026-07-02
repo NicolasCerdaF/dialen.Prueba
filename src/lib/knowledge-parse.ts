@@ -69,8 +69,9 @@ async function parsePdf(file: File): Promise<string> {
 }
 
 async function parseDocx(file: File): Promise<string> {
-  const mammoth = await import("mammoth/mammoth.browser");
+  // @ts-ignore browser build has no type declarations
+  const mammoth: any = await import("mammoth/mammoth.browser");
   const buf = await file.arrayBuffer();
-  const res = await (mammoth as any).extractRawText({ arrayBuffer: buf });
+  const res = await mammoth.extractRawText({ arrayBuffer: buf });
   return String(res?.value ?? "");
 }
