@@ -10,41 +10,18 @@ import {
   Info,
   AlertCircle,
   Clock,
-  UserPlus,
-  Repeat,
-  ShoppingCart,
-  DollarSign,
-  Target,
-  Receipt,
   Bot,
   Pause,
   UsersRound,
-  Lock,
   Send,
   Inbox,
   Trophy,
-  Star,
   UserX,
   UserCheck,
   Sparkles,
-  Zap,
-  Megaphone,
-  Package,
-  Calendar,
-  ShieldCheck,
-  CreditCard,
   ArrowUpRight,
   RefreshCw,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { getDashboardMetrics } from "@/lib/metrics.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +50,7 @@ function formatDuration(seconds: number): string {
   return `${h}h ${m % 60}m`;
 }
 
-type NavTarget = "/" | "/clientes" | "/conocimiento" | "/configuracion" | "/metricas";
+type NavTarget = "/" | "/clientes" | "/configuracion" | "/metricas";
 
 function MetricasPage() {
   const fetchMetrics = useServerFn(getDashboardMetrics);
