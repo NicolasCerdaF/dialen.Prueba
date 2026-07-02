@@ -219,8 +219,9 @@ export const ACTIONS: ActionEntry[] = [
   { type: "create_opportunity", kind: "action", category: "Ventas", icon: "TrendingUp", soon: true,
     label: "Crear oportunidad", description: "Registra una oportunidad comercial." },
   // ---- Próximamente (a la espera de módulos) ----
-  { type: "create_quote", kind: "action", category: "Ventas", icon: "FileText", soon: true,
-    label: "Crear cotización", description: "Cuando se construya el módulo de Cotizaciones." },
+  { type: "create_quote", kind: "action", category: "Ventas", icon: "FileText",
+    label: "Crear cotización (IA)", description: "Genera una cotización borrador a partir de las recomendaciones activas de la IA para el cliente.",
+    fields: [{ key: "max_items", label: "Máximo de productos", type: "number", optional: true, placeholder: "4" }] },
   { type: "create_order", kind: "action", category: "Ventas", icon: "ShoppingCart", soon: true,
     label: "Generar pedido", description: "Cuando exista el módulo de Pedidos." },
   { type: "book_meeting", kind: "action", category: "Agenda", icon: "Calendar", soon: true,
