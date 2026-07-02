@@ -122,6 +122,7 @@ function CustomerDetailPage() {
               <TabsList className="h-10">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
                 <TabsTrigger value="products">Productos</TabsTrigger>
+                <TabsTrigger value="quotes">Cotizaciones</TabsTrigger>
                 <TabsTrigger value="conversations">Conversaciones</TabsTrigger>
                 <TabsTrigger value="activity">Actividad</TabsTrigger>
                 <TabsTrigger value="notes">Notas</TabsTrigger>
