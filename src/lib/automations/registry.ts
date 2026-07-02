@@ -183,6 +183,11 @@ export const ACTIONS: ActionEntry[] = [
       { key: "field", label: "Campo", type: "text", placeholder: "clave" },
       { key: "value", label: "Valor", type: "text" },
     ] },
+  { type: "run_ai_orchestration", kind: "action", category: "IA", icon: "Sparkles",
+    label: "Ejecutar orquestador de IA", description: "Fuerza un ciclo de IA (análisis + recomendaciones) sobre el cliente del evento.",
+    fields: [
+      { key: "force", label: "Forzar aunque no haya cambios", type: "boolean", optional: true },
+    ] },
   // ---- Preparadas (arquitectura lista) ----
   { type: "send_whatsapp_message", kind: "action", category: "Mensajería", icon: "Send",
     label: "Enviar mensaje de WhatsApp", description: "Envía un mensaje al cliente por WhatsApp.",
