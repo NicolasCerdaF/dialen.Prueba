@@ -64,11 +64,25 @@ export async function maybeAutoReply(opts: {
     if (history.length === 0) return;
 
     // 2) Construye prompt + mensajes
-    const system = buildSystemPrompt({
+    let system = buildSystemPrompt({
       style: (company.ai_response_style ?? "cercano") as AiStyle,
       companyName: company.name,
       customPrompt: company.ai_custom_prompt,
     });
+
+    // 2b) RAG: recupera contexto de la base de conocimiento con el último mensaje del cliente
+    const lastInbound = [...history].reverse().find((m) => m.direction === "inbound")?.body ?? "";
+    if (lastInbound) {
+      const context = await fetchKnowledgeContext({
+        supabase,
+        companyId,
+        query: lastInbound,
+        limit: 4,
+      });
+      if (context) {
+        system += `\n\n---\nCONTEXTO DE LA EMPRESA (usa esta información como fuente de verdad si aplica; no la inventes):\n${context}`;
+      }
+    }
 
     const messages = [
       { role: "system", content: system },
