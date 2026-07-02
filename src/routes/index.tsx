@@ -46,6 +46,14 @@ import {
 } from "@/lib/inbox.functions";
 import { useAuth } from "@/lib/auth-context";
 import { analyzeConversation, setSuggestionStatus } from "@/lib/ai-agents.functions";
+import {
+  generateRecommendations,
+  listRecommendations,
+  setRecommendationStatus,
+  REASON_CODES,
+  type ReasonCode,
+} from "@/lib/recommender.functions";
+import { linkProductToCustomer } from "@/lib/catalog.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
