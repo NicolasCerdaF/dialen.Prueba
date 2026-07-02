@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Pause,
   Play,
-  Wand2,
+  
   Search,
   UserPlus,
   UserCheck,
@@ -104,10 +104,12 @@ function InboxPage() {
         .select(
           "id, customer_id, last_message_at, unread_count, status, is_demo, ai_paused, assignee_id, customers(name, phone, tags, stage)",
         )
-        .order("last_message_at", { ascending: false, nullsFirst: false });
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(100);
       if (error) throw error;
       return (data as any) ?? [];
     },
+    staleTime: 15_000,
   });
 
   const orchestrateFn = useServerFn(orchestrateCustomer);
@@ -115,18 +117,27 @@ function InboxPage() {
   const orchestrateTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
+    // Debounce list invalidations so a burst of postgres_changes fires one refetch.
+    let listTimer: ReturnType<typeof setTimeout> | null = null;
+    const invalidateList = () => {
+      if (listTimer) return;
+      listTimer = setTimeout(() => {
+        listTimer = null;
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+      }, 400);
+    };
     const ch = supabase
       .channel("inbox-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations" },
-        () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+        invalidateList,
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          qc.invalidateQueries({ queryKey: ["conversations"] });
+          invalidateList();
           const row = payload.new as any;
           const convId = row?.conversation_id;
           if (convId) qc.invalidateQueries({ queryKey: ["messages", convId] });
@@ -160,13 +171,9 @@ function InboxPage() {
           }
         },
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "customers" },
-        () => qc.invalidateQueries({ queryKey: ["conversations"] }),
-      )
       .subscribe((status) => setRtOk(status === "SUBSCRIBED"));
     return () => {
+      if (listTimer) clearTimeout(listTimer);
       supabase.removeChannel(ch);
       for (const t of Object.values(orchestrateTimers.current)) clearTimeout(t);
       orchestrateTimers.current = {};
@@ -231,16 +238,10 @@ function InboxPage() {
                 : "Los mensajes entrantes aparecerán aquí en tiempo real."}
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link
-                to="/demo-chat"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                <Wand2 className="h-4 w-4" /> Probar en Modo demo
-              </Link>
               {notConnected && (
                 <Link
                   to="/onboarding/whatsapp"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border px-6 text-sm font-semibold hover:bg-secondary"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                 >
                   Conectar WhatsApp <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -443,15 +444,17 @@ function ChatView({ conversationId }: { conversationId: string }) {
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async (): Promise<Message[]> => {
+      // Fetch last 80 messages (recent first), then reverse to render oldest → newest.
       const { data, error } = await supabase
         .from("messages")
         .select("id, body, direction, created_at, status, sender_id")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-        .limit(500);
+        .order("created_at", { ascending: false })
+        .limit(80);
       if (error) throw error;
-      return (data as any) ?? [];
+      return (((data as any) ?? []) as Message[]).slice().reverse();
     },
+    staleTime: 5_000,
   });
 
   const { data: convo } = useQuery({
@@ -1327,12 +1330,6 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
           </div>
         )}
 
-        <Link
-          to="/ia"
-          className="block text-center text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          Ver Panel de IA →
-        </Link>
       </div>
     </Section>
   );
