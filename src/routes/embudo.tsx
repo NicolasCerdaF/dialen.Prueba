@@ -208,21 +208,7 @@ function EmbudoPage() {
               return (
                 <div
                   key={stage.key}
-                  className={cn(
-                    "flex h-full w-[290px] shrink-0 flex-col rounded-xl border bg-card/40 transition-colors",
-                    dragOver === stage.key && "ring-2 ring-primary/60 bg-primary/5",
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(stage.key);
-                  }}
-                  onDragLeave={() => setDragOver((v) => (v === stage.key ? null : v))}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOver(null);
-                    if (dragId) moveTo(dragId, stage.key);
-                    setDragId(null);
-                  }}
+                  className="flex h-full w-[290px] shrink-0 flex-col rounded-xl border bg-card/40"
                 >
                   <div className={cn("h-1 rounded-t-xl", style.bar)} />
                   <div className="border-b p-3">
