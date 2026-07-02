@@ -231,16 +231,10 @@ function InboxPage() {
                 : "Los mensajes entrantes aparecerán aquí en tiempo real."}
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link
-                to="/demo-chat"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                <Wand2 className="h-4 w-4" /> Probar en Modo demo
-              </Link>
               {notConnected && (
                 <Link
                   to="/onboarding/whatsapp"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border px-6 text-sm font-semibold hover:bg-secondary"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                 >
                   Conectar WhatsApp <ArrowRight className="h-4 w-4" />
                 </Link>
