@@ -378,7 +378,7 @@ function QuoteDetailPage() {
                     return (
                       <div key={idx} className="p-3">
                         <div className="grid grid-cols-12 gap-2">
-                          <div className="col-span-5">
+                          <div className="col-span-6">
                             {!readonly ? (
                               <>
                                 <select
@@ -440,16 +440,6 @@ function QuoteDetailPage() {
                               onChange={(e) => updateItem(idx, { discount_pct: Number(e.target.value) })}
                             />
                           </div>
-                          <div className="col-span-1">
-                            <label className="text-[10px] text-muted-foreground">IVA %</label>
-                            <Input
-                              type="number"
-                              className="h-8"
-                              value={it.tax_pct}
-                              disabled={!!readonly}
-                              onChange={(e) => updateItem(idx, { tax_pct: Number(e.target.value) })}
-                            />
-                          </div>
                           <div className="col-span-2 flex items-end justify-end gap-2 pb-1">
                             <div className="text-right text-sm">
                               <div className="font-medium">{money(line, quote.currency)}</div>
@@ -473,16 +463,27 @@ function QuoteDetailPage() {
                 </div>
                 {/* Totals */}
                 <div className="border-t border-border/60 bg-secondary/20 p-4">
-                  <div className="ml-auto max-w-xs space-y-1 text-sm">
+                  <div className="ml-auto max-w-xs space-y-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs text-muted-foreground">IVA global %</label>
+                      <Input
+                        type="number"
+                        className="h-8 w-24 text-right"
+                        value={globalTaxPct}
+                        disabled={!!readonly}
+                        onChange={(e) => setGlobalTaxPct(Number(e.target.value))}
+                      />
+                    </div>
                     <Row label="Subtotal" value={money(totals.subtotal, quote.currency)} />
                     <Row label="Descuento" value={`- ${money(totals.discount, quote.currency)}`} />
-                    <Row label="Impuestos" value={money(totals.tax, quote.currency)} />
+                    <Row label={`IVA (${globalTaxPct || 0}%)`} value={money(totals.tax, quote.currency)} />
                     <Row label="Margen" value={money(totals.margin, quote.currency)} muted />
                     <div className="mt-2 flex justify-between border-t border-border/60 pt-2 text-base font-semibold">
                       <span>Total</span>
                       <span>{money(totals.total, quote.currency)}</span>
                     </div>
                   </div>
+
                 </div>
               </div>
 
