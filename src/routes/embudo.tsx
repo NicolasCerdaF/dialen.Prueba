@@ -337,6 +337,22 @@ function CustomerCard({
             <div className="flex items-center gap-1 truncate text-sm font-medium">
               <span className="truncate">{customer.name ?? customer.phone}</span>
               {isVip && <Star className="h-3 w-3 shrink-0 fill-yellow-500 text-yellow-500" />}
+              {hot && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600"
+                  title={`IA: ${insight?.intent ?? "hot"}${insight?.probability != null ? ` · ${Math.round(Number(insight.probability) * 100)}%` : ""}`}
+                >
+                  <Sparkles className="h-2.5 w-2.5" /> Hot
+                </span>
+              )}
+              {atRisk && !hot && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-rose-600"
+                  title={`IA: riesgo ${Math.round(Number(insight?.churn_risk) * 100)}%`}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" /> Riesgo
+                </span>
+              )}
             </div>
             {customer.company && (
               <div className="truncate text-[11px] text-muted-foreground">{customer.company}</div>
