@@ -20,7 +20,7 @@ export type CrmCustomer = {
   last_interaction_at: string | null;
   next_activity_at: string | null;
   estimated_value: number | null;
-  custom_fields: Record<string, unknown> | null;
+  custom_fields: any;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -226,7 +226,7 @@ export type TimelineItem = {
     | "created";
   event_type?: string;
   body?: string;
-  payload?: Record<string, unknown> | null;
+  payload?: any;
   actor_id?: string | null;
   conversation_id?: string | null;
   created_at: string;
