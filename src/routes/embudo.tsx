@@ -432,11 +432,23 @@ function CustomerCard({
         )}
       </div>
 
-      {/* AI slot — próximamente */}
-      <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
-        <Sparkles className="h-3 w-3" />
-        <span>Resumen IA · Próximamente</span>
-      </div>
+      {topReco ? (
+        <div
+          className="mt-2 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[10px]"
+          title={topReco.reason_code ?? undefined}
+        >
+          <Sparkles className="h-3 w-3 shrink-0 text-primary" />
+          <span className="truncate font-medium text-foreground">{topReco.name}</span>
+          <span className="ml-auto shrink-0 text-muted-foreground">
+            {topReco.currency} {topReco.price.toLocaleString()}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
+          <Sparkles className="h-3 w-3" />
+          <span>Sin recomendación IA aún</span>
+        </div>
+      )}
     </div>
   );
 }
