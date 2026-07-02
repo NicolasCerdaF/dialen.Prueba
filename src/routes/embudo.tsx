@@ -74,12 +74,19 @@ function EmbudoPage() {
   // Unread + conversation aggregate per customer, subscribed to realtime.
   const [unread, setUnread] = useState<UnreadMap>({});
   const [insights, setInsights] = useState<Record<string, { probability: number | null; intent: string | null; churn_risk: number | null }>>({});
+  const [topReco, setTopReco] = useState<Record<string, { name: string; price: number; currency: string; reason_code: string | null } | undefined>>({});
   useEffect(() => {
     let cancel = false;
     async function load() {
-      const [convosRes, insRes] = await Promise.all([
+      const [convosRes, insRes, recoRes] = await Promise.all([
         supabase.from("conversations").select("customer_id, unread_count"),
         supabase.from("ai_insights").select("customer_id, probability, intent, churn_risk"),
+        supabase
+          .from("product_recommendations")
+          .select("customer_id, score, reason_code, product:products(name, price, currency)")
+          .eq("status", "pending")
+          .order("score", { ascending: false })
+          .limit(500),
       ]);
       if (cancel) return;
       const map: UnreadMap = {};
@@ -93,6 +100,17 @@ function EmbudoPage() {
         imap[i.customer_id] = { probability: i.probability, intent: i.intent, churn_risk: i.churn_risk };
       }
       setInsights(imap);
+      const rmap: typeof topReco = {};
+      for (const r of (recoRes.data ?? []) as any[]) {
+        if (!r.customer_id || rmap[r.customer_id] || !r.product) continue;
+        rmap[r.customer_id] = {
+          name: r.product.name,
+          price: Number(r.product.price ?? 0),
+          currency: r.product.currency ?? "USD",
+          reason_code: r.reason_code ?? null,
+        };
+      }
+      setTopReco(rmap);
     }
     load();
     const ch = supabase
@@ -100,6 +118,7 @@ function EmbudoPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "ai_insights" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_recommendations" }, () => load())
       .subscribe();
     return () => {
       cancel = true;
@@ -258,6 +277,7 @@ function EmbudoPage() {
                           team={team}
                           unread={unread[c.id] ?? 0}
                           insight={insights[c.id]}
+                          topReco={topReco[c.id]}
                           onOpen={() => setOpenCustomerId(c.id)}
                           onDragStart={() => setDragId(c.id)}
                           onDragEnd={() => setDragId(null)}
@@ -290,6 +310,7 @@ function CustomerCard({
   team,
   unread,
   insight,
+  topReco,
   onOpen,
   onDragStart,
   onDragEnd,
@@ -299,6 +320,7 @@ function CustomerCard({
   team: { id: string; full_name: string | null; email: string | null }[];
   unread: number;
   insight?: { probability: number | null; intent: string | null; churn_risk: number | null };
+  topReco?: { name: string; price: number; currency: string; reason_code: string | null };
   onOpen: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -410,11 +432,23 @@ function CustomerCard({
         )}
       </div>
 
-      {/* AI slot — próximamente */}
-      <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
-        <Sparkles className="h-3 w-3" />
-        <span>Resumen IA · Próximamente</span>
-      </div>
+      {topReco ? (
+        <div
+          className="mt-2 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[10px]"
+          title={topReco.reason_code ?? undefined}
+        >
+          <Sparkles className="h-3 w-3 shrink-0 text-primary" />
+          <span className="truncate font-medium text-foreground">{topReco.name}</span>
+          <span className="ml-auto shrink-0 text-muted-foreground">
+            {topReco.currency} {topReco.price.toLocaleString()}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
+          <Sparkles className="h-3 w-3" />
+          <span>Sin recomendación IA aún</span>
+        </div>
+      )}
     </div>
   );
 }

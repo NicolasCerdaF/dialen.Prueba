@@ -916,6 +916,7 @@ export type Database = {
         Row: {
           agent_type: string
           company_id: string
+          context: Json
           conversation_id: string | null
           created_at: string
           customer_id: string | null
@@ -923,13 +924,17 @@ export type Database = {
           probability: number | null
           product_id: string
           reason: string | null
+          reason_code: string | null
           resolved_at: string | null
+          score: number | null
           signals: Json
+          stage: string | null
           status: string
         }
         Insert: {
           agent_type?: string
           company_id: string
+          context?: Json
           conversation_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -937,13 +942,17 @@ export type Database = {
           probability?: number | null
           product_id: string
           reason?: string | null
+          reason_code?: string | null
           resolved_at?: string | null
+          score?: number | null
           signals?: Json
+          stage?: string | null
           status?: string
         }
         Update: {
           agent_type?: string
           company_id?: string
+          context?: Json
           conversation_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -951,8 +960,11 @@ export type Database = {
           probability?: number | null
           product_id?: string
           reason?: string | null
+          reason_code?: string | null
           resolved_at?: string | null
+          score?: number | null
           signals?: Json
+          stage?: string | null
           status?: string
         }
         Relationships: [

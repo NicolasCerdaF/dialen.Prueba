@@ -929,6 +929,14 @@ import {
   type Product as CatalogProduct,
   type ProductLink,
 } from "@/lib/catalog.functions";
+import {
+  generateRecommendations,
+  listRecommendations,
+  setRecommendationStatus,
+  REASON_CODES,
+  type ReasonCode,
+} from "@/lib/recommender.functions";
+import { Sparkles, RefreshCw } from "lucide-react";
 
 function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
   const listCustomerP = useServerFn(listCustomerProducts);
@@ -978,6 +986,7 @@ function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged:
 
   return (
     <div className="space-y-4">
+      <ActiveRecommendations customerId={customerId} onChanged={onChanged} />
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-medium">Productos vinculados</div>
@@ -1055,4 +1064,207 @@ function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged:
     </div>
   );
 }
+
+// ------------------- ActiveRecommendations -------------------
+const RECO_STYLES: Record<ReasonCode, string> = {
+  high_intent: "bg-emerald-500/15 text-emerald-600",
+  churn_rescue: "bg-rose-500/15 text-rose-600",
+  purchase_history: "bg-indigo-500/15 text-indigo-600",
+  category_affinity: "bg-violet-500/15 text-violet-600",
+  bestseller: "bg-sky-500/15 text-sky-600",
+  high_margin: "bg-amber-500/15 text-amber-600",
+  stagnant_recovery: "bg-orange-500/15 text-orange-600",
+  stage_fit: "bg-teal-500/15 text-teal-600",
+};
+
+function ActiveRecommendations({
+  customerId,
+  onChanged,
+}: {
+  customerId: string;
+  onChanged: () => void;
+}) {
+  const qc = useQueryClient();
+  const gen = useServerFn(generateRecommendations);
+  const list = useServerFn(listRecommendations);
+  const setStatus = useServerFn(setRecommendationStatus);
+  const link = useServerFn(linkProductToCustomer);
+  const [busy, setBusy] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const { data: recos = [] } = useQuery({
+    queryKey: ["reco-list", customerId],
+    queryFn: () => list({ data: { customer_id: customerId, limit: 50 } }),
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`reco-list-${customerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "product_recommendations",
+          filter: `customer_id=eq.${customerId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["reco-list", customerId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [customerId, qc]);
+
+  const active = recos.filter((r) => r.status === "pending");
+  const history = recos.filter((r) => r.status !== "pending").slice(0, 12);
+  const money = (n: number, cur = "USD") =>
+    new Intl.NumberFormat("es-ES", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(n || 0);
+
+  async function refresh() {
+    setBusy(true);
+    try {
+      await gen({ data: { customer_id: customerId, limit: 4 } });
+      toast.success("Recomendaciones actualizadas");
+      qc.invalidateQueries({ queryKey: ["reco-list", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function accept(r: any) {
+    try {
+      await link({
+        data: {
+          product_id: r.product_id,
+          customer_id: customerId,
+          context: "recommended",
+        },
+      });
+      await setStatus({ data: { id: r.id, status: "accepted" } });
+      toast.success("Recomendación aceptada");
+      qc.invalidateQueries({ queryKey: ["reco-list", customerId] });
+      qc.invalidateQueries({ queryKey: ["customer-products", customerId] });
+      onChanged();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function ignore(id: string) {
+    await setStatus({ data: { id, status: "ignored" } });
+    qc.invalidateQueries({ queryKey: ["reco-list", customerId] });
+  }
+
+  return (
+    <div className="rounded-lg border bg-gradient-to-br from-primary/5 to-transparent p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <div>
+            <div className="text-sm font-semibold">Recomendaciones activas</div>
+            <div className="text-[11px] text-muted-foreground">
+              Motor IA · contexto comercial en tiempo real
+            </div>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" onClick={refresh} disabled={busy}>
+          <RefreshCw className={cn("mr-1 h-3 w-3", busy && "animate-spin")} />
+          Recalcular
+        </Button>
+      </div>
+
+      {active.length === 0 ? (
+        <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
+          Sin recomendaciones activas. Recalcula para generarlas.
+        </div>
+      ) : (
+        <div className="grid gap-2 md:grid-cols-2">
+          {active.map((r) => (
+            <div key={r.id} className="rounded-md border bg-card p-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">
+                    {r.product?.name ?? "Producto"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {money(Number(r.product?.price ?? 0), r.product?.currency ?? "USD")}
+                  </div>
+                </div>
+                {r.score != null && (
+                  <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium">
+                    {Math.round(Number(r.score) * 100)}%
+                  </span>
+                )}
+              </div>
+              {r.reason_code && (
+                <span
+                  className={cn(
+                    "mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    RECO_STYLES[r.reason_code as ReasonCode] ?? "bg-muted",
+                  )}
+                >
+                  {REASON_CODES[r.reason_code as ReasonCode]}
+                </span>
+              )}
+              <div className="mt-2 flex gap-1">
+                <Button size="sm" className="flex-1" onClick={() => accept(r)}>
+                  Aceptar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled
+                  title="Próximamente: crear cotización"
+                >
+                  Cotizar
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => ignore(r.id)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            {showHistory ? "Ocultar historial" : `Ver historial (${history.length})`}
+          </button>
+          {showHistory && (
+            <div className="mt-2 space-y-1">
+              {history.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between rounded border border-border/60 bg-background px-2 py-1 text-[11px]"
+                >
+                  <span className="truncate">{r.product?.name ?? "Producto"}</span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase",
+                      r.status === "accepted" && "bg-emerald-500/15 text-emerald-600",
+                      r.status === "converted" && "bg-primary/15 text-primary",
+                      r.status === "ignored" && "bg-muted text-muted-foreground",
+                      r.status === "expired" && "bg-muted text-muted-foreground opacity-70",
+                    )}
+                  >
+                    {r.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 

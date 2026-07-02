@@ -46,6 +46,14 @@ import {
 } from "@/lib/inbox.functions";
 import { useAuth } from "@/lib/auth-context";
 import { analyzeConversation, setSuggestionStatus } from "@/lib/ai-agents.functions";
+import {
+  generateRecommendations,
+  listRecommendations,
+  setRecommendationStatus,
+  REASON_CODES,
+  type ReasonCode,
+} from "@/lib/recommender.functions";
+import { linkProductToCustomer } from "@/lib/catalog.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -862,6 +870,9 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       {/* AI Panel — Agente de Ventas + Motor de Análisis */}
       <AiPanel conversationId={conversationId} customerId={customer.id} />
 
+      {/* AI Recommendation Engine — Productos recomendados en este momento */}
+      <RecommendedProducts customerId={customer.id} conversationId={conversationId} />
+
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
@@ -1290,4 +1301,197 @@ function MiniStat({
 function pct(n: number | null | undefined) {
   if (n == null || isNaN(Number(n))) return "—";
   return `${Math.round(Number(n) * 100)}%`;
+}
+
+// ================= Recommendation Engine Panel =================
+const REASON_STYLES: Record<ReasonCode, string> = {
+  high_intent: "bg-emerald-500/15 text-emerald-600",
+  churn_rescue: "bg-rose-500/15 text-rose-600",
+  purchase_history: "bg-indigo-500/15 text-indigo-600",
+  category_affinity: "bg-violet-500/15 text-violet-600",
+  bestseller: "bg-sky-500/15 text-sky-600",
+  high_margin: "bg-amber-500/15 text-amber-600",
+  stagnant_recovery: "bg-orange-500/15 text-orange-600",
+  stage_fit: "bg-teal-500/15 text-teal-600",
+};
+
+function RecommendedProducts({
+  customerId,
+  conversationId,
+}: {
+  customerId: string;
+  conversationId: string;
+}) {
+  const qc = useQueryClient();
+  const genFn = useServerFn(generateRecommendations);
+  const listFn = useServerFn(listRecommendations);
+  const statusFn = useServerFn(setRecommendationStatus);
+  const linkFn = useServerFn(linkProductToCustomer);
+  const [busy, setBusy] = useState(false);
+
+  const { data: recos } = useQuery({
+    queryKey: ["recos", customerId],
+    queryFn: () => listFn({ data: { customer_id: customerId, limit: 20 } }),
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`recos-${customerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "product_recommendations",
+          filter: `customer_id=eq.${customerId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["recos", customerId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [customerId, qc]);
+
+  async function refresh() {
+    setBusy(true);
+    try {
+      await genFn({
+        data: { customer_id: customerId, conversation_id: conversationId, limit: 4 },
+      });
+      toast.success("Recomendaciones actualizadas");
+      qc.invalidateQueries({ queryKey: ["recos", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo generar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function accept(recoId: string, productId: string) {
+    try {
+      await linkFn({
+        data: {
+          product_id: productId,
+          customer_id: customerId,
+          conversation_id: conversationId,
+          context: "recommended",
+        },
+      });
+      await statusFn({ data: { id: recoId, status: "accepted" } });
+      toast.success("Producto agregado al cliente");
+      qc.invalidateQueries({ queryKey: ["recos", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo aceptar");
+    }
+  }
+
+  async function ignore(recoId: string) {
+    try {
+      await statusFn({ data: { id: recoId, status: "ignored" } });
+      qc.invalidateQueries({ queryKey: ["recos", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  const active = (recos ?? []).filter((r) => r.status === "pending").slice(0, 4);
+
+  return (
+    <Section
+      icon={<ShoppingBag className="h-3.5 w-3.5 text-primary" />}
+      title="Productos recomendados"
+    >
+      <div className="space-y-2">
+        {active.length === 0 ? (
+          <button
+            onClick={refresh}
+            disabled={busy}
+            className="w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
+          >
+            {busy ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" /> Calculando…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3" /> Generar recomendaciones
+              </span>
+            )}
+          </button>
+        ) : (
+          <>
+            {active.map((r) => (
+              <div
+                key={r.id}
+                className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-[12px] font-semibold">
+                      {r.product?.name ?? "Producto"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {r.product?.currency ?? "USD"}{" "}
+                      {Number(r.product?.price ?? 0).toLocaleString()}
+                    </div>
+                  </div>
+                  {r.score != null && (
+                    <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium">
+                      {Math.round(Number(r.score) * 100)}%
+                    </span>
+                  )}
+                </div>
+                {r.reason_code && (
+                  <span
+                    className={cn(
+                      "inline-block rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
+                      REASON_STYLES[r.reason_code] ?? "bg-muted",
+                    )}
+                  >
+                    {REASON_CODES[r.reason_code]}
+                  </span>
+                )}
+                <div className="flex gap-1 pt-0.5">
+                  <button
+                    onClick={() => accept(r.id, r.product_id)}
+                    className="flex-1 rounded-md bg-primary py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    Ofrecer
+                  </button>
+                  <button
+                    disabled
+                    title="Próximamente"
+                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground opacity-60"
+                  >
+                    Cotizar
+                  </button>
+                  <button
+                    onClick={() => ignore(r.id)}
+                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-secondary"
+                    title="Ignorar"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={refresh}
+              disabled={busy}
+              className="w-full rounded-md border border-border py-1 text-[10px] font-medium text-muted-foreground hover:bg-secondary disabled:opacity-50"
+            >
+              {busy ? (
+                <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+              ) : (
+                <span className="inline-flex items-center justify-center gap-1">
+                  <RefreshCw className="h-3 w-3" /> Recalcular
+                </span>
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    </Section>
+  );
 }

@@ -76,6 +76,14 @@ export const TRIGGERS: TriggerEntry[] = [
     fields: [{ key: "product_id", label: "Producto (opcional)", type: "text", placeholder: "uuid del producto" }] },
   { type: "product_low_stock", kind: "trigger", category: "Catálogo", icon: "AlertTriangle", soon: true,
     label: "Producto en bajo stock", description: "Cuando un producto con seguimiento de stock cruza su umbral mínimo." },
+  { type: "ai_recommendation_created", kind: "trigger", category: "IA", icon: "Sparkles",
+    label: "IA recomienda un producto", description: "Cuando el Motor de Recomendación genera una nueva sugerencia para un cliente.",
+    fields: [
+      { key: "reason_code", label: "Motivo (opcional)", type: "text", placeholder: "high_intent, churn_rescue, …" },
+      { key: "min_score", label: "Score mínimo (0-1)", type: "number", placeholder: "0.5" },
+    ] },
+  { type: "ai_recommendation_accepted", kind: "trigger", category: "IA", icon: "Sparkles",
+    label: "Recomendación aceptada", description: "Cuando un agente acepta una recomendación de la IA." },
   // Placeholders — futuras integraciones
   { type: "quote_sent", kind: "trigger", category: "Ventas", icon: "FileText", soon: true,
     label: "Cotización enviada", description: "Cuando el módulo de Cotizaciones envíe una cotización." },
