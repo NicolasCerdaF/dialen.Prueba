@@ -142,7 +142,13 @@ export const updateCustomer = createServerFn({ method: "POST" })
   .inputValidator((d) => CustomerInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: {
+      updated_at: string;
+      name?: string;
+      stage?: string | null;
+      tags?: string[];
+      notes?: string | null;
+    } = { updated_at: new Date().toISOString() };
     if (data.name !== undefined) patch.name = data.name;
     if (data.stage !== undefined) patch.stage = data.stage;
     if (data.tags !== undefined) patch.tags = data.tags;
