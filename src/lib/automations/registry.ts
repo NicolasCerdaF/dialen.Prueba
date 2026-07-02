@@ -62,6 +62,14 @@ export const TRIGGERS: TriggerEntry[] = [
     fields: [{ key: "minutes", label: "Minutos sin responder", type: "number", placeholder: "60" }] },
   { type: "manual", kind: "trigger", category: "Manual", icon: "Play",
     label: "Ejecución manual", description: "El flujo solo se dispara desde un botón (útil para pruebas)." },
+  // Disparadores de IA (Motor de Inteligencia)
+  { type: "ai_high_intent", kind: "trigger", category: "IA", icon: "Sparkles",
+    label: "IA detecta alta intención de compra", description: "Se dispara cuando el Agente de Ventas marca el cliente como high_intent o ready_to_close." },
+  { type: "ai_churn_risk", kind: "trigger", category: "IA", icon: "AlertTriangle",
+    label: "IA detecta riesgo de pérdida", description: "Cuando el Motor de Análisis eleva el churn_risk del cliente por encima del umbral.",
+    fields: [{ key: "threshold", label: "Umbral (0-1)", type: "number", placeholder: "0.6" }] },
+  { type: "ai_objection_detected", kind: "trigger", category: "IA", icon: "MessageSquare", soon: true,
+    label: "IA detecta objeción", description: "Cuando el Agente de Ventas identifica una objeción específica (próximamente enlazable con secuencias de rebatimiento)." },
   // Placeholders — futuras integraciones
   { type: "quote_sent", kind: "trigger", category: "Ventas", icon: "FileText", soon: true,
     label: "Cotización enviada", description: "Cuando el módulo de Cotizaciones envíe una cotización." },
