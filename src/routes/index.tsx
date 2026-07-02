@@ -1321,12 +1321,6 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
           </div>
         )}
 
-        <Link
-          to="/ia"
-          className="block text-center text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          Ver Panel de IA →
-        </Link>
       </div>
     </Section>
   );
