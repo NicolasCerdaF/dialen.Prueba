@@ -14,51 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          churn_risk: number | null
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          intent: string | null
+          last_analysis_at: string
+          next_best_action: string | null
+          probability: number | null
+          quality_score: number | null
+          sentiment: string | null
+          signals: Json
+          updated_at: string
+        }
+        Insert: {
+          churn_risk?: number | null
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          intent?: string | null
+          last_analysis_at?: string
+          next_best_action?: string | null
+          probability?: number | null
+          quality_score?: number | null
+          sentiment?: string | null
+          signals?: Json
+          updated_at?: string
+        }
+        Update: {
+          churn_risk?: number | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          intent?: string | null
+          last_analysis_at?: string
+          next_best_action?: string | null
+          probability?: number | null
+          quality_score?: number | null
+          sentiment?: string | null
+          signals?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_insights_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_suggestions: {
         Row: {
+          actor_id: string | null
+          agent_type: string
           company_id: string
           confidence: number | null
           conversation_id: string
           created_at: string
+          customer_id: string | null
           id: string
           intent: string | null
           message_id: string
           model: string | null
           next_step: string | null
           objections: Json
+          payload: Json
+          probability: number | null
           sources: Json
           status: Database["public"]["Enums"]["suggestion_status"]
           text: string
+          used_at: string | null
         }
         Insert: {
+          actor_id?: string | null
+          agent_type?: string
           company_id: string
           confidence?: number | null
           conversation_id: string
           created_at?: string
+          customer_id?: string | null
           id?: string
           intent?: string | null
           message_id: string
           model?: string | null
           next_step?: string | null
           objections?: Json
+          payload?: Json
+          probability?: number | null
           sources?: Json
           status?: Database["public"]["Enums"]["suggestion_status"]
           text: string
+          used_at?: string | null
         }
         Update: {
+          actor_id?: string | null
+          agent_type?: string
           company_id?: string
           confidence?: number | null
           conversation_id?: string
           created_at?: string
+          customer_id?: string | null
           id?: string
           intent?: string | null
           message_id?: string
           model?: string | null
           next_step?: string | null
           objections?: Json
+          payload?: Json
+          probability?: number | null
           sources?: Json
           status?: Database["public"]["Enums"]["suggestion_status"]
           text?: string
+          used_at?: string | null
         }
         Relationships: [
           {
@@ -73,6 +154,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_suggestions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {

@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
-  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/conocimiento" | "/metricas" | "/configuracion";
+  to: "/" | "/demo-chat" | "/clientes" | "/embudo" | "/automatizaciones" | "/ia" | "/conocimiento" | "/metricas" | "/configuracion";
   label: string;
   icon: typeof MessageSquare;
 };
@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
   { to: "/automatizaciones", label: "Automatizaciones", icon: Zap },
+  { to: "/ia", label: "IA", icon: Sparkles },
   { to: "/conocimiento", label: "Conocimiento", icon: BookOpen },
   { to: "/metricas", label: "Métricas", icon: BarChart3 },
   { to: "/configuracion", label: "Configuración", icon: Settings },

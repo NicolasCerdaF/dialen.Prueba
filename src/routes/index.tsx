@@ -45,6 +45,7 @@ import {
   markConversationRead,
 } from "@/lib/inbox.functions";
 import { useAuth } from "@/lib/auth-context";
+import { analyzeConversation, setSuggestionStatus } from "@/lib/ai-agents.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -858,6 +859,9 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         </div>
       </div>
 
+      {/* AI Panel — Agente de Ventas + Motor de Análisis */}
+      <AiPanel conversationId={conversationId} customerId={customer.id} />
+
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
@@ -1043,4 +1047,247 @@ function eventLabel(type: string) {
     default:
       return type;
   }
+}
+
+// ================= AI Panel (Inbox) =================
+function AiPanel({ conversationId, customerId }: { conversationId: string; customerId: string }) {
+  const qc = useQueryClient();
+  const analyzeFn = useServerFn(analyzeConversation);
+  const statusFn = useServerFn(setSuggestionStatus);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const { data: suggestion } = useQuery({
+    queryKey: ["ai-suggestion", conversationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ai_suggestions")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const { data: insight } = useQuery({
+    queryKey: ["ai-insight", customerId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ai_insights")
+        .select("*")
+        .eq("customer_id", customerId)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`ai-panel-${conversationId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_suggestions", filter: `conversation_id=eq.${conversationId}` },
+        () => qc.invalidateQueries({ queryKey: ["ai-suggestion", conversationId] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_insights", filter: `customer_id=eq.${customerId}` },
+        () => qc.invalidateQueries({ queryKey: ["ai-insight", customerId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [conversationId, customerId, qc]);
+
+  async function analyze() {
+    setAnalyzing(true);
+    try {
+      await analyzeFn({ data: { conversation_id: conversationId } });
+      toast.success("Análisis de IA generado");
+      qc.invalidateQueries({ queryKey: ["ai-suggestion", conversationId] });
+      qc.invalidateQueries({ queryKey: ["ai-insight", customerId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo analizar");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function copyReply(text: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      await statusFn({ data: { id, status: "used" } });
+      toast.success("Respuesta copiada — marcada como usada");
+      qc.invalidateQueries({ queryKey: ["ai-suggestion", conversationId] });
+    } catch {
+      toast.error("No se pudo copiar");
+    }
+  }
+
+  async function discard(id: string) {
+    try {
+      await statusFn({ data: { id, status: "discarded" } });
+      qc.invalidateQueries({ queryKey: ["ai-suggestion", conversationId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  const intentColor: Record<string, string> = {
+    high_intent: "bg-emerald-500/15 text-emerald-600",
+    ready_to_close: "bg-emerald-500/20 text-emerald-700",
+    objection: "bg-amber-500/15 text-amber-600",
+    browsing: "bg-sky-500/15 text-sky-600",
+    not_interested: "bg-rose-500/15 text-rose-600",
+    support: "bg-indigo-500/15 text-indigo-600",
+  };
+
+  return (
+    <Section icon={<Sparkles className="h-3.5 w-3.5 text-primary" />} title="Inteligencia comercial">
+      <div className="space-y-2">
+        {insight && (
+          <div className="grid grid-cols-3 gap-1.5">
+            <MiniStat label="Cierre" value={pct(insight.probability)} tone="emerald" />
+            <MiniStat label="Riesgo" value={pct(insight.churn_risk)} tone="rose" />
+            <MiniStat label="Calidad" value={pct(insight.quality_score)} tone="sky" />
+          </div>
+        )}
+
+        {suggestion ? (
+          <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+            <div className="flex flex-wrap items-center gap-1">
+              {suggestion.intent && (
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                    intentColor[suggestion.intent] ?? "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {suggestion.intent.replace(/_/g, " ")}
+                </span>
+              )}
+              {suggestion.probability != null && (
+                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium">
+                  {Math.round(Number(suggestion.probability) * 100)}% cierre
+                </span>
+              )}
+              {suggestion.status === "used" && (
+                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium text-emerald-600">
+                  ✓ usada
+                </span>
+              )}
+            </div>
+
+            {suggestion.payload?.summary && (
+              <p className="text-[11px] italic text-muted-foreground">
+                "{suggestion.payload.summary}"
+              </p>
+            )}
+
+            {suggestion.text && (
+              <div className="rounded-md border border-border/60 bg-background p-2">
+                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Respuesta sugerida
+                </div>
+                <p className="whitespace-pre-wrap text-[11px] leading-relaxed">{suggestion.text}</p>
+              </div>
+            )}
+
+            {suggestion.next_step && (
+              <div className="text-[11px]">
+                <span className="font-semibold">Siguiente paso:</span>{" "}
+                <span className="text-muted-foreground">{suggestion.next_step}</span>
+              </div>
+            )}
+
+            {Array.isArray(suggestion.objections) && suggestion.objections.length > 0 && (
+              <div className="text-[10px] text-muted-foreground">
+                Objeciones: {suggestion.objections.join(" · ")}
+              </div>
+            )}
+
+            <div className="flex gap-1 pt-1">
+              {suggestion.text && suggestion.status !== "used" && (
+                <button
+                  onClick={() => copyReply(suggestion.text, suggestion.id)}
+                  className="flex-1 rounded-md bg-primary py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Copiar y usar
+                </button>
+              )}
+              <button
+                onClick={analyze}
+                disabled={analyzing}
+                className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-secondary disabled:opacity-50"
+                title="Volver a analizar"
+              >
+                {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              </button>
+              {suggestion.status === "pending" && (
+                <button
+                  onClick={() => discard(suggestion.id)}
+                  className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-secondary"
+                  title="Descartar"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={analyze}
+            disabled={analyzing}
+            className="w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
+          >
+            {analyzing ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" /> Analizando conversación…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3" /> Analizar con IA
+              </span>
+            )}
+          </button>
+        )}
+
+        <Link
+          to="/ia"
+          className="block text-center text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          Ver Panel de IA →
+        </Link>
+      </div>
+    </Section>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "emerald" | "rose" | "sky";
+}) {
+  const toneMap = {
+    emerald: "text-emerald-600 bg-emerald-500/10",
+    rose: "text-rose-600 bg-rose-500/10",
+    sky: "text-sky-600 bg-sky-500/10",
+  };
+  return (
+    <div className={cn("rounded-md px-2 py-1.5 text-center", toneMap[tone])}>
+      <div className="text-[9px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
+      <div className="text-sm font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function pct(n: number | null | undefined) {
+  if (n == null || isNaN(Number(n))) return "—";
+  return `${Math.round(Number(n) * 100)}%`;
 }
