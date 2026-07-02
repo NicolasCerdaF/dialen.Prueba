@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MetricasRouteImport } from './routes/metricas'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as IaRouteImport } from './routes/ia'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as DemoChatRouteImport } from './routes/demo-chat'
 import { Route as ConocimientoRouteImport } from './routes/conocimiento'
@@ -31,6 +32,11 @@ const MetricasRoute = MetricasRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IaRoute = IaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmbudoRoute = EmbudoRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
+  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
+  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/embudo': typeof EmbudoRoute
+  '/ia': typeof IaRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/conocimiento'
     | '/demo-chat'
     | '/embudo'
+    | '/ia'
     | '/login'
     | '/metricas'
     | '/clientes/$id'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/conocimiento'
     | '/demo-chat'
     | '/embudo'
+    | '/ia'
     | '/login'
     | '/metricas'
     | '/clientes/$id'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/conocimiento'
     | '/demo-chat'
     | '/embudo'
+    | '/ia'
     | '/login'
     | '/metricas'
     | '/clientes/$id'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   ConocimientoRoute: typeof ConocimientoRoute
   DemoChatRoute: typeof DemoChatRoute
   EmbudoRoute: typeof EmbudoRoute
+  IaRoute: typeof IaRoute
   LoginRoute: typeof LoginRoute
   MetricasRoute: typeof MetricasRoute
   DebugWhatsappRoute: typeof DebugWhatsappRoute
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ia': {
+      id: '/ia'
+      path: '/ia'
+      fullPath: '/ia'
+      preLoaderRoute: typeof IaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/embudo': {
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConocimientoRoute: ConocimientoRoute,
   DemoChatRoute: DemoChatRoute,
   EmbudoRoute: EmbudoRoute,
+  IaRoute: IaRoute,
   LoginRoute: LoginRoute,
   MetricasRoute: MetricasRoute,
   DebugWhatsappRoute: DebugWhatsappRoute,
