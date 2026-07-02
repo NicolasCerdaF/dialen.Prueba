@@ -158,6 +158,6 @@ export async function maybeAutoReply(opts: {
       })
       .eq("id", conversationId);
   } catch (e) {
-    console.error("[ai-reply] uncaught", e);
+    log.error("ai-reply", "uncaught", { err: e });
   }
 }
