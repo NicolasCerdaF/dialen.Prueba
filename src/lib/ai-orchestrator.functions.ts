@@ -324,6 +324,7 @@ export const orchestrateCustomer = createServerFn({ method: "POST" })
           }
         : null,
       recommendations: recs?.recommendations?.length ?? 0,
+      auto_draft_id: autoDraftId,
       error,
     };
   });
