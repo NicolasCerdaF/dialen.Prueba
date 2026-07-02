@@ -2,16 +2,54 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageSquare, Send, Loader2, ArrowRight, Pause, Play, Wand2 } from "lucide-react";
+import {
+  MessageSquare,
+  Send,
+  Loader2,
+  ArrowRight,
+  Pause,
+  Play,
+  Wand2,
+  Search,
+  UserPlus,
+  UserCheck,
+  CheckCircle2,
+  Circle,
+  Sparkles,
+  RefreshCw,
+  Radio,
+  StickyNote,
+  Tag,
+  Phone,
+  Building2,
+  Calendar,
+  ShoppingBag,
+  FileText,
+  ClipboardList,
+  Users as UsersIcon,
+  Lock,
+  X,
+  Plus,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { sendWhatsAppMessage, toggleConversationAiPause } from "@/lib/whatsapp.functions";
+import {
+  assignConversation,
+  takeConversation,
+  setConversationStatus,
+  addConversationNote,
+  updateCustomer,
+  markConversationRead,
+} from "@/lib/inbox.functions";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Bandeja — Dialen" }] }),
-  component: ChatsPage,
+  head: () => ({ meta: [{ title: "Bandeja Unificada — Dialen" }] }),
+  component: InboxPage,
 });
 
 type Conversation = {
@@ -19,34 +57,39 @@ type Conversation = {
   customer_id: string;
   last_message_at: string | null;
   unread_count: number;
-  status: string;
+  status: "open" | "pending" | "resolved" | "closed";
   is_demo: boolean;
   ai_paused: boolean;
-  customers: { name: string | null; phone: string } | null;
+  assignee_id: string | null;
+  customers: { name: string | null; phone: string; tags: string[] | null; stage: string | null } | null;
 };
 
-function ChatsPage() {
+type FilterKey = "all" | "mine" | "unassigned" | "unread" | "resolved";
+
+function InboxPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [rtOk, setRtOk] = useState(false);
 
   const { data: channel } = useQuery({
     queryKey: ["wa-channel-status"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("whatsapp_channels")
-        .select("status")
-        .maybeSingle();
+      const { data } = await supabase.from("whatsapp_channels").select("status").maybeSingle();
       return data;
     },
   });
 
-
-  const { data: convos = [] } = useQuery({
+  const { data: convos = [], refetch } = useQuery({
     queryKey: ["conversations"],
     queryFn: async (): Promise<Conversation[]> => {
       const { data, error } = await supabase
         .from("conversations")
-        .select("id, customer_id, last_message_at, unread_count, status, is_demo, ai_paused, customers(name, phone)")
+        .select(
+          "id, customer_id, last_message_at, unread_count, status, is_demo, ai_paused, assignee_id, customers(name, phone, tags, stage)",
+        )
         .order("last_message_at", { ascending: false, nullsFirst: false });
       if (error) throw error;
       return (data as any) ?? [];
@@ -55,7 +98,7 @@ function ChatsPage() {
 
   useEffect(() => {
     const ch = supabase
-      .channel("inbox")
+      .channel("inbox-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations" },
@@ -70,15 +113,56 @@ function ChatsPage() {
           if (convId) qc.invalidateQueries({ queryKey: ["messages", convId] });
         },
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "customers" },
+        () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+      )
+      .subscribe((status) => setRtOk(status === "SUBSCRIBED"));
     return () => {
       supabase.removeChannel(ch);
     };
   }, [qc]);
 
+  const counts = useMemo(() => {
+    const c = { all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0 };
+    for (const x of convos) {
+      if (x.status === "resolved" || x.status === "closed") {
+        c.resolved++;
+        continue;
+      }
+      c.all++;
+      if (x.assignee_id === user?.id) c.mine++;
+      if (!x.assignee_id) c.unassigned++;
+      if (x.unread_count > 0) c.unread++;
+    }
+    return c;
+  }, [convos, user?.id]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return convos.filter((c) => {
+      if (filter === "resolved") {
+        if (c.status !== "resolved" && c.status !== "closed") return false;
+      } else {
+        if (c.status === "resolved" || c.status === "closed") return false;
+        if (filter === "mine" && c.assignee_id !== user?.id) return false;
+        if (filter === "unassigned" && c.assignee_id) return false;
+        if (filter === "unread" && c.unread_count <= 0) return false;
+      }
+      if (!q) return true;
+      const name = c.customers?.name?.toLowerCase() ?? "";
+      const phone = c.customers?.phone?.toLowerCase() ?? "";
+      return name.includes(q) || phone.includes(q);
+    });
+  }, [convos, filter, search, user?.id]);
+
   useEffect(() => {
-    if (!activeId && convos[0]) setActiveId(convos[0].id);
-  }, [convos, activeId]);
+    if (!activeId && filtered[0]) setActiveId(filtered[0].id);
+    if (activeId && !filtered.some((c) => c.id === activeId) && filtered[0]) {
+      setActiveId(filtered[0].id);
+    }
+  }, [filtered, activeId]);
 
   if (convos.length === 0) {
     const notConnected = !channel || channel.status !== "connected";
@@ -119,63 +203,165 @@ function ChatsPage() {
     );
   }
 
-
-
   return (
     <AppShell>
       <div className="flex h-full">
-        <div className="w-[320px] shrink-0 border-r border-border overflow-y-auto">
-          <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Bandeja
+        {/* LEFT: filters + list */}
+        <div className="flex w-[320px] shrink-0 flex-col border-r border-border">
+          <div className="flex items-center justify-between gap-2 px-4 py-3">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Bandeja Unificada
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
+                  rtOk
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "bg-muted text-muted-foreground",
+                )}
+                title={rtOk ? "Conectado en tiempo real" : "Reconectando…"}
+              >
+                <Radio className="h-2.5 w-2.5" />
+                {rtOk ? "Live" : "…"}
+              </span>
+              <button
+                onClick={() => refetch()}
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                title="Refrescar"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-          <ul>
-            {convos.map((c) => (
-              <li key={c.id}>
-                <button
-                  onClick={() => setActiveId(c.id)}
-                  className={cn(
-                    "block w-full border-l-2 px-4 py-3 text-left transition-colors hover:bg-secondary/50",
-                    activeId === c.id
-                      ? "border-primary bg-secondary/40"
-                      : "border-transparent",
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="truncate text-sm font-medium">
-                      {c.customers?.name ?? c.customers?.phone ?? "Sin nombre"}
-                    </div>
-                    {c.last_message_at && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(c.last_message_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="truncate text-xs text-muted-foreground">
-                      {c.customers?.phone}
-                    </span>
-                    {c.is_demo && (
-                      <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
-                        Demo
-                      </span>
-                    )}
-                    {c.ai_paused && (
-                      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                        IA off
-                      </span>
-                    )}
-                  </div>
-                </button>
-              </li>
+
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar nombre o teléfono…"
+                className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-2 text-xs outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1 px-3 pb-2">
+            {(
+              [
+                ["all", "Todas", counts.all],
+                ["mine", "Míos", counts.mine],
+                ["unassigned", "Sin asignar", counts.unassigned],
+                ["unread", "Sin leer", counts.unread],
+                ["resolved", "Resueltos", counts.resolved],
+              ] as const
+            ).map(([k, label, n]) => (
+              <button
+                key={k}
+                onClick={() => setFilter(k as FilterKey)}
+                className={cn(
+                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
+                  filter === k
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+                <span className="opacity-70">{n}</span>
+              </button>
             ))}
+          </div>
+
+          <ul className="flex-1 overflow-y-auto">
+            {filtered.map((c) => {
+              const mine = c.assignee_id === user?.id;
+              return (
+                <li key={c.id}>
+                  <button
+                    onClick={() => setActiveId(c.id)}
+                    className={cn(
+                      "block w-full border-l-2 px-4 py-3 text-left transition-colors hover:bg-secondary/50",
+                      activeId === c.id
+                        ? "border-primary bg-secondary/40"
+                        : "border-transparent",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="truncate text-sm font-medium">
+                        {c.customers?.name ?? c.customers?.phone ?? "Sin nombre"}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {c.unread_count > 0 && (
+                          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                            {c.unread_count}
+                          </span>
+                        )}
+                        {c.last_message_at && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(c.last_message_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                      <span className="truncate text-xs text-muted-foreground">
+                        {c.customers?.phone}
+                      </span>
+                      {c.is_demo && (
+                        <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                          Demo
+                        </span>
+                      )}
+                      {c.ai_paused && (
+                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                          IA off
+                        </span>
+                      )}
+                      {!c.assignee_id ? (
+                        <span className="rounded bg-rose-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400">
+                          Sin asignar
+                        </span>
+                      ) : mine ? (
+                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                          Míos
+                        </span>
+                      ) : null}
+                      {c.customers?.tags?.slice(0, 2).map((t) => (
+                        <span
+                          key={t}
+                          className="rounded bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                        >
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+            {filtered.length === 0 && (
+              <li className="px-4 py-8 text-center text-xs text-muted-foreground">
+                Sin conversaciones en este filtro.
+              </li>
+            )}
           </ul>
         </div>
+
+        {/* CENTER: chat */}
         <div className="flex-1 overflow-hidden">
           {activeId ? <ChatView conversationId={activeId} /> : null}
         </div>
+
+        {/* RIGHT: context */}
+        {activeId && (
+          <div className="hidden w-[340px] shrink-0 flex-col border-l border-border xl:flex">
+            <ContextSidebar conversationId={activeId} />
+          </div>
+        )}
       </div>
     </AppShell>
   );
@@ -187,15 +373,22 @@ type Message = {
   direction: "inbound" | "outbound";
   created_at: string;
   status: string;
+  sender_id: string | null;
 };
 
 function ChatView({ conversationId }: { conversationId: string }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const sendFn = useServerFn(sendWhatsAppMessage);
   const pauseFn = useServerFn(toggleConversationAiPause);
+  const takeFn = useServerFn(takeConversation);
+  const assignFn = useServerFn(assignConversation);
+  const statusFn = useServerFn(setConversationStatus);
+  const markReadFn = useServerFn(markConversationRead);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: messages = [] } = useQuery({
@@ -203,7 +396,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
     queryFn: async (): Promise<Message[]> => {
       const { data, error } = await supabase
         .from("messages")
-        .select("id, body, direction, created_at, status")
+        .select("id, body, direction, created_at, status, sender_id")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(500);
@@ -217,10 +410,18 @@ function ChatView({ conversationId }: { conversationId: string }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("conversations")
-        .select("id, is_demo, ai_paused, customers(name, phone)")
+        .select("id, is_demo, ai_paused, assignee_id, status, customer_id, customers(name, phone)")
         .eq("id", conversationId)
         .maybeSingle();
       return data;
+    },
+  });
+
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["team-members"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name, email");
+      return (data as { id: string; full_name: string | null; email: string | null }[]) ?? [];
     },
   });
 
@@ -228,15 +429,27 @@ function ChatView({ conversationId }: { conversationId: string }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages.length]);
 
+  // Auto mark-read when opening
+  useEffect(() => {
+    markReadFn({ data: { conversation_id: conversationId } }).catch(() => {});
+  }, [conversationId, markReadFn]);
+
   const header = useMemo(
     () => ({
-      name: (convo as any)?.customers?.name ?? (convo as any)?.customers?.phone ?? "Conversación",
+      name:
+        (convo as any)?.customers?.name ??
+        (convo as any)?.customers?.phone ??
+        "Conversación",
       phone: (convo as any)?.customers?.phone ?? "",
       isDemo: Boolean((convo as any)?.is_demo),
       aiPaused: Boolean((convo as any)?.ai_paused),
+      assigneeId: (convo as any)?.assignee_id as string | null,
+      status: ((convo as any)?.status as string) ?? "open",
     }),
     [convo],
   );
+
+  const assignee = teamMembers.find((m) => m.id === header.assigneeId);
 
   async function send() {
     const value = text.trim();
@@ -269,8 +482,41 @@ function ChatView({ conversationId }: { conversationId: string }) {
     }
   }
 
+  async function handleTake() {
+    try {
+      await takeFn({ data: { conversation_id: conversationId } });
+      toast.success("Conversación asignada a ti");
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function handleAssign(assigneeId: string | null) {
+    try {
+      await assignFn({ data: { conversation_id: conversationId, assignee_id: assigneeId } });
+      toast.success(assigneeId ? "Reasignado" : "Sin responsable");
+      setShowAssign(false);
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function handleResolve() {
+    try {
+      const newStatus = header.status === "resolved" ? "open" : "resolved";
+      await statusFn({ data: { conversation_id: conversationId, status: newStatus as any } });
+      toast.success(newStatus === "resolved" ? "Conversación resuelta" : "Reabierta");
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
   return (
     <div className="flex h-full flex-col">
+      {/* Header */}
       <div className="flex items-center gap-3 border-b border-border px-5 py-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-semibold text-primary-foreground">
           {(header.name[0] ?? "?").toUpperCase()}
@@ -283,9 +529,70 @@ function ChatView({ conversationId }: { conversationId: string }) {
                 Demo
               </span>
             )}
+            {header.status === "resolved" && (
+              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                Resuelto
+              </span>
+            )}
           </div>
           <div className="text-xs text-muted-foreground">{header.phone}</div>
         </div>
+
+        {/* Assignment control */}
+        <div className="relative">
+          {header.assigneeId ? (
+            <button
+              onClick={() => setShowAssign((s) => !s)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium hover:bg-secondary"
+              title="Reasignar"
+            >
+              <UserCheck className="h-3 w-3" />
+              {assignee?.full_name ?? assignee?.email ?? "Asignado"}
+            </button>
+          ) : (
+            <button
+              onClick={handleTake}
+              className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-500/20"
+              title="Tomar conversación"
+            >
+              <UserPlus className="h-3 w-3" />
+              Tomar
+            </button>
+          )}
+          {showAssign && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border border-border bg-popover p-1 shadow-lg">
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
+                Asignar a
+              </div>
+              {teamMembers.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleAssign(m.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-secondary",
+                    m.id === header.assigneeId && "bg-secondary",
+                  )}
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-primary text-[9px] font-bold text-primary-foreground">
+                    {(m.full_name ?? m.email ?? "?")[0]?.toUpperCase()}
+                  </div>
+                  <span className="flex-1 truncate">
+                    {m.full_name ?? m.email}
+                    {m.id === user?.id && " (tú)"}
+                  </span>
+                </button>
+              ))}
+              <div className="my-1 border-t border-border" />
+              <button
+                onClick={() => handleAssign(null)}
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-secondary"
+              >
+                <X className="h-3 w-3" /> Quitar responsable
+              </button>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={togglePause}
           disabled={togglingPause}
@@ -306,35 +613,67 @@ function ChatView({ conversationId }: { conversationId: string }) {
           )}
           {header.aiPaused ? "Reactivar IA" : "Pausar IA"}
         </button>
+
+        <button
+          onClick={handleResolve}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium",
+            header.status === "resolved"
+              ? "border-border text-muted-foreground hover:bg-secondary"
+              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20",
+          )}
+          title={header.status === "resolved" ? "Reabrir" : "Marcar como resuelto"}
+        >
+          {header.status === "resolved" ? (
+            <>
+              <Circle className="h-3 w-3" /> Reabrir
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-3 w-3" /> Resolver
+            </>
+          )}
+        </button>
       </div>
+
+      {/* Messages */}
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-5 py-4">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn(
-              "flex",
-              m.direction === "outbound" ? "justify-end" : "justify-start",
-            )}
-          >
+        {messages.map((m) => {
+          const fromAi = m.direction === "outbound" && !m.sender_id;
+          return (
             <div
-              className={cn(
-                "max-w-[70%] rounded-2xl px-3.5 py-2 text-sm",
-                m.direction === "outbound"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-foreground",
-              )}
+              key={m.id}
+              className={cn("flex", m.direction === "outbound" ? "justify-end" : "justify-start")}
             >
-              <div className="whitespace-pre-wrap break-words">{m.body}</div>
-              <div className="mt-1 text-[10px] opacity-70">
-                {new Date(m.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <div
+                className={cn(
+                  "max-w-[70%] rounded-2xl px-3.5 py-2 text-sm",
+                  m.direction === "outbound"
+                    ? fromAi
+                      ? "bg-primary/85 text-primary-foreground ring-1 ring-primary/40"
+                      : "bg-primary text-primary-foreground"
+                    : "bg-secondary text-foreground",
+                )}
+              >
+                {fromAi && (
+                  <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase opacity-80">
+                    <Sparkles className="h-2.5 w-2.5" /> IA
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                <div className="mt-1 text-[10px] opacity-70">
+                  {new Date(m.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Composer */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -345,7 +684,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Escribe un mensaje…"
+          placeholder={header.aiPaused ? "Escribe (IA pausada)…" : "Escribe un mensaje…"}
           className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary"
         />
         <button
@@ -358,4 +697,350 @@ function ChatView({ conversationId }: { conversationId: string }) {
       </form>
     </div>
   );
+}
+
+// ================= Context Sidebar =================
+function ContextSidebar({ conversationId }: { conversationId: string }) {
+  const qc = useQueryClient();
+  const noteFn = useServerFn(addConversationNote);
+  const updCustomer = useServerFn(updateCustomer);
+  const [newNote, setNewNote] = useState("");
+  const [newTag, setNewTag] = useState("");
+
+  const { data: convo } = useQuery({
+    queryKey: ["conversation-ctx", conversationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("conversations")
+        .select(
+          "id, customer_id, created_at, customers(id, name, phone, tags, stage, notes, created_at)",
+        )
+        .eq("id", conversationId)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const { data: notes = [] } = useQuery({
+    queryKey: ["conversation-notes", conversationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("conversation_notes")
+        .select("id, body, created_at, author_id")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data as any[]) ?? [];
+    },
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["conversation-events", conversationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("conversation_events")
+        .select("id, event_type, payload, created_at, actor_id")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return (data as any[]) ?? [];
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`conv-ctx-${conversationId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_notes", filter: `conversation_id=eq.${conversationId}` },
+        () => qc.invalidateQueries({ queryKey: ["conversation-notes", conversationId] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_events", filter: `conversation_id=eq.${conversationId}` },
+        () => qc.invalidateQueries({ queryKey: ["conversation-events", conversationId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [conversationId, qc]);
+
+  const customer = convo?.customers;
+  const isNewLead =
+    customer?.created_at && Date.now() - new Date(customer.created_at).getTime() < 1000 * 60 * 60 * 24 * 3;
+
+  async function submitNote() {
+    const v = newNote.trim();
+    if (!v) return;
+    try {
+      await noteFn({ data: { conversation_id: conversationId, body: v } });
+      setNewNote("");
+      qc.invalidateQueries({ queryKey: ["conversation-notes", conversationId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function addTag() {
+    const v = newTag.trim();
+    if (!v || !customer) return;
+    const next = Array.from(new Set([...(customer.tags ?? []), v]));
+    try {
+      await updCustomer({ data: { customer_id: customer.id, tags: next } });
+      setNewTag("");
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function removeTag(t: string) {
+    if (!customer) return;
+    const next = (customer.tags ?? []).filter((x: string) => x !== t);
+    try {
+      await updCustomer({ data: { customer_id: customer.id, tags: next } });
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  async function setStage(stage: string | null) {
+    if (!customer) return;
+    try {
+      await updCustomer({ data: { customer_id: customer.id, stage } });
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error");
+    }
+  }
+
+  if (!customer) {
+    return (
+      <div className="flex h-full items-center justify-center p-6 text-xs text-muted-foreground">
+        Cargando ficha…
+      </div>
+    );
+  }
+
+  const stages = ["nuevo", "contactado", "calificado", "propuesta", "ganado", "perdido"];
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto">
+      {/* Customer header */}
+      <div className="border-b border-border px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-primary text-sm font-semibold text-primary-foreground">
+            {(customer.name?.[0] ?? customer.phone?.[0] ?? "?").toUpperCase()}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <div className="truncate text-sm font-semibold">{customer.name ?? "Sin nombre"}</div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              <span className="truncate">{customer.phone}</span>
+            </div>
+          </div>
+        </div>
+        {isNewLead && (
+          <div className="mt-3 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+            🌱 Nuevo Lead
+          </div>
+        )}
+        <div className="mt-3">
+          <Link
+            to="/clientes"
+            className="flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium hover:bg-secondary"
+          >
+            <UsersIcon className="h-3 w-3" /> Ver ficha completa en CRM
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Stage */}
+      <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
+        <div className="flex flex-wrap gap-1">
+          {stages.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStage(customer.stage === s ? null : s)}
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize transition",
+                customer.stage === s
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Tags */}
+      <Section icon={<Tag className="h-3.5 w-3.5" />} title="Etiquetas">
+        <div className="flex flex-wrap gap-1">
+          {(customer.tags ?? []).map((t: string) => (
+            <span
+              key={t}
+              className="group flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px]"
+            >
+              #{t}
+              <button onClick={() => removeTag(t)} className="opacity-50 hover:opacity-100">
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-1">
+          <input
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTag();
+              }
+            }}
+            placeholder="Añadir etiqueta…"
+            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] outline-none focus:border-primary"
+          />
+          <button
+            onClick={addTag}
+            className="rounded-md bg-primary px-2 text-primary-foreground disabled:opacity-50"
+            disabled={!newTag.trim()}
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        </div>
+      </Section>
+
+      {/* Notes */}
+      <Section icon={<StickyNote className="h-3.5 w-3.5" />} title="Notas internas">
+        <div className="space-y-2">
+          <div className="flex gap-1">
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Añadir nota interna (solo visible para tu equipo)…"
+              rows={2}
+              className="flex-1 resize-none rounded-md border border-border bg-background px-2 py-1 text-[11px] outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            onClick={submitNote}
+            disabled={!newNote.trim()}
+            className="w-full rounded-md bg-primary py-1 text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            Guardar nota
+          </button>
+          <div className="max-h-48 space-y-1.5 overflow-y-auto">
+            {notes.map((n) => (
+              <div key={n.id} className="rounded-md bg-secondary/60 px-2 py-1.5 text-[11px]">
+                <div className="whitespace-pre-wrap">{n.body}</div>
+                <div className="mt-0.5 text-[9px] text-muted-foreground">
+                  {new Date(n.created_at).toLocaleString()}
+                </div>
+              </div>
+            ))}
+            {notes.length === 0 && (
+              <div className="text-[10px] text-muted-foreground">Sin notas aún.</div>
+            )}
+          </div>
+        </div>
+      </Section>
+
+      {/* Audit */}
+      <Section icon={<History className="h-3.5 w-3.5" />} title="Historial de acciones">
+        <div className="space-y-1">
+          {events.map((e) => (
+            <div key={e.id} className="text-[10px] text-muted-foreground">
+              <span className="font-medium text-foreground">{eventLabel(e.event_type)}</span>
+              {" · "}
+              {new Date(e.created_at).toLocaleString()}
+            </div>
+          ))}
+          {events.length === 0 && (
+            <div className="text-[10px] text-muted-foreground">Sin eventos.</div>
+          )}
+        </div>
+      </Section>
+
+      {/* Coming soon integrations */}
+      <Section icon={<Sparkles className="h-3.5 w-3.5" />} title="Acciones comerciales">
+        <div className="grid grid-cols-2 gap-1.5">
+          <ComingSoon icon={<ShoppingBag className="h-3 w-3" />} label="Nuevo pedido" />
+          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Cotización" />
+          <ComingSoon icon={<Calendar className="h-3 w-3" />} label="Agendar" />
+          <ComingSoon icon={<Building2 className="h-3 w-3" />} label="Oportunidad" />
+        </div>
+      </Section>
+
+      <Section icon={<ShoppingBag className="h-3.5 w-3.5" />} title="Historial de compras">
+        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
+          <Lock className="mx-auto mb-1 h-3 w-3" />
+          Próximamente — al conectar el módulo de Pedidos.
+        </div>
+      </Section>
+
+      <Section icon={<Calendar className="h-3.5 w-3.5" />} title="Agenda y campañas">
+        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
+          <Lock className="mx-auto mb-1 h-3 w-3" />
+          Próximamente — módulos de Agenda, Campañas y Automatizaciones.
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-border px-4 py-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {icon}
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ComingSoon({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      disabled
+      className="flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1.5 text-[10px] text-muted-foreground opacity-70"
+      title="Próximamente"
+    >
+      {icon}
+      <span className="flex-1 truncate text-left">{label}</span>
+      <Lock className="h-2.5 w-2.5" />
+    </button>
+  );
+}
+
+function eventLabel(type: string) {
+  switch (type) {
+    case "assigned":
+      return "Conversación asignada";
+    case "reassigned":
+      return "Conversación reasignada";
+    case "unassigned":
+      return "Responsable retirado";
+    case "taken":
+      return "Un agente tomó la conversación";
+    case "status_changed":
+      return "Estado actualizado";
+    default:
+      return type;
+  }
 }
