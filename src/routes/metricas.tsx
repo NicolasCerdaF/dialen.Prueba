@@ -301,78 +301,9 @@ function MetricasPage() {
             />
           </Section>
 
-          {/* Clientes / CRM */}
+          {/* IA (compacto, sólo lo que sirve para vender) */}
           <Section
-            title="CRM · Clientes"
-            source="/clientes"
-            icon={<Users className="h-3.5 w-3.5" />}
-          >
-            <Kpi
-              icon={<Users className="h-4 w-4" />}
-              label="Total en CRM"
-              value={m?.totalCustomers ?? 0}
-              tooltip="Todos los clientes registrados."
-              to="/clientes"
-            />
-            <Kpi
-              icon={<UserPlus className="h-4 w-4" />}
-              label="Nuevos (30d)"
-              value={m?.newCustomers ?? 0}
-              tooltip="Clientes creados en los últimos 30 días."
-              to="/clientes"
-            />
-            <Kpi
-              icon={<UserCheck className="h-4 w-4" />}
-              label="Activos (30d)"
-              value={
-                (m?.totalCustomers ?? 0) - (m?.inactiveCustomers ?? 0)
-              }
-              tooltip="Clientes con actividad en los últimos 30 días."
-              to="/clientes"
-            />
-            <Kpi
-              icon={<UserX className="h-4 w-4" />}
-              label="Inactivos"
-              value={m?.inactiveCustomers ?? 0}
-              tooltip="Clientes sin conversación en los últimos 30 días."
-              to="/clientes"
-            />
-            <Kpi
-              icon={<Star className="h-4 w-4" />}
-              label="VIP"
-              value={m?.vipCustomers ?? 0}
-              tooltip="Clientes con etiqueta VIP."
-              to="/clientes"
-              accent={!!m?.vipCustomers}
-            />
-            <Kpi
-              icon={<Repeat className="h-4 w-4" />}
-              label="Recurrentes"
-              value={m?.recurringCustomers ?? 0}
-              tooltip="Clientes con 2 o más conversaciones."
-              to="/clientes"
-            />
-            <Kpi
-              icon={<UsersRound className="h-4 w-4" />}
-              label="Agentes del equipo"
-              value={m?.teamMembers ?? 0}
-              tooltip="Miembros de tu empresa en Dialen."
-              to="/configuracion"
-            />
-            <Kpi
-              icon={<UserX className="h-4 w-4" />}
-              label="Sin responsable"
-              value={m?.unassignedConversations ?? 0}
-              tooltip="Conversaciones abiertas sin agente asignado."
-              to="/"
-              tone={m && m.unassignedConversations > 0 ? "warn" : undefined}
-            />
-          </Section>
-
-          {/* IA */}
-          <Section
-            title="Inteligencia artificial"
-            source="/conocimiento"
+            title="IA vendiendo"
             icon={<Sparkles className="h-3.5 w-3.5" />}
           >
             <Kpi
@@ -402,120 +333,20 @@ function MetricasPage() {
               value={m?.aiAccepted ?? 0}
               tooltip="Sugerencias que los agentes enviaron al cliente."
             />
-            <Kpi
-              icon={<Target className="h-4 w-4" />}
-              label="Confianza promedio"
-              value={m?.aiAvgConfidence ? `${m.aiAvgConfidence}%` : "—"}
-              tooltip="Confianza estimada de las respuestas generadas por IA."
-            />
-            <Kpi
-              icon={<DollarSign className="h-4 w-4" />}
-              label="Costo IA (30d)"
-              value="—"
-              tooltip="Se activará cuando conectemos la telemetría de costos."
-              locked
-            />
           </Section>
 
-          {/* Gráfico + ranking */}
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <div className="font-display text-sm font-semibold">
-                    Actividad diaria
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Mensajes entrantes vs. respuestas enviadas
-                  </div>
-                </div>
-                <Legend />
-              </div>
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={m?.series ?? []}
-                    margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="g-in" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="g-out" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="0%"
-                          stopColor="hsl(var(--muted-foreground))"
-                          stopOpacity={0.25}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="hsl(var(--muted-foreground))"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(d: string) => d.slice(5)}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      stroke="hsl(var(--border))"
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      stroke="hsl(var(--border))"
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="inbound"
-                      name="Recibidos"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      fill="url(#g-in)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="outbound"
-                      name="Enviados"
-                      stroke="hsl(var(--muted-foreground))"
-                      strokeWidth={2}
-                      fill="url(#g-out)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              {m && m.inbound + m.outbound === 0 && (
-                <p className="mt-4 text-center text-xs text-muted-foreground">
-                  Aún no hay datos. Cuando llegue tu primer mensaje, esto se llenará
-                  automáticamente.
-                </p>
-              )}
-            </div>
-
+          {/* Ranking de vendedores (única vista secundaria que se conserva) */}
+          <section className="mt-8">
             <div className="rounded-2xl border border-border bg-card p-6">
               <div className="mb-4 flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-primary" />
                 <div className="font-display text-sm font-semibold">
-                  Ranking de vendedores
+                  Ranking de vendedores (30d)
                 </div>
               </div>
               {m && m.sellers.length > 0 ? (
-                <ol className="space-y-3">
-                  {m.sellers.map((s, i) => (
+                <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {m.sellers.slice(0, 6).map((s, i) => (
                     <li
                       key={s.sender_id}
                       className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5"
@@ -546,59 +377,8 @@ function MetricasPage() {
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Sección: Ventas (próximamente) */}
-          <Section
-            title="Ventas · Embudo"
-            icon={<TrendingUp className="h-3.5 w-3.5" />}
-            comingSoon
-          >
-            <Kpi icon={<DollarSign className="h-4 w-4" />} label="Ventas hoy" value="—" tooltip="Requiere módulo de pedidos." locked />
-            <Kpi icon={<DollarSign className="h-4 w-4" />} label="Ventas del mes" value="—" tooltip="Requiere módulo de pedidos." locked />
-            <Kpi icon={<Target className="h-4 w-4" />} label="Tasa conversión" value="—" tooltip="Requiere embudo de ventas." locked />
-            <Kpi icon={<Receipt className="h-4 w-4" />} label="Ticket promedio" value="—" tooltip="Requiere módulo de pedidos." locked />
-            <Kpi icon={<TrendingUp className="h-4 w-4" />} label="Negocios ganados" value="—" tooltip="Requiere embudo de ventas." locked />
-            <Kpi icon={<AlertCircle className="h-4 w-4" />} label="Negocios perdidos" value="—" tooltip="Requiere embudo de ventas." locked />
-            <Kpi icon={<Clock className="h-4 w-4" />} label="Tiempo por etapa" value="—" tooltip="Requiere embudo de ventas." locked />
-            <Kpi icon={<DollarSign className="h-4 w-4" />} label="Valor pipeline" value="—" tooltip="Requiere embudo de ventas." locked />
-          </Section>
-
-          {/* Operaciones (próximamente) */}
-          <Section
-            title="Operaciones"
-            icon={<Package className="h-3.5 w-3.5" />}
-            comingSoon
-          >
-            <Kpi icon={<Package className="h-4 w-4" />} label="Productos activos" value="—" tooltip="Requiere catálogo." locked />
-            <Kpi icon={<AlertCircle className="h-4 w-4" />} label="Stock bajo" value="—" tooltip="Requiere catálogo." locked />
-            <Kpi icon={<ShoppingCart className="h-4 w-4" />} label="Pedidos pendientes" value="—" tooltip="Requiere módulo de pedidos." locked />
-            <Kpi icon={<Calendar className="h-4 w-4" />} label="Reuniones hoy" value="—" tooltip="Requiere agenda." locked />
-          </Section>
-
-          {/* IA + Automatización + Campañas (próximamente) */}
-          <Section
-            title="Automatización · Campañas"
-            icon={<Zap className="h-3.5 w-3.5" />}
-            comingSoon
-          >
-            <Kpi icon={<Zap className="h-4 w-4" />} label="Flujos activos" value="—" tooltip="Requiere automatizaciones." locked />
-            <Kpi icon={<AlertCircle className="h-4 w-4" />} label="Flujos con error" value="—" tooltip="Requiere automatizaciones." locked />
-            <Kpi icon={<Megaphone className="h-4 w-4" />} label="Campañas activas" value="—" tooltip="Requiere módulo de campañas." locked />
-            <Kpi icon={<Target className="h-4 w-4" />} label="ROI campañas" value="—" tooltip="Requiere módulo de campañas." locked />
-          </Section>
-
-          {/* SaaS + Supervisión (próximamente) */}
-          <Section
-            title="SaaS · Supervisión"
-            icon={<ShieldCheck className="h-3.5 w-3.5" />}
-            comingSoon
-          >
-            <Kpi icon={<ShieldCheck className="h-4 w-4" />} label="Supervisiones activas" value="—" tooltip="Requiere supervisor en vivo." locked />
-            <Kpi icon={<CreditCard className="h-4 w-4" />} label="MRR" value="—" tooltip="Requiere facturación del SaaS." locked />
-            <Kpi icon={<Repeat className="h-4 w-4" />} label="Renovaciones próximas" value="—" tooltip="Requiere facturación del SaaS." locked />
-            <Kpi icon={<Users className="h-4 w-4" />} label="Suscriptores activos" value="—" tooltip="Requiere facturación del SaaS." locked />
-          </Section>
 
           <p className="mt-8 text-center text-xs text-muted-foreground">
             Este panel agrega datos en vivo de todos los módulos. Ninguna métrica se
