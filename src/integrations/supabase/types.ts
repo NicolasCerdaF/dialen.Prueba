@@ -374,6 +374,8 @@ export type Database = {
           ai_response_style: string
           created_at: string
           demo_mode: boolean
+          follow_up_enabled: boolean
+          follow_up_hours: number
           id: string
           language: string
           name: string
@@ -388,6 +390,8 @@ export type Database = {
           ai_response_style?: string
           created_at?: string
           demo_mode?: boolean
+          follow_up_enabled?: boolean
+          follow_up_hours?: number
           id?: string
           language?: string
           name: string
@@ -402,6 +406,8 @@ export type Database = {
           ai_response_style?: string
           created_at?: string
           demo_mode?: boolean
+          follow_up_enabled?: boolean
+          follow_up_hours?: number
           id?: string
           language?: string
           name?: string
