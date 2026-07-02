@@ -286,37 +286,160 @@ export type Database = {
           },
         ]
       }
-      customers: {
+      customer_events: {
         Row: {
+          actor_id: string | null
           company_id: string
           created_at: string
+          customer_id: string
+          event_type: string
           id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          customer_id: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          assignee_id: string | null
+          channel: string | null
+          company: string | null
+          company_id: string
+          created_at: string
+          custom_fields: Json | null
+          email: string | null
+          estimated_value: number | null
+          id: string
+          last_interaction_at: string | null
           name: string | null
+          next_activity_at: string | null
           notes: string | null
           phone: string
+          position: string | null
+          priority: string | null
           stage: string | null
+          status: string | null
           tags: string[] | null
           updated_at: string
         }
         Insert: {
+          assignee_id?: string | null
+          channel?: string | null
+          company?: string | null
           company_id: string
           created_at?: string
+          custom_fields?: Json | null
+          email?: string | null
+          estimated_value?: number | null
           id?: string
+          last_interaction_at?: string | null
           name?: string | null
+          next_activity_at?: string | null
           notes?: string | null
           phone: string
+          position?: string | null
+          priority?: string | null
           stage?: string | null
+          status?: string | null
           tags?: string[] | null
           updated_at?: string
         }
         Update: {
+          assignee_id?: string | null
+          channel?: string | null
+          company?: string | null
           company_id?: string
           created_at?: string
+          custom_fields?: Json | null
+          email?: string | null
+          estimated_value?: number | null
           id?: string
+          last_interaction_at?: string | null
           name?: string | null
+          next_activity_at?: string | null
           notes?: string | null
           phone?: string
+          position?: string | null
+          priority?: string | null
           stage?: string | null
+          status?: string | null
           tags?: string[] | null
           updated_at?: string
         }

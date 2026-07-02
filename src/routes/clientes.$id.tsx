@@ -1,0 +1,915 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  Building2,
+  Briefcase,
+  Star,
+  Tag as TagIcon,
+  X,
+  Plus,
+  Save,
+  MessageSquare,
+  StickyNote,
+  History,
+  Paperclip,
+  Sliders,
+  Lock,
+  User,
+  Send,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { AppShell } from "@/components/app-shell";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  getCustomer,
+  updateCrmCustomer,
+  addCustomerNote,
+  deleteCustomerNote,
+  getCustomerTimeline,
+  listTeamMembers,
+  type CrmCustomer,
+  type TimelineItem,
+} from "@/lib/crm.functions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/clientes/$id")({
+  head: () => ({ meta: [{ title: "Ficha de cliente — Dialen" }] }),
+  component: CustomerDetailPage,
+});
+
+function CustomerDetailPage() {
+  const { id } = Route.useParams();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const get = useServerFn(getCustomer);
+  const timelineFn = useServerFn(getCustomerTimeline);
+  const teamFn = useServerFn(listTeamMembers);
+
+  const { data: customer, refetch } = useQuery({
+    queryKey: ["crm-customer", id],
+    queryFn: () => get({ data: { id } }),
+  });
+
+  const { data: timeline = [], refetch: refetchTimeline } = useQuery({
+    queryKey: ["crm-timeline", id],
+    queryFn: () => timelineFn({ data: { customer_id: id } }),
+  });
+
+  const { data: team = [] } = useQuery({
+    queryKey: ["crm-team"],
+    queryFn: () => teamFn(),
+  });
+
+  // Realtime: refresh customer + timeline on relevant changes
+  useEffect(() => {
+    const ch = supabase
+      .channel(`crm-detail-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `id=eq.${id}` }, () => refetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "customer_events", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
+      .on("postgres_changes", { event: "*", schema: "public", table: "customer_notes", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [id, refetch, refetchTimeline]);
+
+  if (!customer) {
+    return (
+      <AppShell>
+        <div className="p-10 text-sm text-muted-foreground">Cargando ficha…</div>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell>
+      <div className="flex h-full flex-col overflow-hidden">
+        <header className="border-b bg-background/80 px-6 py-4 backdrop-blur">
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <button
+              onClick={() => navigate({ to: "/clientes" })}
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <ArrowLeft className="h-3 w-3" /> CRM · Clientes
+            </button>
+            <span>/</span>
+            <span className="text-foreground">{customer.name ?? customer.phone}</span>
+          </div>
+          <CustomerHeader
+            customer={customer}
+            team={team}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ["crm-customer", id] });
+              qc.invalidateQueries({ queryKey: ["crm-timeline", id] });
+            }}
+          />
+        </header>
+
+        <div className="flex-1 overflow-hidden">
+          <Tabs defaultValue="summary" className="flex h-full flex-col">
+            <div className="border-b px-6">
+              <TabsList className="h-10">
+                <TabsTrigger value="summary">Resumen</TabsTrigger>
+                <TabsTrigger value="conversations">Conversaciones</TabsTrigger>
+                <TabsTrigger value="activity">Actividad</TabsTrigger>
+                <TabsTrigger value="notes">Notas</TabsTrigger>
+                <TabsTrigger value="tags">Etiquetas</TabsTrigger>
+                <TabsTrigger value="files">Archivos</TabsTrigger>
+                <TabsTrigger value="custom">Campos</TabsTrigger>
+                <TabsTrigger value="soon">Próximamente</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6">
+              <TabsContent value="summary" className="mt-0">
+                <SummaryTab customer={customer} team={team} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
+              </TabsContent>
+              <TabsContent value="conversations" className="mt-0">
+                <ConversationsTab customerId={customer.id} />
+              </TabsContent>
+              <TabsContent value="activity" className="mt-0">
+                <TimelineList items={timeline} team={team} />
+              </TabsContent>
+              <TabsContent value="notes" className="mt-0">
+                <NotesTab customerId={customer.id} />
+              </TabsContent>
+              <TabsContent value="tags" className="mt-0">
+                <TagsTab customer={customer} />
+              </TabsContent>
+              <TabsContent value="files" className="mt-0">
+                <SoonPlaceholder icon={Paperclip} title="Archivos" description="Adjuntos, documentos y contratos por cliente." />
+              </TabsContent>
+              <TabsContent value="custom" className="mt-0">
+                <CustomFieldsTab customer={customer} />
+              </TabsContent>
+              <TabsContent value="soon" className="mt-0">
+                <SoonGrid />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+// ---------- Header with quick edit ----------
+function CustomerHeader({
+  customer,
+  team,
+  onChanged,
+}: {
+  customer: CrmCustomer;
+  team: { id: string; full_name: string | null; email: string | null }[];
+  onChanged: () => void;
+}) {
+  const update = useServerFn(updateCrmCustomer);
+  const [stage, setStage] = useState(customer.stage ?? "");
+  const [priority, setPriority] = useState(customer.priority ?? "normal");
+  const [status, setStatus] = useState(customer.status ?? "active");
+  const [assignee, setAssignee] = useState(customer.assignee_id ?? "");
+  useEffect(() => {
+    setStage(customer.stage ?? "");
+    setPriority(customer.priority ?? "normal");
+    setStatus(customer.status ?? "active");
+    setAssignee(customer.assignee_id ?? "");
+  }, [customer.id, customer.stage, customer.priority, customer.status, customer.assignee_id]);
+
+  const commit = async (patch: Record<string, unknown>) => {
+    try {
+      await update({ data: { id: customer.id, ...patch } as any });
+      onChanged();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-lg font-semibold text-primary-foreground">
+          {(customer.name ?? customer.phone).slice(0, 2).toUpperCase()}
+        </div>
+        <div>
+          <h1 className="font-display text-xl font-semibold">
+            {customer.name ?? customer.phone}
+            {(customer.tags ?? []).includes("vip") && (
+              <Star className="ml-2 inline h-4 w-4 fill-yellow-500 text-yellow-500" />
+            )}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{customer.phone}</span>
+            {customer.email && <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{customer.email}</span>}
+            {customer.company && <span className="inline-flex items-center gap-1"><Building2 className="h-3 w-3" />{customer.company}</span>}
+            <span>Creado {new Date(customer.created_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <MiniSelect
+          label="Etapa"
+          value={stage}
+          onChange={(v) => {
+            setStage(v);
+            commit({ stage: v || null });
+          }}
+          options={["lead", "contactado", "propuesta", "negociacion", "ganado", "perdido"]}
+          allowEmpty
+        />
+        <MiniSelect
+          label="Prioridad"
+          value={priority}
+          onChange={(v) => {
+            setPriority(v);
+            commit({ priority: v });
+          }}
+          options={["low", "normal", "high", "urgent"]}
+        />
+        <MiniSelect
+          label="Estado"
+          value={status}
+          onChange={(v) => {
+            setStatus(v);
+            commit({ status: v });
+          }}
+          options={["active", "inactive", "archived"]}
+        />
+        <div className="flex items-center gap-1 text-xs">
+          <User className="h-3 w-3 text-muted-foreground" />
+          <select
+            value={assignee}
+            onChange={(e) => {
+              setAssignee(e.target.value);
+              commit({ assignee_id: e.target.value || null });
+            }}
+            className="rounded-md border bg-background px-2 py-1 text-xs"
+          >
+            <option value="">Sin responsable</option>
+            {team.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name ?? m.email}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniSelect({
+  label,
+  value,
+  onChange,
+  options,
+  allowEmpty,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  allowEmpty?: boolean;
+}) {
+  return (
+    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+      {label}:
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border bg-background px-2 py-1 text-xs text-foreground"
+      >
+        {allowEmpty && <option value="">—</option>}
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+// ---------- Summary tab (editable form) ----------
+function SummaryTab({
+  customer,
+  team,
+  onChanged,
+}: {
+  customer: CrmCustomer;
+  team: { id: string; full_name: string | null; email: string | null }[];
+  onChanged: () => void;
+}) {
+  const update = useServerFn(updateCrmCustomer);
+  const [form, setForm] = useState({
+    name: customer.name ?? "",
+    email: customer.email ?? "",
+    company: customer.company ?? "",
+    position: customer.position ?? "",
+    channel: customer.channel ?? "whatsapp",
+    estimated_value: customer.estimated_value ?? 0,
+    next_activity_at: customer.next_activity_at ? customer.next_activity_at.slice(0, 16) : "",
+    notes: customer.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setForm({
+      name: customer.name ?? "",
+      email: customer.email ?? "",
+      company: customer.company ?? "",
+      position: customer.position ?? "",
+      channel: customer.channel ?? "whatsapp",
+      estimated_value: customer.estimated_value ?? 0,
+      next_activity_at: customer.next_activity_at ? customer.next_activity_at.slice(0, 16) : "",
+      notes: customer.notes ?? "",
+    });
+  }, [customer.id]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await update({
+        data: {
+          id: customer.id,
+          name: form.name || null,
+          email: form.email || null,
+          company: form.company || null,
+          position: form.position || null,
+          channel: form.channel || null,
+          estimated_value: Number(form.estimated_value) || 0,
+          next_activity_at: form.next_activity_at ? new Date(form.next_activity_at).toISOString() : null,
+          notes: form.notes || null,
+        } as any,
+      });
+      toast.success("Ficha actualizada");
+      onChanged();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const responsible = team.find((t) => t.id === customer.assignee_id);
+
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="space-y-4 lg:col-span-2">
+        <Section title="Datos de contacto">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Nombre">
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </Field>
+            <Field label="Correo">
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </Field>
+            <Field label="Empresa">
+              <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+            </Field>
+            <Field label="Cargo">
+              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
+            </Field>
+            <Field label="Teléfono">
+              <Input value={customer.phone} disabled />
+            </Field>
+            <Field label="Canal de origen">
+              <select
+                value={form.channel}
+                onChange={(e) => setForm({ ...form, channel: e.target.value })}
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                {["whatsapp", "instagram", "messenger", "telegram", "email", "web", "manual"].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Comercial">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Valor estimado (USD)">
+              <Input
+                type="number"
+                value={form.estimated_value}
+                onChange={(e) => setForm({ ...form, estimated_value: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Próxima actividad">
+              <Input
+                type="datetime-local"
+                value={form.next_activity_at}
+                onChange={(e) => setForm({ ...form, next_activity_at: e.target.value })}
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Notas comerciales">
+          <Textarea
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            placeholder="Contexto general del cliente…"
+            className="min-h-[100px]"
+          />
+        </Section>
+
+        <div className="flex justify-end">
+          <Button onClick={save} disabled={saving}>
+            <Save className="h-4 w-4" /> Guardar cambios
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <Section title="Meta">
+          <dl className="space-y-2 text-sm">
+            <MetaRow label="Etapa" value={customer.stage ?? "—"} />
+            <MetaRow label="Estado" value={customer.status ?? "—"} />
+            <MetaRow label="Prioridad" value={customer.priority ?? "—"} />
+            <MetaRow
+              label="Responsable"
+              value={responsible ? responsible.full_name ?? responsible.email ?? "—" : "Sin asignar"}
+            />
+            <MetaRow
+              label="Última interacción"
+              value={
+                customer.last_interaction_at
+                  ? new Date(customer.last_interaction_at).toLocaleString()
+                  : "Sin interacción"
+              }
+            />
+            <MetaRow
+              label="Creado"
+              value={new Date(customer.created_at).toLocaleString()}
+            />
+          </dl>
+        </Section>
+        <Section title="Etiquetas rápidas">
+          <div className="flex flex-wrap gap-1">
+            {(customer.tags ?? []).length === 0 ? (
+              <span className="text-xs text-muted-foreground">Sin etiquetas</span>
+            ) : (
+              (customer.tags ?? []).map((t) => (
+                <span key={t} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs">
+                  <TagIcon className="h-3 w-3" /> {t}
+                </span>
+              ))
+            )}
+          </div>
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <h3 className="mb-3 text-sm font-semibold text-muted-foreground">{title}</h3>
+      {children}
+    </div>
+  );
+}
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="space-y-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-right text-sm">{value}</dd>
+    </div>
+  );
+}
+
+// ---------- Conversations tab ----------
+function ConversationsTab({ customerId }: { customerId: string }) {
+  const { data: convos = [] } = useQuery({
+    queryKey: ["crm-convos", customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("conversations")
+        .select("id, status, last_message_at, unread_count, ai_paused")
+        .eq("customer_id", customerId)
+        .order("last_message_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  if (convos.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+        Este cliente aún no tiene conversaciones. Cuando reciba un mensaje aparecerá aquí.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {convos.map((c) => (
+        <Link
+          key={c.id}
+          to="/"
+          className="flex items-center justify-between rounded-lg border bg-card p-3 text-sm hover:bg-secondary/40"
+        >
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <div className="font-medium">
+                Conversación · <span className="capitalize">{c.status}</span>
+                {c.unread_count > 0 && (
+                  <span className="ml-2 rounded-sm bg-primary/10 px-1.5 text-[10px] text-primary">
+                    {c.unread_count} sin leer
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Último mensaje:{" "}
+                {c.last_message_at ? new Date(c.last_message_at).toLocaleString() : "—"}
+              </div>
+            </div>
+          </div>
+          <span className="text-xs text-muted-foreground">Abrir en Bandeja →</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Notes tab ----------
+function NotesTab({ customerId }: { customerId: string }) {
+  const qc = useQueryClient();
+  const addFn = useServerFn(addCustomerNote);
+  const delFn = useServerFn(deleteCustomerNote);
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const { data: notes = [] } = useQuery({
+    queryKey: ["crm-notes", customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customer_notes")
+        .select("id, body, author_id, created_at")
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`notes-${customerId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "customer_notes", filter: `customer_id=eq.${customerId}` },
+        () => qc.invalidateQueries({ queryKey: ["crm-notes", customerId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [customerId, qc]);
+
+  const submit = async () => {
+    if (!body.trim()) return;
+    setSending(true);
+    try {
+      await addFn({ data: { customer_id: customerId, body: body.trim() } });
+      setBody("");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border bg-card p-4">
+        <Textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Escribe una nota interna (solo visible para tu equipo)…"
+          className="min-h-[80px]"
+        />
+        <div className="mt-2 flex justify-end">
+          <Button onClick={submit} disabled={sending || !body.trim()}>
+            <Send className="h-4 w-4" /> Guardar nota
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {notes.length === 0 ? (
+          <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+            Sin notas todavía.
+          </div>
+        ) : (
+          notes.map((n) => (
+            <div key={n.id} className="group rounded-lg border bg-card p-3 text-sm">
+              <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <StickyNote className="h-3 w-3" />
+                  {new Date(n.created_at).toLocaleString()}
+                </span>
+                <button
+                  onClick={async () => {
+                    await delFn({ data: { id: n.id } });
+                  }}
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Eliminar"
+                >
+                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                </button>
+              </div>
+              <div className="whitespace-pre-wrap">{n.body}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Tags tab ----------
+function TagsTab({ customer }: { customer: CrmCustomer }) {
+  const update = useServerFn(updateCrmCustomer);
+  const [tags, setTags] = useState<string[]>(customer.tags ?? []);
+  const [input, setInput] = useState("");
+  useEffect(() => {
+    setTags(customer.tags ?? []);
+  }, [customer.id, customer.tags]);
+
+  const commit = async (next: string[]) => {
+    setTags(next);
+    try {
+      await update({ data: { id: customer.id, tags: next } as any });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const add = () => {
+    const v = input.trim().toLowerCase();
+    if (!v || tags.includes(v)) return;
+    commit([...tags, v]);
+    setInput("");
+  };
+  const remove = (t: string) => commit(tags.filter((x) => x !== t));
+
+  const suggestions = ["vip", "lead", "cliente", "prospecto", "recurrente", "urgente"].filter(
+    (s) => !tags.includes(s),
+  );
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="rounded-xl border bg-card p-4">
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {tags.length === 0 && <span className="text-xs text-muted-foreground">Sin etiquetas</span>}
+          {tags.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs"
+            >
+              <TagIcon className="h-3 w-3" />
+              {t}
+              <button onClick={() => remove(t)} className="ml-1 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="Nueva etiqueta…"
+          />
+          <Button onClick={add} variant="outline">
+            <Plus className="h-4 w-4" /> Añadir
+          </Button>
+        </div>
+        {suggestions.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            <span className="text-xs text-muted-foreground">Sugeridas:</span>
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => commit([...tags, s])}
+                className="rounded-md border px-2 py-0.5 text-xs hover:bg-secondary"
+              >
+                + {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Custom fields tab ----------
+function CustomFieldsTab({ customer }: { customer: CrmCustomer }) {
+  const update = useServerFn(updateCrmCustomer);
+  const initial = (customer.custom_fields as Record<string, string>) ?? {};
+  const [rows, setRows] = useState<{ k: string; v: string }[]>(
+    Object.entries(initial).map(([k, v]) => ({ k, v: String(v) })),
+  );
+
+  useEffect(() => {
+    const init = (customer.custom_fields as Record<string, string>) ?? {};
+    setRows(Object.entries(init).map(([k, v]) => ({ k, v: String(v) })));
+  }, [customer.id]);
+
+  const save = async () => {
+    const obj: Record<string, string> = {};
+    for (const r of rows) if (r.k.trim()) obj[r.k.trim()] = r.v;
+    try {
+      await update({ data: { id: customer.id, custom_fields: obj } as any });
+      toast.success("Campos guardados");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl space-y-3">
+      <div className="rounded-xl border bg-card p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <Sliders className="h-4 w-4" />
+          Campos personalizados clave–valor
+        </div>
+        {rows.length === 0 && (
+          <div className="mb-3 text-xs text-muted-foreground">Sin campos definidos.</div>
+        )}
+        <div className="space-y-2">
+          {rows.map((r, i) => (
+            <div key={i} className="flex gap-2">
+              <Input
+                value={r.k}
+                onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, k: e.target.value } : x)))}
+                placeholder="clave"
+                className="w-40"
+              />
+              <Input
+                value={r.v}
+                onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, v: e.target.value } : x)))}
+                placeholder="valor"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setRows(rows.filter((_, j) => j !== i))}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button variant="outline" onClick={() => setRows([...rows, { k: "", v: "" }])}>
+            <Plus className="h-4 w-4" /> Añadir campo
+          </Button>
+          <Button onClick={save}>
+            <Save className="h-4 w-4" /> Guardar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Timeline ----------
+function TimelineList({
+  items,
+  team,
+}: {
+  items: TimelineItem[];
+  team: { id: string; full_name: string | null; email: string | null }[];
+}) {
+  const actorName = (id?: string | null) => {
+    if (!id) return "Sistema";
+    const m = team.find((t) => t.id === id);
+    return m?.full_name ?? m?.email ?? "Usuario";
+  };
+  if (items.length === 0) {
+    return <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">Sin actividad todavía.</div>;
+  }
+  return (
+    <ol className="relative space-y-3 border-l pl-6">
+      {items.map((it) => (
+        <li key={it.id} className="relative">
+          <span className={cn(
+            "absolute -left-[27px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background",
+            it.kind === "customer_note" || it.kind === "conversation_note" ? "bg-amber-500" :
+            it.kind === "created" ? "bg-emerald-500" : "bg-primary",
+          )} />
+          <div className="rounded-lg border bg-card p-3 text-sm">
+            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <History className="h-3 w-3" />
+                {new Date(it.created_at).toLocaleString()} · {actorName(it.actor_id)}
+              </span>
+              <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase">
+                {labelFor(it)}
+              </span>
+            </div>
+            <TimelineBody item={it} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+function labelFor(it: TimelineItem) {
+  if (it.kind === "customer_note") return "Nota CRM";
+  if (it.kind === "conversation_note") return "Nota en chat";
+  if (it.kind === "created") return "Creado";
+  return it.event_type ?? it.kind;
+}
+function TimelineBody({ item }: { item: TimelineItem }) {
+  if (item.kind === "customer_note" || item.kind === "conversation_note") {
+    return <div className="whitespace-pre-wrap">{item.body}</div>;
+  }
+  if (item.kind === "created") return <div>Contacto añadido al CRM.</div>;
+  if (item.event_type === "updated" && item.payload) {
+    const changes = (item.payload as { changes?: Record<string, { from: unknown; to: unknown }> }).changes ?? {};
+    const keys = Object.keys(changes);
+    if (keys.length === 0) return <div>Actualizado.</div>;
+    return (
+      <ul className="space-y-0.5 text-xs">
+        {keys.map((k) => (
+          <li key={k}>
+            <span className="font-medium">{k}:</span>{" "}
+            <span className="text-muted-foreground">{String(changes[k].from ?? "—")}</span>
+            {" → "}
+            <span>{String(changes[k].to ?? "—")}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return <div className="text-xs text-muted-foreground">{JSON.stringify(item.payload ?? {})}</div>;
+}
+
+// ---------- Placeholders ----------
+function SoonPlaceholder({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof Lock;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed bg-card p-8 text-center">
+      <Icon className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+      <div className="font-semibold">{title}</div>
+      <div className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{description}</div>
+      <span className="mt-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
+        Próximamente
+      </span>
+    </div>
+  );
+}
+function SoonGrid() {
+  const items: { title: string; description: string }[] = [
+    { title: "Pedidos", description: "Historial y estado de pedidos del cliente." },
+    { title: "Cotizaciones", description: "Propuestas comerciales enviadas y aceptadas." },
+    { title: "Facturación", description: "Facturas emitidas y estado de pagos." },
+    { title: "Campañas", description: "Campañas de marketing en las que participa." },
+    { title: "Agenda", description: "Reuniones y actividades programadas." },
+    { title: "Automatizaciones", description: "Flujos activos y pasos ejecutados." },
+    { title: "Historial de compras", description: "Productos adquiridos por el cliente." },
+    { title: "Analíticas individuales", description: "Métricas específicas de este cliente." },
+  ];
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((i) => (
+        <SoonPlaceholder key={i.title} icon={Lock} title={i.title} description={i.description} />
+      ))}
+    </div>
+  );
+}

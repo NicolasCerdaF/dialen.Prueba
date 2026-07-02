@@ -18,6 +18,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
 import { Route as DebugWhatsappRouteImport } from './routes/debug.whatsapp'
+import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 
 const MetricasRoute = MetricasRouteImport.update({
@@ -65,6 +66,11 @@ const DebugWhatsappRoute = DebugWhatsappRouteImport.update({
   path: '/debug/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientesIdRoute = ClientesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ClientesRoute,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp/webhook',
@@ -74,24 +80,26 @@ const ApiPublicWhatsappWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/clientes': typeof ClientesRoute
+  '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
+  '/clientes/$id': typeof ClientesIdRoute
   '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/clientes': typeof ClientesRoute
+  '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
+  '/clientes/$id': typeof ClientesIdRoute
   '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -99,12 +107,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/clientes': typeof ClientesRoute
+  '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/demo-chat': typeof DemoChatRoute
   '/login': typeof LoginRoute
   '/metricas': typeof MetricasRoute
+  '/clientes/$id': typeof ClientesIdRoute
   '/debug/whatsapp': typeof DebugWhatsappRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/demo-chat'
     | '/login'
     | '/metricas'
+    | '/clientes/$id'
     | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/demo-chat'
     | '/login'
     | '/metricas'
+    | '/clientes/$id'
     | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/demo-chat'
     | '/login'
     | '/metricas'
+    | '/clientes/$id'
     | '/debug/whatsapp'
     | '/onboarding/whatsapp'
     | '/api/public/whatsapp/webhook'
@@ -150,7 +162,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ClientesRoute: typeof ClientesRoute
+  ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
   DemoChatRoute: typeof DemoChatRoute
@@ -226,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clientes/$id': {
+      id: '/clientes/$id'
+      path: '/$id'
+      fullPath: '/clientes/$id'
+      preLoaderRoute: typeof ClientesIdRouteImport
+      parentRoute: typeof ClientesRoute
+    }
     '/api/public/whatsapp/webhook': {
       id: '/api/public/whatsapp/webhook'
       path: '/api/public/whatsapp/webhook'
@@ -236,9 +255,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ClientesRouteChildren {
+  ClientesIdRoute: typeof ClientesIdRoute
+}
+
+const ClientesRouteChildren: ClientesRouteChildren = {
+  ClientesIdRoute: ClientesIdRoute,
+}
+
+const ClientesRouteWithChildren = ClientesRoute._addFileChildren(
+  ClientesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ClientesRoute: ClientesRoute,
+  ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
   DemoChatRoute: DemoChatRoute,
