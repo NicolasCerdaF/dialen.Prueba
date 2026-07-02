@@ -35,7 +35,7 @@ import {
   listTeamMembers,
   type CrmCustomer,
 } from "@/lib/crm.functions";
-import { orchestrateCustomer } from "@/lib/ai-orchestrator.functions";
+
 import { STAGES, normalizeStage, stageStyle, getStage, STAGNANT_DAYS_BY_STAGE } from "@/lib/pipeline";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
