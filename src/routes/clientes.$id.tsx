@@ -140,6 +140,9 @@ function CustomerDetailPage() {
               <TabsContent value="products" className="mt-0">
                 <ProductsTab customerId={customer.id} onChanged={() => qc.invalidateQueries({ queryKey: ["crm-customer", id] })} />
               </TabsContent>
+              <TabsContent value="quotes" className="mt-0">
+                <QuotesTab customerId={customer.id} />
+              </TabsContent>
               <TabsContent value="conversations" className="mt-0">
                 <ConversationsTab customerId={customer.id} />
               </TabsContent>
