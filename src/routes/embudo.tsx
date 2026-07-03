@@ -187,8 +187,8 @@ function EmbudoPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex h-full gap-3 p-4" style={{ minWidth: STAGES.length * 300 }}>
+        <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin">
+          <div className="flex h-full gap-4 px-6 py-5" style={{ minWidth: STAGES.length * 296 + 48 }}>
             {STAGES.map((stage, idx) => {
               const items = grouped[stage.key] ?? [];
               const style = stageStyle(stage.key);
@@ -207,36 +207,39 @@ function EmbudoPage() {
               return (
                 <div
                   key={stage.key}
-                  className="flex h-full w-[290px] shrink-0 flex-col rounded-xl border bg-card/40"
+                  className="flex h-full w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/30 shadow-sm backdrop-blur-sm transition-colors hover:border-border"
                 >
-                  <div className={cn("h-1 rounded-t-xl", style.bar)} />
-                  <div className="border-b p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{stage.label}</span>
-                        <span className={cn("rounded-md border px-1.5 py-0.5 text-[10px]", style.badge)}>
+                  <div className={cn("h-[3px]", style.bar)} />
+                  <div className="border-b border-border/50 bg-gradient-to-b from-card/60 to-transparent px-3.5 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={cn("h-2 w-2 shrink-0 rounded-full", style.bar)} />
+                        <span className="truncate text-sm font-semibold tracking-tight">{stage.label}</span>
+                        <span className={cn("shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium", style.badge)}>
                           {items.length}
                         </span>
                       </div>
                       {stagnantCount > 0 && (
                         <span
-                          className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-400"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400"
                           title={`${stagnantCount} estancadas > ${stagnantThreshold}d`}
                         >
                           <AlertTriangle className="h-3 w-3" /> {stagnantCount}
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>{fmtMoney(total)}</span>
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="font-medium tabular-nums">{fmtMoney(total)}</span>
                       {convRate !== null && (
-                        <span title="Conversión a la siguiente etapa">→ {convRate.toFixed(0)}%</span>
+                        <span title="Conversión a la siguiente etapa" className="inline-flex items-center gap-1 rounded-md bg-muted/40 px-1.5 py-0.5">
+                          → {convRate.toFixed(0)}%
+                        </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-2">
+                  <div className="flex-1 space-y-2 overflow-y-auto scrollbar-thin px-2.5 py-2.5">
                     {items.length === 0 ? (
-                      <div className="px-2 py-6 text-center text-[11px] text-muted-foreground">
+                      <div className="flex h-full min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border/40 px-3 py-6 text-center text-[11px] text-muted-foreground/70">
                         Sin clientes en esta etapa
                       </div>
                     ) : (
