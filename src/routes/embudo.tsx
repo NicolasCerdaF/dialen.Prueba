@@ -310,7 +310,7 @@ function CustomerCard({
     <div
       onClick={onOpen}
       className={cn(
-        "group mb-2 cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md",
+        "group cursor-pointer rounded-xl border border-border/60 bg-card/80 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:shadow-md",
         stagnant && "border-amber-500/40",
       )}
     >
