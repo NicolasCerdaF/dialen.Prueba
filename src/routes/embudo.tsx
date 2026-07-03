@@ -187,8 +187,8 @@ function EmbudoPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin">
-          <div className="flex h-full gap-4 px-6 py-5" style={{ minWidth: STAGES.length * 296 + 48 }}>
+        <div className="min-h-0 flex-1 overflow-hidden px-6 py-5">
+          <div className="grid h-full min-h-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {STAGES.map((stage, idx) => {
               const items = grouped[stage.key] ?? [];
               const style = stageStyle(stage.key);
@@ -207,7 +207,7 @@ function EmbudoPage() {
               return (
                 <div
                   key={stage.key}
-                  className="flex h-full w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/30 shadow-sm backdrop-blur-sm transition-colors hover:border-border"
+                  className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/30 shadow-sm backdrop-blur-sm transition-colors hover:border-border"
                 >
                   <div className={cn("h-[3px]", style.bar)} />
                   <div className="border-b border-border/50 bg-gradient-to-b from-card/60 to-transparent px-3.5 py-3">
