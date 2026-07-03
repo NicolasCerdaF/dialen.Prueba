@@ -169,15 +169,15 @@ function EmbudoPage() {
             <div>
               <h1 className="font-display text-xl font-semibold">Embudo de Ventas</h1>
               <p className="text-xs text-muted-foreground">
-                Vista comercial del CRM · Arrastra tarjetas para actualizar la etapa en tiempo real
+                Vista comercial del CRM · Las etapas se actualizan solas por eventos comerciales
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-emerald-500">
+            <div className="hidden items-center gap-2 text-xs text-emerald-500 sm:flex">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>IA en modo automático · Recomendaciones vivas por etapa</span>
+              <span>IA automática · Recomendaciones vivas por etapa</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <Kpi icon={DollarSign} label="Pipeline activo" value={fmtMoney(kpis.pipelineValue)} accent="text-emerald-400" />
             <Kpi icon={Target} label="Oportunidades" value={String(kpis.open)} />
             <Kpi icon={Trophy} label="Ganadas" value={String(kpis.won)} accent="text-emerald-400" />
