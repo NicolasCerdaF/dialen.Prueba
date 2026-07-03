@@ -164,12 +164,12 @@ function EmbudoPage() {
   return (
     <AppShell>
       <div className="flex h-full flex-col overflow-hidden">
-        <header className="border-b bg-background/80 px-6 py-4 backdrop-blur">
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <div>
-              <h1 className="font-display text-xl font-semibold">Embudo de Ventas</h1>
-              <p className="text-xs text-muted-foreground">
-                Vista comercial del CRM · Las etapas se actualizan solas por eventos comerciales
+        <header className="border-b bg-background/80 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display text-lg font-semibold sm:text-xl">Embudo de Ventas</h1>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                Vista comercial del CRM · Etapas automáticas
               </p>
             </div>
             <div className="hidden items-center gap-2 text-xs text-emerald-500 sm:flex">
@@ -177,7 +177,7 @@ function EmbudoPage() {
               <span>IA automática · Recomendaciones vivas por etapa</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
             <Kpi icon={DollarSign} label="Pipeline activo" value={fmtMoney(kpis.pipelineValue)} accent="text-emerald-400" />
             <Kpi icon={Target} label="Oportunidades" value={String(kpis.open)} />
             <Kpi icon={Trophy} label="Ganadas" value={String(kpis.won)} accent="text-emerald-400" />
@@ -187,8 +187,9 @@ function EmbudoPage() {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-hidden px-6 py-5">
-          <div className="grid h-full min-h-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-4 py-4 sm:px-6 sm:py-5">
+          <div className="grid h-full min-h-0 auto-cols-[78vw] grid-flow-col gap-3 sm:auto-cols-auto sm:grid-flow-row sm:grid-cols-3 lg:grid-cols-6">
+
             {STAGES.map((stage, idx) => {
               const items = grouped[stage.key] ?? [];
               const style = stageStyle(stage.key);
