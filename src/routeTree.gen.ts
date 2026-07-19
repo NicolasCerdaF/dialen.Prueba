@@ -9,14 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmbudoRouteImport } from './routes/embudo'
+import { Route as DirectorIaRouteImport } from './routes/director-ia'
+import { Route as DashboardEjecutivoRouteImport } from './routes/dashboard-ejecutivo'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
+import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
+import { Route as BandejaIaRouteImport } from './routes/bandeja-ia'
 import { Route as AutomatizacionesRouteImport } from './routes/automatizaciones'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
@@ -25,6 +31,11 @@ import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
 
+const OportunidadesRoute = OportunidadesRouteImport.update({
+  id: '/oportunidades',
+  path: '/oportunidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MetricasIaRoute = MetricasIaRouteImport.update({
   id: '/metricas-ia',
   path: '/metricas-ia',
@@ -40,9 +51,29 @@ const EmbudoRoute = EmbudoRouteImport.update({
   path: '/embudo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DirectorIaRoute = DirectorIaRouteImport.update({
+  id: '/director-ia',
+  path: '/director-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardEjecutivoRoute = DashboardEjecutivoRouteImport.update({
+  id: '/dashboard-ejecutivo',
+  path: '/dashboard-ejecutivo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CotizacionesRoute = CotizacionesRouteImport.update({
   id: '/cotizaciones',
   path: '/cotizaciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactosRoute = ContactosRouteImport.update({
+  id: '/contactos',
+  path: '/contactos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConocimientoRoute = ConocimientoRouteImport.update({
@@ -63,6 +94,11 @@ const ClientesRoute = ClientesRouteImport.update({
 const CatalogoRoute = CatalogoRouteImport.update({
   id: '/catalogo',
   path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BandejaIaRoute = BandejaIaRouteImport.update({
+  id: '/bandeja-ia',
+  path: '/bandeja-ia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AutomatizacionesRoute = AutomatizacionesRouteImport.update({
@@ -106,14 +142,20 @@ const ApiPublicHooksFollowUpCheckRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/contactos': typeof ContactosRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/dashboard': typeof DashboardRoute
+  '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
+  '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -123,14 +165,20 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/contactos': typeof ContactosRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/dashboard': typeof DashboardRoute
+  '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
+  '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -141,14 +189,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/automatizaciones': typeof AutomatizacionesRoute
+  '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
+  '/contactos': typeof ContactosRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/dashboard': typeof DashboardRoute
+  '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
+  '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -160,14 +214,20 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/automatizaciones'
+    | '/bandeja-ia'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/contactos'
     | '/cotizaciones'
+    | '/dashboard'
+    | '/dashboard-ejecutivo'
+    | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/oportunidades'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -177,14 +237,20 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/automatizaciones'
+    | '/bandeja-ia'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/contactos'
     | '/cotizaciones'
+    | '/dashboard'
+    | '/dashboard-ejecutivo'
+    | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/oportunidades'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -194,14 +260,20 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/automatizaciones'
+    | '/bandeja-ia'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/conocimiento'
+    | '/contactos'
     | '/cotizaciones'
+    | '/dashboard'
+    | '/dashboard-ejecutivo'
+    | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/oportunidades'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -212,14 +284,20 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AutomatizacionesRoute: typeof AutomatizacionesRoute
+  BandejaIaRoute: typeof BandejaIaRoute
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
+  ContactosRoute: typeof ContactosRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
+  DashboardRoute: typeof DashboardRoute
+  DashboardEjecutivoRoute: typeof DashboardEjecutivoRoute
+  DirectorIaRoute: typeof DirectorIaRoute
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
   MetricasIaRoute: typeof MetricasIaRoute
+  OportunidadesRoute: typeof OportunidadesRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
   ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -227,6 +305,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/oportunidades': {
+      id: '/oportunidades'
+      path: '/oportunidades'
+      fullPath: '/oportunidades'
+      preLoaderRoute: typeof OportunidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/metricas-ia': {
       id: '/metricas-ia'
       path: '/metricas-ia'
@@ -248,11 +333,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbudoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/director-ia': {
+      id: '/director-ia'
+      path: '/director-ia'
+      fullPath: '/director-ia'
+      preLoaderRoute: typeof DirectorIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard-ejecutivo': {
+      id: '/dashboard-ejecutivo'
+      path: '/dashboard-ejecutivo'
+      fullPath: '/dashboard-ejecutivo'
+      preLoaderRoute: typeof DashboardEjecutivoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cotizaciones': {
       id: '/cotizaciones'
       path: '/cotizaciones'
       fullPath: '/cotizaciones'
       preLoaderRoute: typeof CotizacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contactos': {
+      id: '/contactos'
+      path: '/contactos'
+      fullPath: '/contactos'
+      preLoaderRoute: typeof ContactosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conocimiento': {
@@ -281,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/catalogo'
       fullPath: '/catalogo'
       preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bandeja-ia': {
+      id: '/bandeja-ia'
+      path: '/bandeja-ia'
+      fullPath: '/bandeja-ia'
+      preLoaderRoute: typeof BandejaIaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/automatizaciones': {
@@ -362,14 +482,20 @@ const CotizacionesRouteWithChildren = CotizacionesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AutomatizacionesRoute: AutomatizacionesRoute,
+  BandejaIaRoute: BandejaIaRoute,
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
+  ContactosRoute: ContactosRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
+  DashboardRoute: DashboardRoute,
+  DashboardEjecutivoRoute: DashboardEjecutivoRoute,
+  DirectorIaRoute: DirectorIaRoute,
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,
   MetricasIaRoute: MetricasIaRoute,
+  OportunidadesRoute: OportunidadesRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
   ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,

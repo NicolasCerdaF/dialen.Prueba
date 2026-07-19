@@ -35,6 +35,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 type ExistingRoute =
   | "/"
+  | "/dashboard"
+  | "/dashboard-ejecutivo"
+  | "/bandeja-ia"
+  | "/director-ia"
+  | "/contactos"
+  | "/oportunidades"
   | "/metricas-ia"
   | "/embudo"
   | "/clientes"
@@ -65,9 +71,9 @@ const navGroups: NavGroup[] = [
     label: "Inicio",
     icon: Home,
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, soon: true },
+      { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Conversaciones", icon: MessageSquare, to: "/" },
-      { label: "Bandeja IA", icon: Inbox, soon: true },
+      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
     ],
   },
   {
@@ -75,9 +81,9 @@ const navGroups: NavGroup[] = [
     label: "Ventas",
     icon: Briefcase,
     items: [
-      { label: "Contactos", icon: Users, soon: true },
+      { label: "Contactos", icon: Users, to: "/contactos" },
       { label: "Clientes", icon: Users, to: "/clientes" },
-      { label: "Oportunidades", icon: Target, soon: true },
+      { label: "Oportunidades", icon: Target, to: "/oportunidades" },
       { label: "Embudo Comercial", icon: TrendingUp, to: "/embudo" },
       { label: "Cotizaciones", icon: FileText, to: "/cotizaciones" },
       { label: "Catálogo", icon: Package, to: "/catalogo" },
@@ -88,7 +94,7 @@ const navGroups: NavGroup[] = [
     label: "IA Comercial",
     icon: Bot,
     items: [
-      { label: "Director Comercial IA", icon: Sparkles, soon: true },
+      { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia" },
       { label: "Automatizaciones", icon: Zap, to: "/automatizaciones" },
       { label: "Base de Conocimiento IA", icon: BookOpen, to: "/conocimiento" },
       { label: "Análisis IA", icon: Brain, to: "/metricas-ia" },
@@ -99,7 +105,7 @@ const navGroups: NavGroup[] = [
     label: "Reportes",
     icon: BarChart3,
     items: [
-      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, soon: true },
+      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo" },
       { label: "Conversaciones", icon: MessageSquare, soon: true },
       { label: "Ventas", icon: LineChart, soon: true },
       { label: "Conversiones", icon: PieChart, soon: true },
@@ -117,6 +123,7 @@ const navGroups: NavGroup[] = [
     ],
   },
 ];
+
 
 function isItemActive(pathname: string, to?: ExistingRoute) {
   if (!to) return false;
