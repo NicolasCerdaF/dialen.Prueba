@@ -149,14 +149,13 @@ function QuotesPage() {
   });
   const quotes: Quote[] = quotesResp?.rows ?? [];
 
-  const { data: kpis } = useQuery({ queryKey: ["quotes-overview"], queryFn: () => overview() });
   const { data: adv } = useQuery({ queryKey: ["quotes-kpis-adv"], queryFn: () => kpisAdv({ data: { days: 30 } }) });
   const { data: alertsData } = useQuery({ queryKey: ["quotes-alerts"], queryFn: () => alerts() });
 
   useRealtimeInvalidate({
     channel: "quotes-index",
     tables: ["quotes", "quote_events"],
-    invalidate: [["quotes-adv"], ["quotes-overview"], ["quotes-kpis-adv"], ["quotes-alerts"]],
+    invalidate: [["quotes-adv"], ["quotes-kpis-adv"], ["quotes-alerts"]],
   });
 
   const { data: customerPickerData } = useQuery({
