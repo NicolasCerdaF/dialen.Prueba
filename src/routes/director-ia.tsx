@@ -784,10 +784,14 @@ function InsightRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onSelect={onOpen}>
-              <ExternalLink className="mr-2 h-3.5 w-3.5" /> Ir a la acción
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {row.action_to && (
+              <>
+                <DropdownMenuItem onSelect={onOpen}>
+                  <ExternalLink className="mr-2 h-3.5 w-3.5" /> Ir a la acción
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {isActive ? (
               <>
                 <DropdownMenuItem onSelect={onDone}>
