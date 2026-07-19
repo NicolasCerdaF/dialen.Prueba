@@ -941,7 +941,7 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
     );
   }
 
-  const stages = ["nuevo", "contactado", "calificado", "propuesta", "ganado", "perdido"];
+  const currentStage = normalizeStage(customer.stage);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -961,7 +961,7 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         </div>
         {isNewLead && (
           <div className="mt-3 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
-            🌱 Nuevo Lead
+            Nuevo Lead
           </div>
         )}
         <div className="mt-3">
@@ -989,20 +989,25 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
-          {stages.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStage(customer.stage === s ? null : s)}
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize transition",
-                customer.stage === s
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
-          ))}
+          {STAGES.map((s) => {
+            const active = currentStage === s.key;
+            const style = STAGE_STYLES[s.color];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStage(active ? null : s.key)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
+                  active
+                    ? cn(style.bar, "text-white")
+                    : "bg-secondary text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-white/80" : style.bar)} />
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       </Section>
 
