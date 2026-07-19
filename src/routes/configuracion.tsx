@@ -172,42 +172,78 @@ function ConfigPage() {
 
 /* ----------------------------- Summary strip ---------------------------- */
 
-function SummaryStrip() {
+function SummaryStrip({ onSelectTab }: { onSelectTab: (t: TabKey) => void }) {
   const fetchSummary = useServerFn(getSettingsSummary);
-  const { data } = useQuery({ queryKey: ["settings-summary"], queryFn: () => fetchSummary() });
-  const items = [
-    { label: "Equipo", value: data?.members ?? "—", to: "?tab=equipo" },
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings-summary"],
+    queryFn: () => fetchSummary(),
+  });
+  const waConnected = data?.whatsapp?.status === "connected";
+  const items: Array<{
+    label: string;
+    value: string | number;
+    tone?: "ok" | "warn";
+    tab?: TabKey;
+    to?: string;
+  }> = [
+    { label: "Equipo", value: data?.members ?? 0, tab: "equipo" },
     {
       label: "WhatsApp",
-      value:
-        data?.whatsapp?.status === "connected"
-          ? data.whatsapp.display_phone ?? "Conectado"
-          : "Desconectado",
-      tone: data?.whatsapp?.status === "connected" ? "ok" : "warn",
-      to: "?tab=whatsapp",
+      value: waConnected
+        ? (data?.whatsapp as any)?.display_phone ?? "Conectado"
+        : "Desconectado",
+      tone: waConnected ? "ok" : "warn",
+      tab: "whatsapp",
     },
-    { label: "Clientes", value: data?.customers ?? "—", to: "/clientes" },
-    { label: "Productos", value: data?.products ?? "—", to: "/catalogo" },
-    { label: "Cotizaciones", value: data?.quotes ?? "—", to: "/cotizaciones" },
-    { label: "Automatizaciones", value: data?.automations ?? "—", to: "/automatizaciones" },
+    { label: "Clientes", value: data?.customers ?? 0, to: "/clientes" },
+    { label: "Productos", value: data?.products ?? 0, to: "/catalogo" },
+    { label: "Cotizaciones", value: data?.quotes ?? 0, to: "/cotizaciones" },
+    { label: "Automatizaciones", value: data?.automations ?? 0, to: "/automatizaciones" },
   ];
   return (
     <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {items.map((i) => (
-        <div key={i.label} className="rounded-lg border border-border bg-background p-3">
-          <div className="text-xs text-muted-foreground">{i.label}</div>
-          <div
-            className={`mt-0.5 truncate font-display text-lg font-semibold ${
-              i.tone === "warn" ? "text-amber-500" : ""
-            }`}
+      {items.map((i) => {
+        const content = (
+          <>
+            <div className="text-xs text-muted-foreground">{i.label}</div>
+            <div
+              className={`mt-0.5 truncate font-display text-lg font-semibold tabular-nums ${
+                i.tone === "warn"
+                  ? "text-amber-500"
+                  : i.tone === "ok"
+                  ? "text-emerald-600"
+                  : ""
+              }`}
+              title={String(i.value)}
+            >
+              {isLoading ? "…" : String(i.value)}
+            </div>
+          </>
+        );
+        const base =
+          "rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/40";
+        if (i.to) {
+          return (
+            <Link key={i.label} to={i.to as any} className={base}>
+              {content}
+            </Link>
+          );
+        }
+        return (
+          <button
+            key={i.label}
+            type="button"
+            onClick={() => i.tab && onSelectTab(i.tab)}
+            className={base}
           >
-            {String(i.value)}
-          </div>
-        </div>
-      ))}
+            {content}
+          </button>
+        );
+      })}
     </div>
   );
 }
+
 
 /* -------------------------------- General ------------------------------- */
 
