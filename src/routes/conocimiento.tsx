@@ -1189,7 +1189,7 @@ function DocumentSheet({
                           {u.conversation_id && (
                             <Link
                               to="/conversaciones"
-                              search={{ id: u.conversation_id } as any}
+                              hash={`conv=${u.conversation_id}`}
                               className="inline-flex items-center gap-1 text-primary hover:underline"
                             >
                               <MessageSquare className="h-3 w-3" /> Ver chat
