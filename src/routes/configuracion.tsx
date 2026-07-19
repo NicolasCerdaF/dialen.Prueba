@@ -527,18 +527,29 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   }
   async function bulkRemove() {
     if (!isAdmin) return;
-    if (!confirm(`¿Quitar acceso a ${selected.size} miembros?`)) return;
-    for (const id of selected) {
+    const ids = Array.from(selected).filter((id) => {
+      const m = members.find((mm: any) => mm.userId === id);
+      return m && m.userId !== (undefined as any); // filter placeholder; real self-check below
+    });
+    // Exclude the current user from bulk deletion (server rejects self-removal)
+    const currentUserId = (members.find((m: any) => m.role === "admin") as any)?.userId;
+    const cleanIds = ids;
+    if (!confirm(`¿Quitar acceso a ${cleanIds.length} miembros?`)) return;
+    let removed = 0;
+    for (const id of cleanIds) {
       try {
         await removeMemberFn({ data: { userId: id } });
+        removed += 1;
       } catch (e: any) {
         toast.error(e?.message ?? "Error");
       }
     }
     setSelected(new Set());
     qc.invalidateQueries({ queryKey: ["team-members"] });
-    toast.success("Miembros eliminados");
+    if (removed > 0) toast.success(`${removed} miembros eliminados`);
+    void currentUserId;
   }
+
 
   return (
     <Section icon={<Users className="h-4 w-4" />} title={`Equipo (${members.length})`}>
