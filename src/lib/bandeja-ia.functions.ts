@@ -82,7 +82,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
         supabase
           .from("customers")
           .select(
-            "id, name, company_name, phone, stage, estimated_value, priority, tags, last_interaction_at",
+            "id, name, company, phone, stage, estimated_value, priority, tags, last_interaction_at",
           )
           .eq("company_id", companyId)
           .limit(1000),
@@ -116,7 +116,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
     }
 
     // Latest quote per conversation
-    const quoteByConv = new Map<string, (typeof quotes)[number]>();
+    const quoteByConv = new Map<string, NonNullable<typeof quotes>[number]>();
     for (const q of quotes ?? []) {
       if (q.conversation_id && !quoteByConv.has(q.conversation_id)) {
         quoteByConv.set(q.conversation_id, q);
@@ -160,7 +160,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 100 + value / 1000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cliente VIP sin respuesta",
           reasonDetail: `Cliente marcado como prioritario esperando ${elapsed(last?.created_at)}.`,
@@ -182,7 +182,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 90 + value / 1000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cotización sin seguimiento",
           reasonDetail: `Cotización enviada ${elapsed(activeQuote?.sent_at ?? activeQuote?.created_at)} sin respuesta.`,
@@ -204,7 +204,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 85 + value / 1000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Negociación esperando respuesta",
           reasonDetail: `Cliente en negociación esperando hace ${elapsed(last?.created_at)}.`,
@@ -228,7 +228,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 60 + value / 2000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cliente mostró interés",
           reasonDetail: "El cliente hizo preguntas sobre productos o precios.",
@@ -250,7 +250,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 55 + value / 2000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cotización sin enviar",
           reasonDetail: "Existe un borrador de cotización pendiente de envío.",
@@ -274,7 +274,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           score: 40 + value / 3000,
           customerId: cust.id,
           customerName: cust.name ?? cust.phone,
-          companyName: cust.company_name ?? null,
+          companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Lead nuevo activo",
           reasonDetail: "Lead nuevo con mensajes recientes. Recomendado calificar.",
