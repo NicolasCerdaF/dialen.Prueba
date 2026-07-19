@@ -323,14 +323,18 @@ function OverviewTab({ a }: { a: AiAnalytics }) {
         <Kpi
           label="Leads calientes"
           value={t.hotLeads.toLocaleString()}
-          hint="Prob. de cierre ≥70%"
+          hint={t.hotLeads > 0 ? "Prob. de cierre ≥70%" : "Sin leads calientes"}
           icon={Flame}
-          tone="rose"
+          tone={t.hotLeads > 0 ? "rose" : undefined}
         />
         <Kpi
           label="Chats abiertos"
           value={t.activeConversations.toLocaleString()}
-          hint={`${t.aiPaused} con IA pausada`}
+          hint={
+            t.activeConversations > 0
+              ? `${t.aiPaused} con IA pausada`
+              : "Sin conversaciones abiertas"
+          }
           icon={MessageSquare}
         />
       </div>
