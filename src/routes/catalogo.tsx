@@ -1122,7 +1122,7 @@ function ProductDetailSheet({
               <div className="flex items-start gap-3">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                   {Array.isArray(data.product.images) && data.product.images[0] ? (
-                    <img src={data.product.images[0]} alt="" className="h-full w-full object-cover" />
+                    <img src={String(data.product.images[0])} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   )}
