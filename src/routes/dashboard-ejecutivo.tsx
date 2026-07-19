@@ -503,9 +503,22 @@ function SalesTab({ dash }: { dash: ExecutiveDashboard }) {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Pipeline abierto" value={fmtMoney(t.openPipeline, cur)} hint={`${t.openOpportunities} oportunidades`} />
-            <MiniStat label="Forecast ponderado" value={fmtMoney(t.weightedPipeline, cur)} hint="Ajustado por etapa" />
+            <MiniStat
+              label="Pipeline abierto"
+              value={t.openOpportunities > 0 ? fmtMoney(t.openPipeline, cur) : "—"}
+              hint={
+                t.openOpportunities > 0
+                  ? `${t.openOpportunities} oportunidades`
+                  : "Sin oportunidades abiertas"
+              }
+            />
+            <MiniStat
+              label="Forecast ponderado"
+              value={t.openOpportunities > 0 ? fmtMoney(t.weightedPipeline, cur) : "—"}
+              hint={t.openOpportunities > 0 ? "Ajustado por etapa" : "Sin datos para proyectar"}
+            />
           </div>
+
           <div className="mt-4 space-y-2">
             {dash.funnel
               .filter((f) => f.kind === "open")
