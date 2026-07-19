@@ -154,10 +154,12 @@ function ContactDetailPage() {
                 to="/clientes/$id"
                 params={{ id }}
                 className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+                title="Editar ficha CRM completa"
               >
-                <ArrowUpRight className="h-3.5 w-3.5" />
-                Ficha completa
+                <Sliders className="h-3.5 w-3.5" />
+                Editar ficha CRM
               </Link>
+
             </div>
           </div>
         </header>
