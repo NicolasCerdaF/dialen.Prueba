@@ -440,7 +440,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
   const [sending, setSending] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
