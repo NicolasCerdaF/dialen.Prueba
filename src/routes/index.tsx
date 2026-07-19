@@ -478,9 +478,6 @@ function ChatView({ conversationId }: { conversationId: string }) {
     },
   });
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages.length]);
 
   // Auto mark-read when opening
   useEffect(() => {
