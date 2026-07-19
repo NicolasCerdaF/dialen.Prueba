@@ -30,6 +30,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 type ExistingRoute =
   | "/"
+  | "/conversaciones"
   | "/dashboard"
   | "/dashboard-ejecutivo"
   | "/bandeja-ia"
