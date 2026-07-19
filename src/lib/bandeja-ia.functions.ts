@@ -109,13 +109,13 @@ export const getBandejaIA = createServerFn({ method: "GET" })
     const convoList = convos ?? [];
     const convIds = convoList.map((c) => c.id);
     const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
-    const currency = quotes?.[0]?.currency ?? "USD";
+    const fallbackCurrency = quotes?.find((q) => q.currency)?.currency ?? null;
 
-    // Latest AI suggestion per conversation (for summary + product mention)
+    // Latest AI suggestion per conversation (real IA signal for intent/probability/summary).
     const { data: suggestions } = convIds.length
       ? await supabase
           .from("ai_suggestions")
-          .select("conversation_id, text, intent, next_step, sources, created_at")
+          .select("conversation_id, text, intent, probability, next_step, sources, created_at")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false })
           .limit(500)
