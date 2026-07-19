@@ -17,6 +17,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type NavItem = {
   to:
