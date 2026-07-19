@@ -259,50 +259,66 @@ function OverviewTab({ a }: { a: AiAnalytics }) {
         <Kpi
           label="Respuestas de IA"
           value={t.outboundAi.toLocaleString()}
-          hint={`${t.aiShare}% del total saliente`}
-          delta={a.deltas.aiShare}
+          hint={t.outbound > 0 ? `${t.aiShare}% del total saliente` : "Sin salientes en el rango"}
+          delta={t.outbound > 0 ? a.deltas.aiShare : undefined}
           deltaSuffix=" pts"
           icon={Bot}
           tone="violet"
         />
         <Kpi
           label="Sugerencias aceptadas"
-          value={`${t.acceptRate}%`}
-          hint={`${t.aiAccepted} de ${t.aiSuggestions}`}
-          delta={a.deltas.acceptRate}
+          value={t.aiSuggestions > 0 ? `${t.acceptRate}%` : "—"}
+          hint={t.aiSuggestions > 0 ? `${t.aiAccepted} de ${t.aiSuggestions}` : "Sin sugerencias aún"}
+          delta={t.aiSuggestions > 0 ? a.deltas.acceptRate : undefined}
           deltaSuffix=" pts"
           icon={ThumbsUp}
-          tone={t.acceptRate >= 40 ? "emerald" : "amber"}
+          tone={t.aiSuggestions === 0 ? undefined : t.acceptRate >= 40 ? "emerald" : "amber"}
         />
         <Kpi
           label="Confianza promedio"
-          value={`${t.avgConfidence}%`}
-          hint="Certeza del modelo"
+          value={t.aiSuggestions > 0 ? `${t.avgConfidence}%` : "—"}
+          hint={t.aiSuggestions > 0 ? "Certeza del modelo" : "Sin sugerencias aún"}
           icon={TrendingUp}
-          tone={t.avgConfidence >= 65 ? "emerald" : t.avgConfidence >= 45 ? "amber" : "rose"}
+          tone={
+            t.aiSuggestions === 0
+              ? undefined
+              : t.avgConfidence >= 65
+                ? "emerald"
+                : t.avgConfidence >= 45
+                  ? "amber"
+                  : "rose"
+          }
         />
         <Kpi
           label="Tiempo de respuesta"
           value={formatDuration(t.avgResponseSeconds)}
-          hint="Primera respuesta al cliente"
+          hint={t.avgResponseSeconds > 0 ? "Primera respuesta al cliente" : "Sin pares entrada→salida"}
           icon={Timer}
-          tone={t.avgResponseSeconds < 120 ? "emerald" : t.avgResponseSeconds < 600 ? "amber" : "rose"}
+          tone={
+            t.avgResponseSeconds === 0
+              ? undefined
+              : t.avgResponseSeconds < 120
+                ? "emerald"
+                : t.avgResponseSeconds < 600
+                  ? "amber"
+                  : "rose"
+          }
         />
         <Kpi
           label="Automatizaciones"
           value={t.automationRuns.toLocaleString()}
-          hint={`${t.automationErrorRate}% con error`}
-          delta={-a.deltas.automationErrorRate}
+          hint={t.automationRuns > 0 ? `${t.automationErrorRate}% con error` : "Sin ejecuciones"}
+          delta={t.automationRuns > 0 ? -a.deltas.automationErrorRate : undefined}
           deltaSuffix=" pts"
           icon={Workflow}
-          tone={t.automationErrorRate < 10 ? "emerald" : "amber"}
+          tone={t.automationRuns === 0 ? undefined : t.automationErrorRate < 10 ? "emerald" : "amber"}
         />
         <Kpi
           label="Citas de conocimiento"
           value={t.knowledgeCitations.toLocaleString()}
-          hint="La IA usó tu base"
+          hint={t.knowledgeCitations > 0 ? "La IA usó tu base" : "La IA no citó documentos"}
           icon={BookOpen}
-          tone="violet"
+          tone={t.knowledgeCitations > 0 ? "violet" : undefined}
         />
         <Kpi
           label="Leads calientes"
