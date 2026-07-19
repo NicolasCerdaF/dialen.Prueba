@@ -195,8 +195,14 @@ function InboxPage() {
   }, [qc, orchestrateFn]);
 
   const counts = useMemo(() => {
-    const c = { all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0 };
+    const c = {
+      all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0,
+      nuevo_lead: 0, interesado: 0, cotizado: 0, negociando: 0, ganado: 0, perdido: 0,
+    };
     for (const x of convos) {
+      const stage = normalizeStage(x.customers?.stage);
+      if (stage === "ganado") c.ganado++;
+      if (stage === "perdido") c.perdido++;
       if (x.status === "resolved" || x.status === "closed") {
         c.resolved++;
         continue;
@@ -205,6 +211,10 @@ function InboxPage() {
       if (x.assignee_id === user?.id) c.mine++;
       if (!x.assignee_id) c.unassigned++;
       if (x.unread_count > 0) c.unread++;
+      if (stage === "nuevo_lead") c.nuevo_lead++;
+      if (stage === "interesado") c.interesado++;
+      if (stage === "cotizado") c.cotizado++;
+      if (stage === "negociando") c.negociando++;
     }
     return c;
   }, [convos, user?.id]);
@@ -212,10 +222,18 @@ function InboxPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return convos.filter((c) => {
-      if (filter === "resolved") {
+      const stage = normalizeStage(c.customers?.stage);
+      if (filter.startsWith("stage:")) {
+        const target = filter.slice(6);
+        if (stage !== target) return false;
+        if (target !== "ganado" && target !== "perdido") {
+          if (c.status === "resolved" || c.status === "closed") return false;
+        }
+      } else if (filter === "resolved") {
         if (c.status !== "resolved" && c.status !== "closed") return false;
       } else {
         if (c.status === "resolved" || c.status === "closed") return false;
+        if (stage === "ganado" || stage === "perdido") return false;
         if (filter === "mine" && c.assignee_id !== user?.id) return false;
         if (filter === "unassigned" && c.assignee_id) return false;
         if (filter === "unread" && c.unread_count <= 0) return false;
