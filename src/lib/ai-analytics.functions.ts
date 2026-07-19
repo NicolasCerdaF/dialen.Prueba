@@ -684,7 +684,7 @@ export const getAiAnalytics = createServerFn({ method: "POST" })
           prevAiShare,
         ),
         acceptRate: diff(acceptRate, prevAcceptRate),
-        avgResponseSeconds: pct(avgResponseSeconds, 0),
+        avgResponseSeconds: 0,
         automationErrorRate: diff(automationErrorRate, prevErrRate),
       },
       series: days.map((d) => seriesMap.get(d)!),
