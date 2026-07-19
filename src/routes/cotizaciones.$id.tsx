@@ -148,9 +148,11 @@ function QuoteDetailPage() {
   const [terms, setTerms] = useState("");
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<QuoteStatus | null>(null);
+  const [confirmSend, setConfirmSend] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
   const [followupHours, setFollowupHours] = useState<number>(48);
   const [followupNote, setFollowupNote] = useState("");
