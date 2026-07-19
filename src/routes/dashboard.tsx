@@ -334,7 +334,7 @@ function KpiTile({
   label: string;
   value: string;
   sub?: string;
-  delta?: number;
+  delta?: number | null;
   icon: typeof MessageSquare;
   tone: "primary" | "success" | "accent" | "warn";
   to: string;
