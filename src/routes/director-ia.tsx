@@ -867,10 +867,14 @@ function ExecStat({
   label,
   value,
   tone,
+  hint,
+  title,
 }: {
   label: string;
   value: string;
   tone: "primary" | "success" | "danger";
+  hint?: string;
+  title?: string;
 }) {
   const toneMap = {
     primary: "text-primary",
@@ -878,9 +882,15 @@ function ExecStat({
     danger: "text-rose-500",
   } as const;
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 font-display text-2xl font-semibold", toneMap[tone])}>{value}</div>
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4">
+      <div className="truncate text-xs text-muted-foreground">{label}</div>
+      <div
+        className={cn("mt-1 truncate font-display text-2xl font-semibold tabular-nums", toneMap[tone])}
+        title={title ?? value}
+      >
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
