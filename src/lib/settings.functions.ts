@@ -21,19 +21,41 @@ async function getCompanyId(supabase: any, userId: string): Promise<string> {
     (authUser?.user?.user_metadata as any)?.full_name ??
     (email ? email.split("@")[0] : "Mi empresa");
 
+  const { data: existingCompany } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const companyId = existingCompany?.id
+    ? existingCompany.id
+    : (await supabase
+        .from("companies")
+        .insert({ name: `${fullName} Workspace`, owner_id: userId })
+        .select("id")
+        .single()).data?.id;
+
+  if (!companyId) {
+    throw new Error("No se pudo crear la empresa");
+  }
+
   const { data: company, error: companyError } = await supabase
     .from("companies")
-    .insert({ name: `${fullName} Workspace`, owner_id: userId })
     .select("id")
-    .single();
+    .eq("id", companyId)
+    .maybeSingle();
   if (companyError || !company?.id) {
-    throw new Error(companyError?.message || "No se pudo crear la empresa");
+    throw new Error(companyError?.message || "No se pudo cargar la empresa");
   }
+
+  const resolvedCompanyId = company.id as string;
 
   if (data) {
     const { error } = await supabase
       .from("profiles")
-      .update({ company_id: company.id })
+      .update({ company_id: resolvedCompanyId })
       .eq("id", userId);
     if (error) throw new Error(error.message);
   } else {
@@ -41,19 +63,22 @@ async function getCompanyId(supabase: any, userId: string): Promise<string> {
       id: userId,
       full_name: fullName,
       email,
-      company_id: company.id,
+      company_id: resolvedCompanyId,
     });
     if (error) throw new Error(error.message);
   }
 
-  const { error: roleError } = await supabase.from("user_roles").insert({
-    user_id: userId,
-    company_id: company.id,
-    role: "admin",
-  });
+  const { error: roleError } = await supabase.from("user_roles").upsert(
+    {
+      user_id: userId,
+      company_id: resolvedCompanyId,
+      role: "admin",
+    },
+    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
+  );
   if (roleError) throw new Error(roleError.message);
 
-  return company.id as string;
+  return resolvedCompanyId;
 }
 
 async function assertAdmin(supabase: any, userId: string, companyId: string) {
