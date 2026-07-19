@@ -645,22 +645,28 @@ function AutomationTab({ a }: { a: AiAnalytics }) {
   const t = a.totals;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Kpi label="Ejecuciones" value={t.automationRuns.toLocaleString()} icon={Workflow} />
         <Kpi
           label="Errores"
           value={t.automationErrors.toLocaleString()}
-          hint={`${t.automationErrorRate}% del total`}
+          hint={t.automationRuns > 0 ? `${t.automationErrorRate}% del total` : "—"}
           icon={AlertTriangle}
-          tone={t.automationErrorRate > 10 ? "rose" : "emerald"}
+          tone={t.automationRuns === 0 ? undefined : t.automationErrorRate > 10 ? "rose" : "emerald"}
         />
         <Kpi
           label="Tasa de éxito"
-          value={`${Math.max(0, 100 - t.automationErrorRate)}%`}
+          value={t.automationRuns > 0 ? `${Math.max(0, 100 - t.automationErrorRate)}%` : "—"}
+          hint={t.automationRuns > 0 ? undefined : "Sin ejecuciones en el rango"}
           icon={CheckCircle2}
-          tone="emerald"
+          tone={t.automationRuns > 0 ? "emerald" : undefined}
         />
-        <Kpi label="Flujos activos" value={a.topAutomations.length} icon={Zap} />
+        <Kpi
+          label="Flujos con actividad"
+          value={a.topAutomations.length.toLocaleString()}
+          hint={a.topAutomations.length ? "En el rango seleccionado" : "—"}
+          icon={Zap}
+        />
       </div>
 
       <Card className="p-5">
