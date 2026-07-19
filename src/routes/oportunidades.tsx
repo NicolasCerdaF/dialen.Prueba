@@ -107,10 +107,26 @@ function OpportunitiesPage() {
     return g;
   }, [filtered]);
 
-  const totalValue = opps.reduce((s, o) => s + (o.estimated_value ?? 0), 0);
-  const avgProb = opps.length
-    ? Math.round(opps.reduce((s, o) => s + o.probability, 0) / opps.length)
-    : 0;
+  // Pipeline value per currency (no mezclar MXN/USD)
+  const valueByCurrency = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const o of opps) {
+      if (o.estimated_value) m.set(o.currency, (m.get(o.currency) ?? 0) + o.estimated_value);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  }, [opps]);
+  const pipelineLabel =
+    valueByCurrency.length === 0
+      ? "—"
+      : valueByCurrency.length === 1
+      ? formatMoney(valueByCurrency[0][1], valueByCurrency[0][0])
+      : `${formatMoney(valueByCurrency[0][1], valueByCurrency[0][0])} +${valueByCurrency.length - 1}`;
+
+  // Prob. media: sólo sobre oportunidades con señal IA real
+  const probs = opps.map((o) => o.probability).filter((p): p is number => p !== null);
+  const avgProbLabel = probs.length
+    ? `${Math.round(probs.reduce((s, p) => s + p, 0) / probs.length)}%`
+    : "—";
   const stalledCount = opps.filter((o) => o.stalled).length;
 
   return (
@@ -145,6 +161,11 @@ function OpportunitiesPage() {
             >
               <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
               Detenidas
+              {stalledCount > 0 && (
+                <span className="ml-1.5 rounded-full bg-background/20 px-1.5 py-0.5 text-[10px] tabular-nums">
+                  {stalledCount}
+                </span>
+              )}
             </Button>
           </div>
         </header>
@@ -152,8 +173,10 @@ function OpportunitiesPage() {
         {/* KPIs */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Kpi label="Abiertas" value={opps.length} icon={Target} tone="default" />
-          <Kpi label="Valor pipeline" value={formatMoney(totalValue)} icon={TrendingUp} tone="emerald" />
-          <Kpi label="Prob. media" value={`${avgProb}%`} icon={Sparkles} tone="violet" />
+          <Kpi label="Valor pipeline" value={pipelineLabel} icon={TrendingUp} tone="emerald"
+               hint={valueByCurrency.length > 1 ? `${valueByCurrency.length} monedas` : undefined} />
+          <Kpi label="Prob. media (IA)" value={avgProbLabel} icon={Sparkles} tone="violet"
+               hint={probs.length ? `${probs.length} con señal IA` : "Sin señal IA aún"} />
           <Kpi label="Detenidas" value={stalledCount} icon={AlertTriangle} tone="amber" />
         </section>
 
