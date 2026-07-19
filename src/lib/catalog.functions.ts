@@ -288,12 +288,22 @@ export const getCatalogOverview = createServerFn({ method: "POST" })
       return { ...prod, links: stat.count, pipeline_value: stat.value, purchased: stat.purchased, reco_count: recoCount, margin, margin_pct: marginPct };
     });
 
-    const topSelling = [...enriched].sort((a, b) => b.purchased - a.purchased).slice(0, 5);
-    const topPipeline = [...enriched].sort((a, b) => b.pipeline_value - a.pipeline_value).slice(0, 5);
-    const topRecommended = [...enriched].sort((a, b) => b.reco_count - a.reco_count).slice(0, 5);
+    const topSelling = [...enriched].filter((x) => x.purchased > 0).sort((a, b) => b.purchased - a.purchased).slice(0, 5);
+    const topPipeline = [...enriched].filter((x) => x.pipeline_value > 0).sort((a, b) => b.pipeline_value - a.pipeline_value).slice(0, 5);
+    const topRecommended = [...enriched].filter((x) => x.reco_count > 0).sort((a, b) => b.reco_count - a.reco_count).slice(0, 5);
     const topMargin = [...enriched].filter((x) => x.price > 0).sort((a, b) => b.margin_pct - a.margin_pct).slice(0, 5);
 
-    const totalPipeline = l.reduce((s: number, link: any) => s + Number(link.estimated_value ?? 0), 0);
+    // Pipeline agrupado por moneda del producto (no sumar MXN + USD como si fueran lo mismo).
+    const productCurrency = new Map<string, string>();
+    for (const prod of p) productCurrency.set(prod.id, (prod as any).currency ?? "USD");
+    const pipelineByCurrency: Record<string, number> = {};
+    for (const link of l) {
+      const cur = productCurrency.get(link.product_id) ?? "USD";
+      pipelineByCurrency[cur] = (pipelineByCurrency[cur] ?? 0) + Number(link.estimated_value ?? 0);
+    }
+    // Productos distintos con al menos un vínculo (para KPI "Vinculados a clientes").
+    const linkedProducts = new Set<string>();
+    for (const link of l) linkedProducts.add(link.product_id);
 
     return {
       totals: {
@@ -301,9 +311,10 @@ export const getCatalogOverview = createServerFn({ method: "POST" })
         active: totalActive,
         lowStock: lowStock.length,
         recommendations: r.length,
-        pipelineValue: totalPipeline,
-        linked: l.length,
+        linkedProducts: linkedProducts.size,
+        linkedRecords: l.length,
       },
+      pipelineByCurrency,
       lowStock: lowStock.slice(0, 10),
       topSelling,
       topPipeline,
