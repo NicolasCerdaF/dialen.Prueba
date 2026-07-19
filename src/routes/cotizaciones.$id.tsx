@@ -799,6 +799,35 @@ function QuoteDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={confirmSend}
+        onOpenChange={(o) => !o && !sending && setConfirmSend(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enviar cotización por WhatsApp</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se enviará <strong>{quote?.number}</strong> al cliente por WhatsApp con un
+              resumen y el enlace público. Podrás reenviarla luego si es necesario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={sending}
+              onClick={(e) => {
+                e.preventDefault();
+                onSend();
+              }}
+            >
+              {sending ? "Enviando…" : "Enviar ahora"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
       <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
         <DialogContent>
           <DialogHeader>
