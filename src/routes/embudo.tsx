@@ -403,12 +403,32 @@ function EmbudoPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-7">
             <Kpi icon={DollarSign} label="Pipeline" value={fmtMoney(kpis.pipelineValue)} accent="text-emerald-400" />
-            <Kpi icon={Sparkles} label="Ponderado IA" value={fmtMoney(kpis.weighted)} accent="text-primary" />
+            <Kpi
+              icon={Sparkles}
+              label="Ponderado IA"
+              value={fmtMoney(kpis.weighted)}
+              accent="text-primary"
+              hint={
+                kpis.weightedCovered === 0
+                  ? "Sin señal IA aún"
+                  : `${kpis.weightedCovered} con probabilidad IA`
+              }
+            />
             <Kpi icon={Target} label="Oportunidades" value={String(kpis.open)} />
             <Kpi icon={Trophy} label="Ganadas" value={String(kpis.won)} accent="text-emerald-400" />
             <Kpi icon={XCircle} label="Perdidas" value={String(kpis.lost)} accent="text-rose-400" />
-            <Kpi icon={Percent} label="Conversión" value={`${kpis.conversion.toFixed(1)}%`} />
-            <Kpi icon={TrendingUp} label="Ticket prom." value={fmtMoney(kpis.avgTicket)} />
+            <Kpi
+              icon={Percent}
+              label="Conversión"
+              value={kpis.won + kpis.lost === 0 ? "—" : `${kpis.conversion.toFixed(1)}%`}
+              hint={kpis.won + kpis.lost === 0 ? "Sin decisiones aún" : `${kpis.won + kpis.lost} decididas`}
+            />
+            <Kpi
+              icon={TrendingUp}
+              label="Ticket prom."
+              value={kpis.won === 0 ? "—" : fmtMoney(kpis.avgTicket)}
+              hint={kpis.won === 0 ? "Sin ganadas aún" : undefined}
+            />
           </div>
 
           {/* Alerts strip */}
