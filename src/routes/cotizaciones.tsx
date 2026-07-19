@@ -161,6 +161,12 @@ function QuotesPage() {
     label: string;
     danger?: boolean;
   }>(null);
+  const [confirmSingle, setConfirmSingle] = useState<null | {
+    id: string;
+    kind: "send" | "delete";
+    number?: string;
+  }>(null);
+  const [singleBusy, setSingleBusy] = useState(false);
 
   const params = useMemo(() => {
     const p: any = { sort_by: sortBy, sort_dir: sortDir, limit: 200 };
