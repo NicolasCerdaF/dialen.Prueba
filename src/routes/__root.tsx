@@ -76,6 +76,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // Warm up the Supabase edge so the first Data API / auth call is faster.
+      { rel: "preconnect", href: "https://fscmaiyvdtichwpoajvu.supabase.co", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://fscmaiyvdtichwpoajvu.supabase.co" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap",
