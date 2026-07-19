@@ -42,7 +42,7 @@ export const Route = createFileRoute("/contactos")({
 });
 
 
-type SortKey = "last_interaction" | "created" | "name" | "value";
+type SortKey = "last_interaction" | "created" | "name";
 
 const SEGMENTS: { k: ContactSegment; label: string; icon: typeof Users; hint: string }[] = [
   { k: "all", label: "Todos", icon: Users, hint: "Toda tu base" },
@@ -79,7 +79,7 @@ function ContactosPage() {
 
   useRealtimeInvalidate({
     channel: "contacts-live",
-    tables: ["customers", "messages"],
+    tables: ["customers", "messages", "quotes"],
     invalidate: [["contacts"]],
   });
 
@@ -109,7 +109,7 @@ function ContactosPage() {
                   Contactos
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {totals.total} en total · {totals.clientes} clientes · {totals.contactos} contactos
+                  {totals.total} visibles · {totals.clientes} clientes · {totals.contactos} contactos
                 </p>
               </div>
             </div>
@@ -168,7 +168,6 @@ function ContactosPage() {
               <option value="last_interaction">Última interacción</option>
               <option value="created">Fecha de creación</option>
               <option value="name">Nombre</option>
-              <option value="value">Valor estimado</option>
             </select>
           </div>
         </header>
