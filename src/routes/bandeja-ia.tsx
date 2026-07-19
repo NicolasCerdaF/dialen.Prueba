@@ -587,10 +587,10 @@ function AnalysisPanel({
         <StatCard label="Análisis IA" value={data.totals.suggestions} tone="primary" />
         <StatCard
           label="Confianza IA"
-          value={Math.round(data.totals.avgConfidence * 100)}
+          value={`${Math.round(data.totals.avgConfidence * 100)}%`}
           tone="success"
         />
-        <StatCard label="Prob. cierre media" value={data.totals.avgProbability} tone="warn" />
+        <StatCard label="Prob. cierre media" value={`${data.totals.avgProbability}%`} tone="warn" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <TopList title="Intenciones frecuentes" items={data.topIntents} icon={TrendingUp} tone="primary" />
