@@ -1177,7 +1177,7 @@ function ForecastView({
       const k = normalizeStage(c.stage);
       const kind = getStage(k)?.kind;
       if (kind !== "open") continue;
-      const dateStr = (c as any).next_activity_at ?? c.updated_at;
+      const dateStr = c.next_activity_at ?? c.updated_at;
       const d = dateStr ? new Date(dateStr) : new Date();
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
