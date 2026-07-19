@@ -60,7 +60,7 @@ export const updateCompanyProfile = createServerFn({ method: "POST" })
     if (data.aiConfidenceThreshold !== undefined)
       update.ai_confidence_threshold = data.aiConfidenceThreshold;
     if (Object.keys(update).length === 0) return { ok: true };
-    const { error } = await supabase.from("companies").update(update).eq("id", companyId);
+    const { error } = await supabase.from("companies").update(update as any).eq("id", companyId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
