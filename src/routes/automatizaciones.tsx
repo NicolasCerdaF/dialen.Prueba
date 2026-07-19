@@ -307,13 +307,15 @@ function AutomationsPage() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-1">
                       <PackageSearch className="h-3.5 w-3.5" />
-                      Categoría: {category}
+                      {category === "all" ? "Categoría" : `Categoría: ${category}`}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuLabel>Categoría del disparador</DropdownMenuLabel>
                     {TRIGGER_CATEGORIES.map((c) => (
-                      <DropdownMenuItem key={c} onSelect={() => setCategory(c)}>{c}</DropdownMenuItem>
+                      <DropdownMenuItem key={c} onSelect={() => setCategory(c)}>
+                        {c === "all" ? "Todas" : c}
+                      </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
