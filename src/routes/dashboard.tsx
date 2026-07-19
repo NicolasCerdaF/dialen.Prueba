@@ -13,6 +13,8 @@ import {
   Package,
   FileText,
   Sparkles,
+  Target,
+  Clock,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
