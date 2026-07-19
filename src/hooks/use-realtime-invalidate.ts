@@ -18,7 +18,10 @@ export type RealtimeTable =
   | "products"
   | "product_customers"
   | "product_events"
-  | "director_insights";
+  | "director_insights"
+  | "automations"
+  | "automation_runs"
+  | "automation_versions";
 
 
 type Options = {
