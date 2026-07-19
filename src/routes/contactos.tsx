@@ -168,7 +168,6 @@ function ContactosPage() {
               <option value="last_interaction">Última interacción</option>
               <option value="created">Fecha de creación</option>
               <option value="name">Nombre</option>
-              <option value="value">Valor estimado</option>
             </select>
           </div>
         </header>
