@@ -67,7 +67,7 @@ const navGroups: NavGroup[] = [
     icon: Home,
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
-      { label: "Conversaciones", icon: MessageSquare, to: "/" },
+      { label: "Conversaciones", icon: MessageSquare, to: "/conversaciones" },
       { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
     ],
   },
