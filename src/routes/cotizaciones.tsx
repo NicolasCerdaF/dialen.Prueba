@@ -602,9 +602,15 @@ function QuotesPage() {
               quotes={quotes}
               onOpen={(id) => navigate({ to: "/cotizaciones/$id", params: { id } })}
               onStatus={onStatus}
-              onDelete={onDelete}
+              onDelete={(id) => {
+                const q = quotes.find((x) => x.id === id);
+                setConfirmSingle({ id, kind: "delete", number: q?.number });
+              }}
               onDuplicate={onDuplicate}
-              onSend={onSendById}
+              onSend={(id) => {
+                const q = quotes.find((x) => x.id === id);
+                setConfirmSingle({ id, kind: "send", number: q?.number });
+              }}
             />
           ) : (
             <table className="w-full text-sm">
@@ -629,9 +635,13 @@ function QuotesPage() {
                     selected={selected.has(q.id)}
                     onToggle={() => toggleOne(q.id)}
                     onStatus={onStatus}
-                    onDelete={onDelete}
+                    onDelete={(id) =>
+                      setConfirmSingle({ id, kind: "delete", number: q.number })
+                    }
                     onDuplicate={onDuplicate}
-                    onSend={onSendById}
+                    onSend={(id) =>
+                      setConfirmSingle({ id, kind: "send", number: q.number })
+                    }
                   />
                 ))}
               </tbody>
@@ -639,6 +649,7 @@ function QuotesPage() {
           )}
         </div>
       </div>
+
 
       {/* Confirmation dialog */}
       <AlertDialog open={!!confirmBulk} onOpenChange={(o) => !o && setConfirmBulk(null)}>
