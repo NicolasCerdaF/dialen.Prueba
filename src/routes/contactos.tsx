@@ -109,7 +109,7 @@ function ContactosPage() {
                   Contactos
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {totals.total} en total · {totals.clientes} clientes · {totals.contactos} contactos
+                  {totals.total} visibles · {totals.clientes} clientes · {totals.contactos} contactos
                 </p>
               </div>
             </div>
