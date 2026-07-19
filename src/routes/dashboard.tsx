@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -28,7 +28,7 @@ import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 import { getDashboardData, type AiPriority, type AttentionBucket, type AttentionItem, type FunnelStageMini } from "@/lib/dashboard.functions";
 import { STAGE_STYLES } from "@/lib/pipeline";
-import { supabase } from "@/integrations/supabase/client";
+
 import type { ReactNode } from "react";
 
 const dashboardQueryOptions = (fetcher: () => Promise<unknown>) =>
@@ -50,27 +50,13 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardPage() {
   const fetcher = useServerFn(getDashboardData);
-  const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(dashboardQueryOptions(fetcher));
 
-  // Realtime: invalidate on message/quote/conversation changes
-  useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "quotes" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
+  useRealtimeInvalidate({
+    channel: "dashboard-live",
+    tables: ["messages", "quotes", "conversations", "customers", "ai_suggestions"],
+    invalidate: [["dashboard", "overview"]],
+  });
 
   return (
     <AppShell>
@@ -277,9 +263,9 @@ function PulseGrid({
     openOpportunities: number;
     openOpportunitiesValue: number;
     quotesSent7d: number;
-    quotesSent7dDelta: number;
+    quotesSent7dDelta: number | null;
     salesMonth: number;
-    salesMonthCurrency: string;
+    salesMonthCurrency: string | null;
   };
 }) {
   return (
@@ -309,7 +295,11 @@ function PulseGrid({
       />
       <KpiTile
         label="Ventas del mes"
-        value={`${pulse.salesMonth.toLocaleString()} ${pulse.salesMonthCurrency}`}
+        value={
+          pulse.salesMonth > 0 && pulse.salesMonthCurrency
+            ? `${pulse.salesMonth.toLocaleString()} ${pulse.salesMonthCurrency}`
+            : "—"
+        }
         icon={DollarSign}
         tone="success"
         to="/dashboard-ejecutivo"
@@ -330,7 +320,7 @@ function KpiTile({
   label: string;
   value: string;
   sub?: string;
-  delta?: number;
+  delta?: number | null;
   icon: typeof MessageSquare;
   tone: "primary" | "success" | "accent" | "warn";
   to: string;
@@ -515,10 +505,10 @@ function LiveFunnel({ funnel }: { funnel: FunnelStageMini[] }) {
 
 function QuickActions() {
   const actions: { to: string; icon: typeof MessageSquare; label: string; desc: string }[] = [
-    { to: "/", icon: MessageSquare, label: "Nueva conversación", desc: "Abrir bandeja" },
-    { to: "/clientes", icon: UserPlus, label: "Crear contacto", desc: "Añadir cliente" },
-    { to: "/cotizaciones", icon: FileText, label: "Nueva cotización", desc: "Generar documento" },
-    { to: "/conocimiento", icon: BookOpen, label: "Cargar conocimiento", desc: "Base para la IA" },
+    { to: "/", icon: MessageSquare, label: "Abrir bandeja", desc: "Ver conversaciones" },
+    { to: "/contactos", icon: UserPlus, label: "Contactos", desc: "Directorio de personas" },
+    { to: "/cotizaciones", icon: FileText, label: "Cotizaciones", desc: "Crear y enviar" },
+    { to: "/conocimiento", icon: BookOpen, label: "Conocimiento", desc: "Base para la IA" },
   ];
   return (
     <Card className="md:col-span-2">

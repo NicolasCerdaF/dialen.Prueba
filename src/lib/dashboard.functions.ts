@@ -67,9 +67,9 @@ export type DashboardData = {
     openOpportunities: number;
     openOpportunitiesValue: number;
     quotesSent7d: number;
-    quotesSent7dDelta: number;
+    quotesSent7dDelta: number | null;
     salesMonth: number;
-    salesMonthCurrency: string;
+    salesMonthCurrency: string | null;
   };
   attention: AttentionBucket[];
   funnel: FunnelStageMini[];
@@ -114,9 +114,9 @@ export const getDashboardData = createServerFn({ method: "GET" })
         openOpportunities: 0,
         openOpportunitiesValue: 0,
         quotesSent7d: 0,
-        quotesSent7dDelta: 0,
+        quotesSent7dDelta: null,
         salesMonth: 0,
-        salesMonthCurrency: "USD",
+        salesMonthCurrency: null,
       },
       attention: [
         { id: "unresponded", label: "Sin responder", count: 0, items: [] },
@@ -234,19 +234,19 @@ export const getDashboardData = createServerFn({ method: "GET" })
         q.sent_at >= twoWeeksAgo &&
         q.sent_at < weekAgo,
     ).length;
-    const quotesSent7dDelta =
+    const quotesSent7dDelta: number | null =
       quotesSent7to14 === 0
-        ? quotesSent7d > 0 ? 100 : 0
+        ? null
         : Math.round(((quotesSent7d - quotesSent7to14) / quotesSent7to14) * 100);
 
     const acceptedThisMonth = quoteList.filter(
       (q) => q.status === "accepted" && q.accepted_at && new Date(q.accepted_at) >= monthStart,
     );
     const salesMonth = acceptedThisMonth.reduce((a, q) => a + Number(q.total ?? 0), 0);
-    const currency =
+    const currency: string | null =
       acceptedThisMonth[0]?.currency ??
-      quoteList.find((q) => q.currency)?.currency ??
-      "USD";
+      quoteList.find((q) => q.status === "accepted")?.currency ??
+      null;
 
     // ---- Funnel mini
     const funnel: FunnelStageMini[] = STAGES.filter((s) => s.kind !== "lost").map((s) => {
@@ -414,7 +414,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         customerId: c.customer_id,
         customerName: cust?.name ?? cust?.phone ?? "Cliente",
         potentialValue: Number(cust?.estimated_value ?? 0),
-        currency,
+        currency: currency ?? "",
         elapsedLabel: elapsedLabel(c.last_message_at),
         action: {
           label: "Abrir conversación",
@@ -439,7 +439,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         customerId: c.id,
         customerName: c.name ?? c.phone ?? "Cliente",
         potentialValue: Number(c.estimated_value ?? 0),
-        currency,
+        currency: currency ?? "",
         elapsedLabel: elapsedLabel(c.last_interaction_at),
         action: {
           label: "Ver cliente",
