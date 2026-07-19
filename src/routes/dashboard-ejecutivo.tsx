@@ -702,10 +702,15 @@ function ProductsTab({ dash }: { dash: ExecutiveDashboard }) {
                       <td className="px-4 py-3 text-right tabular-nums">{p.units.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtMoney(p.revenue, cur)}</td>
                       <td className="px-4 py-3 text-right">
-                        <Badge variant="outline" className="rounded">
-                          {winRate}%
-                        </Badge>
+                        {p.quoted > 0 ? (
+                          <Badge variant="outline" className="rounded">
+                            {winRate}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
+
                     </tr>
                   );
                 })}
