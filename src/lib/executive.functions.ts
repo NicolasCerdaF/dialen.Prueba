@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { normalizeStage, STAGES } from "@/lib/pipeline";
+import { callChat } from "@/lib/ai-router.server";
 
 export type ExecRange = 7 | 30 | 90;
 
