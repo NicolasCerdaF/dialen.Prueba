@@ -741,9 +741,9 @@ function KnowledgeTab({ a }: { a: AiAnalytics }) {
           icon={ThumbsUp}
         />
         <Kpi
-          label="Documentos activos"
-          value={a.topDocuments.length}
-          hint="Con al menos 1 cita"
+          label="Documentos citados"
+          value={a.topDocuments.length.toLocaleString()}
+          hint={a.topDocuments.length ? "Top citados en el rango" : "—"}
           icon={Sparkles}
         />
       </div>
