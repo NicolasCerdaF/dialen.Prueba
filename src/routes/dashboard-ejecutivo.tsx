@@ -1107,6 +1107,14 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
 
 function FunnelBar({ funnel, currency }: { funnel: ExecutiveDashboard["funnel"]; currency: string }) {
   const rows = funnel.filter((f) => f.kind !== "lost");
+  const totalCount = rows.reduce((a, r) => a + r.count, 0);
+  if (totalCount === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Aún no hay clientes en el embudo.
+      </div>
+    );
+  }
   const maxCount = Math.max(1, ...rows.map((r) => r.count));
   return (
     <div className="space-y-2">
@@ -1121,13 +1129,14 @@ function FunnelBar({ funnel, currency }: { funnel: ExecutiveDashboard["funnel"];
           </div>
           <span className="w-14 text-right tabular-nums">{s.count}</span>
           <span className="w-24 text-right text-muted-foreground tabular-nums">
-            {fmtMoney(s.value, currency)}
+            {s.value > 0 ? fmtMoney(s.value, currency) : "—"}
           </span>
         </div>
       ))}
     </div>
   );
 }
+
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
