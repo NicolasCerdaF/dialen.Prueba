@@ -42,7 +42,7 @@ export const Route = createFileRoute("/contactos")({
 });
 
 
-type SortKey = "last_interaction" | "created" | "name" | "value";
+type SortKey = "last_interaction" | "created" | "name";
 
 const SEGMENTS: { k: ContactSegment; label: string; icon: typeof Users; hint: string }[] = [
   { k: "all", label: "Todos", icon: Users, hint: "Toda tu base" },
