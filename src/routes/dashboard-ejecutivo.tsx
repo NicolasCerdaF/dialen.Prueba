@@ -1042,7 +1042,14 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
     },
     { human: 0, ai: 0 },
   );
-  const total = totals.human + totals.ai || 1;
+  const total = totals.human + totals.ai;
+  if (total === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Aún no hay respuestas salientes en este periodo.
+      </div>
+    );
+  }
   const humanPct = Math.round((totals.human / total) * 100);
   const aiPct = 100 - humanPct;
   return (
@@ -1054,18 +1061,23 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-md border border-border p-3">
           <div className="text-xs text-muted-foreground">Humanos</div>
-          <div className="font-display text-lg font-semibold">{totals.human.toLocaleString()}</div>
+          <div className="font-display text-lg font-semibold tabular-nums">
+            {totals.human.toLocaleString()}
+          </div>
           <div className="text-xs text-muted-foreground">{humanPct}% del total</div>
         </div>
         <div className="rounded-md border border-border p-3">
           <div className="text-xs text-muted-foreground">IA</div>
-          <div className="font-display text-lg font-semibold">{totals.ai.toLocaleString()}</div>
+          <div className="font-display text-lg font-semibold tabular-nums">
+            {totals.ai.toLocaleString()}
+          </div>
           <div className="text-xs text-muted-foreground">{aiPct}% del total</div>
         </div>
       </div>
     </div>
   );
 }
+
 
 function FunnelBar({ funnel, currency }: { funnel: ExecutiveDashboard["funnel"]; currency: string }) {
   const rows = funnel.filter((f) => f.kind !== "lost");
