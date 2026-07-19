@@ -5,12 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 export type RealtimeTable =
   | "messages"
   | "conversations"
+  | "conversation_events"
+  | "conversation_notes"
   | "quotes"
   | "quote_events"
   | "customers"
-  | "ai_suggestions"
-  | "conversation_notes"
-  | "customer_notes";
+  | "customer_events"
+  | "customer_notes"
+  | "ai_suggestions";
+
 
 type Options = {
   /** Unique channel name (must be stable across renders for the same subscription). */
