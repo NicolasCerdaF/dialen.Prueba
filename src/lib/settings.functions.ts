@@ -4,13 +4,36 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Role = "admin" | "manager" | "vendedor";
 
+async function ensureOwnerAdminRole(supabase: any, userId: string, companyId: string) {
+  const { data: company } = await supabase
+    .from("companies")
+    .select("owner_id")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (company?.owner_id !== userId) return;
+
+  const { error } = await supabase.from("user_roles").upsert(
+    {
+      user_id: userId,
+      company_id: companyId,
+      role: "admin",
+    },
+    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
+  );
+  if (error) throw new Error(error.message);
+}
+
 async function getCompanyId(supabase: any, userId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
     .select("company_id, email, full_name")
     .eq("id", userId)
     .maybeSingle();
-  if (data?.company_id) return data.company_id as string;
+  if (data?.company_id) {
+    const companyId = data.company_id as string;
+    await ensureOwnerAdminRole(supabase, userId, companyId);
+    return companyId;
+  }
 
   // Bootstrap para cuentas existentes en proyectos remixados: si el trigger de
   // alta no creó empresa/perfil/rol, lo resolvemos antes de cargar Configuración.
@@ -68,15 +91,7 @@ async function getCompanyId(supabase: any, userId: string): Promise<string> {
     if (error) throw new Error(error.message);
   }
 
-  const { error: roleError } = await supabase.from("user_roles").upsert(
-    {
-      user_id: userId,
-      company_id: resolvedCompanyId,
-      role: "admin",
-    },
-    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
-  );
-  if (roleError) throw new Error(roleError.message);
+  await ensureOwnerAdminRole(supabase, userId, resolvedCompanyId);
 
   return resolvedCompanyId;
 }
