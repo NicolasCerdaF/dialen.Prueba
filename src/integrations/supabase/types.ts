@@ -1792,6 +1792,7 @@ export type Database = {
     }
     Functions: {
       current_company_id: { Args: never; Returns: string }
+      ensure_user_company: { Args: never; Returns: string }
       has_role: {
         Args: {
           _company_id: string
