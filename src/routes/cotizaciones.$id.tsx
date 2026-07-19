@@ -494,7 +494,7 @@ function QuoteDetailPage() {
                     </DropdownMenuItem>
                   )}
                   {["sent", "viewed"].includes(quote.status) && (
-                    <DropdownMenuItem onSelect={onSend}>
+                    <DropdownMenuItem onSelect={() => setConfirmSend(true)}>
                       <Send className="mr-2 h-3.5 w-3.5" /> Reenviar por WhatsApp
                     </DropdownMenuItem>
                   )}
