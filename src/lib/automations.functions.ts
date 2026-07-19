@@ -894,7 +894,7 @@ export const getRecipeSuggestions = createServerFn({ method: "GET" })
       supabase.from("customers").select("id", { count: "exact", head: true }).eq("company_id", cid)
         .lte("last_interaction_at", new Date(Date.now() - 14 * 24 * 3600_000).toISOString()),
       supabase.from("quotes").select("id", { count: "exact", head: true }).eq("company_id", cid).eq("status", "sent").is("viewed_at", null),
-      supabase.from("ai_insights").select("id", { count: "exact", head: true }).eq("company_id", cid).eq("kind", "sales_analysis").gte("score", 0.7),
+      supabase.from("ai_insights").select("id", { count: "exact", head: true }).eq("company_id", cid).gte("probability", 0.7),
     ]);
     const suggestions: { recipe_id: string; reason: string; score: number }[] = [];
     if ((openConv ?? 0) > 3) suggestions.push({ recipe_id: "followup-no-response", reason: `Tienes ${openConv} conversaciones abiertas: activa recordatorios sin respuesta.`, score: 0.9 });
