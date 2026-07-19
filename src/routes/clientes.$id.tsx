@@ -44,9 +44,13 @@ import { Button } from "@/components/ui/button";
 import { listQuotes as listQuotesForTab, generateQuoteDraft as generateQuoteDraftFn } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
+
 export const Route = createFileRoute("/clientes/$id")({
   head: () => ({ meta: [{ title: "Ficha de cliente — Dialen" }] }),
   component: CustomerDetailPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
 function CustomerDetailPage() {
@@ -60,30 +64,35 @@ function CustomerDetailPage() {
   const { data: customer, refetch } = useQuery({
     queryKey: ["crm-customer", id],
     queryFn: () => get({ data: { id } }),
+    staleTime: 20_000,
   });
 
   const { data: timeline = [], refetch: refetchTimeline } = useQuery({
     queryKey: ["crm-timeline", id],
     queryFn: () => timelineFn({ data: { customer_id: id } }),
+    staleTime: 20_000,
   });
 
   const { data: team = [] } = useQuery({
     queryKey: ["crm-team"],
     queryFn: () => teamFn(),
+    staleTime: 5 * 60_000,
   });
 
-  // Realtime: refresh customer + timeline on relevant changes
-  useEffect(() => {
-    const ch = supabase
-      .channel(`crm-detail-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `id=eq.${id}` }, () => refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customer_events", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customer_notes", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [id, refetch, refetchTimeline]);
+  // Realtime: shared helper — customer row + related timeline events/notes.
+  useRealtimeInvalidate({
+    channel: `crm-detail-${id}`,
+    tables: ["customers"],
+    filter: `id=eq.${id}`,
+    invalidate: [["crm-customer", id]],
+  });
+  useRealtimeInvalidate({
+    channel: `crm-detail-tl-${id}`,
+    tables: ["customer_events", "customer_notes"],
+    filter: `customer_id=eq.${id}`,
+    invalidate: [["crm-timeline", id]],
+  });
+
 
   if (!customer) {
     return (
