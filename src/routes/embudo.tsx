@@ -1001,7 +1001,7 @@ function CustomerCard({
           {unread > 0 && conversationId && (
             <Link
               to="/conversaciones"
-              search={{ conversation: conversationId } as any}
+              hash={`conv=${conversationId}`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-1.5 py-0.5 text-primary"
             >
