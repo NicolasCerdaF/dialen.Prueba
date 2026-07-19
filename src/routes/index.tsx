@@ -966,7 +966,8 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         )}
         <div className="mt-3">
           <Link
-            to="/clientes"
+            to="/clientes/$id"
+            params={{ id: customer.id }}
             className="flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium hover:bg-secondary"
           >
             <UsersIcon className="h-3 w-3" /> Ver ficha completa en CRM
