@@ -477,8 +477,11 @@ function SalesTab({ dash }: { dash: ExecutiveDashboard }) {
         <div className="mb-3 flex items-center justify-between text-sm font-medium">
           <span>Cotizaciones y ventas por día</span>
           <span className="text-xs text-muted-foreground">
-            Total periodo: {fmtMoney(totalRevenue, cur)} · Mejor día: {bestDay?.date ?? "—"}
+            {totalRevenue > 0
+              ? `Total periodo: ${fmtMoney(totalRevenue, cur)} · Mejor día: ${bestDay?.date ?? "—"}`
+              : "Sin ventas en el periodo"}
           </span>
+
         </div>
         <SalesStackedChart series={dash.series} />
       </Card>
