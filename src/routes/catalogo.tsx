@@ -37,7 +37,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import {
   listProductsAdvanced,
-  listProducts,
+  
   upsertProduct,
   deleteProduct,
   duplicateProduct,
