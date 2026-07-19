@@ -439,7 +439,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         customerId: c.id,
         customerName: c.name ?? c.phone ?? "Cliente",
         potentialValue: Number(c.estimated_value ?? 0),
-        currency,
+        currency: currency ?? "",
         elapsedLabel: elapsedLabel(c.last_interaction_at),
         action: {
           label: "Ver cliente",
