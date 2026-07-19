@@ -45,7 +45,8 @@ type ExistingRoute =
   | "/automatizaciones"
   | "/conocimiento"
   | "/configuracion"
-  | "/onboarding/whatsapp";
+  | "/onboarding/whatsapp"
+  | "/whatsapp";
 
 type NavItem = {
   label: string;
