@@ -15,7 +15,9 @@ export type AiPriority = {
   action: {
     label: string;
     to: string;
+    params?: Record<string, string>;
     search?: Record<string, string>;
+    hash?: string;
   };
 };
 
@@ -26,7 +28,9 @@ export type AttentionItem = {
   detail: string;
   elapsedLabel: string;
   to: string;
+  params?: Record<string, string>;
   search?: Record<string, string>;
+  hash?: string;
 };
 
 export type AttentionBucket = {
