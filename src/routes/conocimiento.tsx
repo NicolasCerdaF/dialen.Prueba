@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -643,12 +643,12 @@ function KPI({
             ? "text-violet-500"
             : "text-primary";
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <Icon className={`h-3.5 w-3.5 ${toneCls}`} />
-        {label}
+    <div className="min-w-0 rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-2 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
+        <Icon className={`h-3.5 w-3.5 shrink-0 ${toneCls}`} />
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-1 font-display text-2xl font-semibold">{value.toLocaleString()}</div>
+      <div className="mt-1 truncate font-display text-2xl font-semibold tabular-nums">{value.toLocaleString()}</div>
     </div>
   );
 }
@@ -927,7 +927,7 @@ function DocumentSheet({
   const [busy, setBusy] = useState<"save" | "summarize" | "reembed" | null>(null);
 
   // Sync state when doc loads
-  useMemo(() => {
+  useEffect(() => {
     if (doc) {
       setTitle(doc.title ?? "");
       setDescription(doc.description ?? "");
@@ -935,7 +935,7 @@ function DocumentSheet({
       setTagsStr((doc.tags ?? []).join(", "));
       setFolder(doc.folder ?? "");
     }
-    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc?.id]);
 
   async function save() {
@@ -1189,7 +1189,7 @@ function DocumentSheet({
                           {u.conversation_id && (
                             <Link
                               to="/conversaciones"
-                              search={{ id: u.conversation_id } as any}
+                              hash={`conv=${u.conversation_id}`}
                               className="inline-flex items-center gap-1 text-primary hover:underline"
                             >
                               <MessageSquare className="h-3 w-3" /> Ver chat
@@ -1360,6 +1360,7 @@ function AnalyticsPanel({
     );
   }
   const maxBucket = Math.max(1, ...agg.buckets.map((b: any) => b.count));
+  const hasUsage = (agg.usage_7d ?? 0) > 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -1367,25 +1368,32 @@ function AnalyticsPanel({
         <div className="mb-3 flex items-center gap-2 text-sm font-medium">
           <TrendingUp className="h-4 w-4 text-violet-500" /> Citas por día (7d)
         </div>
-        <div className="flex h-32 items-end gap-2">
-          {agg.buckets.map((b: any) => (
-            <div key={b.day} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className="w-full rounded-t bg-violet-500/70"
-                style={{ height: `${(b.count / maxBucket) * 100}%` }}
-                title={`${b.count} citas`}
-              />
-              <div className="text-[10px] text-muted-foreground">
-                {new Date(b.day).toLocaleDateString(undefined, { weekday: "short" })}
+        {hasUsage ? (
+          <div className="flex h-32 items-end gap-2">
+            {agg.buckets.map((b: any) => (
+              <div key={b.day} className="flex flex-1 flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t bg-violet-500/70"
+                  style={{ height: `${Math.max(2, (b.count / maxBucket) * 100)}%` }}
+                  title={`${b.count} citas`}
+                />
+                <div className="text-[10px] text-muted-foreground">
+                  {new Date(b.day).toLocaleDateString(undefined, { weekday: "short" })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex justify-between text-xs text-muted-foreground">
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+            La IA aún no ha citado documentos en los últimos 7 días
+          </div>
+        )}
+        <div className="mt-3 flex justify-between text-xs text-muted-foreground tabular-nums">
           <span>Total 7d: {agg.usage_7d}</span>
           <span>Total 30d: {agg.usage_30d}</span>
         </div>
       </Card>
+
 
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium">
