@@ -3,12 +3,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, type AiStyle } from "@/lib/ai-styles";
-import { aiFetch } from "@/lib/ai-fetch";
 import { log } from "@/lib/logger";
 import { fetchKnowledgeContext } from "@/lib/knowledge-rag.server";
+import { callChat } from "@/lib/ai-router.server";
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
 const HISTORY_LIMIT = 12;
 
 type AdminClient = ReturnType<typeof createClient<Database>>;
