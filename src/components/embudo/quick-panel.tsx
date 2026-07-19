@@ -547,7 +547,7 @@ function TimelineItem({
   entry: {
     id: string;
     kind: string;
-    title?: string | null;
+    event_type?: string;
     body?: string | null;
     payload?: any;
     actor_id?: string | null;
@@ -557,11 +557,13 @@ function TimelineItem({
 }) {
   const date = new Date(entry.created_at);
   const iconByKind: Record<string, React.ReactNode> = {
-    note: <StickyNote className="h-3.5 w-3.5" />,
-    event: <History className="h-3.5 w-3.5" />,
-    message: <MessageSquare className="h-3.5 w-3.5" />,
+    customer_note: <StickyNote className="h-3.5 w-3.5" />,
+    conversation_note: <StickyNote className="h-3.5 w-3.5" />,
+    customer_event: <History className="h-3.5 w-3.5" />,
+    conversation_event: <MessageSquare className="h-3.5 w-3.5" />,
   };
   const icon = iconByKind[entry.kind] ?? <History className="h-3.5 w-3.5" />;
+  const title = entry.event_type ?? entry.kind.replace("_", " ");
   const changes = entry?.payload?.changes as
     | Record<string, { from: unknown; to: unknown }>
     | undefined;
@@ -573,7 +575,7 @@ function TimelineItem({
       </span>
       <div className="rounded-lg border bg-card/40 p-2.5">
         <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <span className="font-medium capitalize">{entry.title ?? entry.kind}</span>
+          <span className="font-medium capitalize">{title}</span>
           <time>{date.toLocaleString()}</time>
         </div>
         {entry.body && <p className="mt-1 text-sm">{entry.body}</p>}
