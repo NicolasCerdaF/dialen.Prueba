@@ -329,31 +329,61 @@ function InboxPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1 px-3 pb-2">
-            {(
-              [
-                ["all", "Todas", counts.all],
-                ["mine", "Míos", counts.mine],
-                ["unassigned", "Sin asignar", counts.unassigned],
-                ["unread", "Sin leer", counts.unread],
-                ["resolved", "Resueltos", counts.resolved],
-              ] as const
-            ).map(([k, label, n]) => (
-              <button
-                key={k}
-                onClick={() => setFilter(k as FilterKey)}
-                className={cn(
-                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
-                  filter === k
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {label}
-                <span className="opacity-70">{n}</span>
-              </button>
-            ))}
+          <div className="space-y-1.5 px-3 pb-2">
+            <div className="flex flex-wrap gap-1">
+              {(
+                [
+                  ["all", "Todas", counts.all],
+                  ["mine", "Míos", counts.mine],
+                  ["unassigned", "Sin asignar", counts.unassigned],
+                  ["unread", "Sin leer", counts.unread],
+                  ["resolved", "Resueltos", counts.resolved],
+                ] as const
+              ).map(([k, label, n]) => (
+                <button
+                  key={k}
+                  onClick={() => setFilter(k as FilterKey)}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
+                    filter === k
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                  <span className="opacity-70">{n}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1 border-t border-border/60 pt-1.5">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70 self-center pr-1">
+                Estado
+              </span>
+              {STAGES.map((s) => {
+                const key = `stage:${s.key}` as FilterKey;
+                const n = counts[s.key as keyof typeof counts] as number;
+                const active = filter === key;
+                const style = STAGE_STYLES[s.color];
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setFilter(key)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition",
+                      active
+                        ? cn(style.bar, "border-transparent text-white")
+                        : "border-border bg-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-white/80" : style.bar)} />
+                    {s.label}
+                    <span className="opacity-70">{n}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
 
           <ul className="flex-1 overflow-y-auto">
             {filtered.map((c) => {
