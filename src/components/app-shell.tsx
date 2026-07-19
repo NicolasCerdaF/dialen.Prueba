@@ -165,42 +165,54 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-5 pb-4 pt-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-[var(--shadow-glow)]">
           <Sparkles className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
         </div>
         <div className="leading-tight">
-          <div className="font-display text-lg font-semibold tracking-tight">
+          <div className="font-display text-[15px] font-semibold tracking-tight">
             <span className="text-gradient-primary">Dialen</span>
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">by Nova Corp</div>
+          <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            by Nova Corp
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-2">
-        <ul className="space-y-2">
+      <nav className="flex-1 overflow-y-auto px-3 pb-2 pt-1">
+        <ul className="space-y-1">
           {navGroups.map((group) => {
             const GroupIcon = group.icon;
             const isOpen = open[group.id] ?? false;
+            const isAiGroup = group.id === "ia";
             return (
-              <li key={group.id}>
+              <li key={group.id} className="pt-2 first:pt-0">
                 <button
                   type="button"
-                  onClick={() => setOpen((p) => ({ ...p, [group.id]: !p[group.id] }))}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    setOpen((p) => ({ ...p, [group.id]: !p[group.id] }))
+                  }
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] transition-smooth",
+                    isAiGroup
+                      ? "text-[color:var(--ai)] hover:text-[color:var(--ai-glow)]"
+                      : "text-muted-foreground/80 hover:text-foreground",
+                  )}
                   aria-expanded={isOpen}
                 >
                   <GroupIcon className="h-3.5 w-3.5" />
                   <span className="flex-1 text-left">{group.label}</span>
+                  {isAiGroup && <span className="ai-dot h-1.5 w-1.5 rounded-full" />}
                   <ChevronDown
                     className={cn(
-                      "h-3.5 w-3.5 transition-transform",
+                      "h-3.5 w-3.5 transition-transform duration-200",
                       isOpen ? "rotate-0" : "-rotate-90",
                     )}
                   />
                 </button>
                 {isOpen && (
-                  <ul className="mt-1 space-y-0.5 pl-1">
+                  <ul className="mt-1 space-y-px">
                     {group.items.map((item) => {
                       const Icon = item.icon;
                       const active = isItemActive(pathname, item.to);
@@ -208,12 +220,12 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                         return (
                           <li key={`${group.id}-${item.label}`}>
                             <div
-                              className="group relative flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground/60"
+                              className="group relative flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted-foreground/55"
                               title="Próximamente"
                             >
-                              <Icon className="h-4 w-4" />
+                              <Icon className="h-4 w-4" strokeWidth={1.75} />
                               <span className="flex-1 truncate">{item.label}</span>
-                              <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                              <span className="rounded-full border border-border bg-secondary/60 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Pronto
                               </span>
                             </div>
@@ -226,16 +238,33 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                             to={item.to}
                             onClick={onNavigate}
                             className={cn(
-                              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                              "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-smooth",
                               active
-                                ? "bg-accent text-accent-foreground"
-                                : "text-sidebar-foreground/80 hover:bg-secondary hover:text-foreground",
+                                ? isAiGroup
+                                  ? "bg-[color-mix(in_oklab,var(--ai)_10%,transparent)] text-foreground"
+                                  : "bg-secondary text-foreground"
+                                : "text-sidebar-foreground/75 hover:bg-secondary/70 hover:text-foreground",
                             )}
                           >
                             {active && (
-                              <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-r bg-primary" />
+                              <span
+                                className={cn(
+                                  "absolute inset-y-1.5 left-0 w-0.5 rounded-r",
+                                  isAiGroup ? "bg-[color:var(--ai)]" : "bg-primary",
+                                )}
+                              />
                             )}
-                            <Icon className="h-4 w-4" />
+                            <Icon
+                              className={cn(
+                                "h-4 w-4 transition-smooth",
+                                active
+                                  ? isAiGroup
+                                    ? "text-[color:var(--ai)]"
+                                    : "text-primary"
+                                  : "text-muted-foreground/80 group-hover:text-foreground",
+                              )}
+                              strokeWidth={1.75}
+                            />
                             <span className="flex-1 truncate">{item.label}</span>
                           </Link>
                         </li>
@@ -249,28 +278,34 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
 
+      {/* Footer */}
       <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
-          <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="text-xs">
+        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 transition-smooth hover:bg-secondary/70">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+          </span>
+          <div className="text-xs leading-tight">
             <div className="font-medium">WhatsApp no conectado</div>
-            <div className="text-muted-foreground">Configura en ajustes</div>
+            <div className="text-[11px] text-muted-foreground">Configura en ajustes</div>
           </div>
         </div>
         <div className="mt-3 flex items-center gap-3 px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-xs font-semibold text-primary-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-[11px] font-semibold text-primary-foreground shadow-[var(--shadow-xs)]">
             {initials}
           </div>
           <div className="flex-1 overflow-hidden text-xs">
-            <div className="truncate font-medium">{profile?.full_name ?? profile?.email ?? "—"}</div>
-            <div className="truncate text-muted-foreground">
+            <div className="truncate font-medium">
+              {profile?.full_name ?? profile?.email ?? "—"}
+            </div>
+            <div className="truncate text-[11px] text-muted-foreground">
               {role ?? "—"} · {companyName ?? "—"}
             </div>
           </div>
           <button
             onClick={signOut}
             title="Cerrar sesión"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
@@ -279,6 +314,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
     </div>
   );
 }
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
