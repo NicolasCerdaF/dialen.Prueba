@@ -414,7 +414,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         customerId: c.customer_id,
         customerName: cust?.name ?? cust?.phone ?? "Cliente",
         potentialValue: Number(cust?.estimated_value ?? 0),
-        currency,
+        currency: currency ?? "",
         elapsedLabel: elapsedLabel(c.last_message_at),
         action: {
           label: "Abrir conversación",
