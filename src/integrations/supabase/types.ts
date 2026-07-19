@@ -963,6 +963,51 @@ export type Database = {
           },
         ]
       }
+      product_events: {
+        Row: {
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          product_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          product_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_recommendations: {
         Row: {
           agent_type: string
