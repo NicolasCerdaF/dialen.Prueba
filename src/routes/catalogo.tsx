@@ -893,19 +893,26 @@ function Kpi({
   label,
   value,
   tone = "default",
+  hint,
+  title,
 }: {
   icon: any;
   label: string;
   value: string;
   tone?: "default" | "warn";
+  hint?: string;
+  title?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border bg-card p-4", tone === "warn" && "border-amber-400/50")}>
+    <div className={cn("min-w-0 rounded-lg border bg-card p-4", tone === "warn" && "border-amber-400/50")}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className={cn("h-4 w-4", tone === "warn" ? "text-amber-500" : "text-primary")} />
-        {label}
+        <Icon className={cn("h-4 w-4 shrink-0", tone === "warn" ? "text-amber-500" : "text-primary")} />
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-1 text-2xl font-semibold">{value}</div>
+      <div className="mt-1 truncate font-display text-2xl font-semibold tabular-nums" title={title ?? value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
