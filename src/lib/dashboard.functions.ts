@@ -396,7 +396,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Abrir cotización",
           to: "/cotizaciones/$id",
-          search: { id: q.id },
+          params: { id: q.id },
         },
       });
     }
