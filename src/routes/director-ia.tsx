@@ -510,7 +510,7 @@ function DirectorIA() {
                 onCheckedChange={(v) => (v ? selectAllVisible() : setSelected(new Set()))}
               />
               <span className="flex-1">Recomendación</span>
-              <span className="hidden w-24 text-right sm:block">Valor</span>
+              <span className="hidden w-28 text-right sm:block">Valor</span>
               <span className="hidden w-20 text-right sm:block">Estado</span>
               <span className="w-8" />
             </div>
