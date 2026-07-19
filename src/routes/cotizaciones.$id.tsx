@@ -115,9 +115,15 @@ const STATUS_META: Record<QuoteStatus, { label: string; color: string; icon: any
 function QuoteDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const get = useServerFn(getQuote);
   const update = useServerFn(updateQuote);
   const changeStatus = useServerFn(setQuoteStatus);
+  const delFn = useServerFn(deleteQuote);
+  const dupFn = useServerFn(duplicateQuote);
+  const reviseFn = useServerFn(reviseQuote);
+  const sendFn = useServerFn(sendQuoteById);
+  const followupFn = useServerFn(scheduleQuoteFollowup);
   const listEvents = useServerFn(listQuoteEvents);
   const listProds = useServerFn(listProducts);
 
@@ -125,7 +131,7 @@ function QuoteDetailPage() {
     queryKey: ["quote", id],
     queryFn: () => get({ data: { id } }),
   });
-  const { data: events = [] } = useQuery({
+  const { data: events = [], refetch: refetchEvents } = useQuery({
     queryKey: ["quote-events", id],
     queryFn: () => listEvents({ data: { quote_id: id } }),
     enabled: !!quote,
