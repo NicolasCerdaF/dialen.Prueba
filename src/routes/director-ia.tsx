@@ -216,8 +216,7 @@ function DirectorIA() {
 
   const rows = listQ.data?.rows ?? [];
   const summary = summaryQ.data;
-
-  const filteredRows = useMemo(() => rows, [rows]);
+  const filteredRows = rows;
 
   function toggleOne(id: string) {
     setSelected((prev) => {
