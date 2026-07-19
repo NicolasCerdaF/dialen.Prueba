@@ -45,7 +45,8 @@ type ExistingRoute =
   | "/automatizaciones"
   | "/conocimiento"
   | "/configuracion"
-  | "/onboarding/whatsapp";
+  | "/onboarding/whatsapp"
+  | "/whatsapp";
 
 type NavItem = {
   label: string;
@@ -109,7 +110,7 @@ const navGroups: NavGroup[] = [
     label: "Administración",
     icon: Cog,
     items: [
-      { label: "WhatsApp", icon: MessageSquare, to: "/onboarding/whatsapp" },
+      { label: "WhatsApp", icon: MessageSquare, to: "/whatsapp" },
       { label: "Configuración", icon: Settings, to: "/configuracion" },
     ],
   },

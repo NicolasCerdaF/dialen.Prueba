@@ -339,3 +339,248 @@ export const toggleConversationAiPause = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, paused: data.paused };
   });
+
+// ============================================================
+// PRODUCTION MODULE — Channel management, templates, metrics
+// ============================================================
+
+async function getCompanyChannel(supabase: any, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles").select("company_id").eq("id", userId).maybeSingle();
+  if (!profile?.company_id) throw new Error("No se encontró la empresa");
+  const { data: ch } = await supabase
+    .from("whatsapp_channels")
+    .select("*")
+    .eq("company_id", profile.company_id)
+    .maybeSingle();
+  return { company_id: profile.company_id as string, channel: ch };
+}
+
+// Full channel info (token redacted)
+export const getWhatsAppChannel = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel) return null;
+    return {
+      id: channel.id,
+      status: channel.status,
+      display_phone: channel.display_phone,
+      phone_number_id: channel.phone_number_id,
+      business_account_id: channel.business_account_id,
+      webhook_verify_token: channel.webhook_verify_token,
+      connected_at: channel.connected_at,
+      updated_at: channel.updated_at,
+      has_token: !!channel.access_token,
+    };
+  });
+
+// Business profile from Meta Graph API
+export const getWhatsAppBusinessProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.phone_number_id) return null;
+    const res = await fetch(
+      `${GRAPH()}/${channel.phone_number_id}/whatsapp_business_profile?fields=about,address,description,email,profile_picture_url,websites,vertical`,
+      { headers: { Authorization: `Bearer ${channel.access_token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return json?.data?.[0] ?? null;
+  });
+
+const ProfileInput = z.object({
+  about: z.string().max(139).optional(),
+  description: z.string().max(512).optional(),
+  email: z.string().email().max(128).optional().or(z.literal("")),
+  address: z.string().max(256).optional(),
+  vertical: z.string().max(64).optional(),
+  websites: z.array(z.string().url().max(256)).max(2).optional(),
+});
+
+export const updateWhatsAppBusinessProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => ProfileInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.phone_number_id) throw new Error("Canal no conectado");
+    const payload: any = { messaging_product: "whatsapp" };
+    for (const k of Object.keys(data) as (keyof typeof data)[]) {
+      const v = (data as any)[k];
+      if (v !== undefined && v !== "") payload[k] = v;
+    }
+    const res = await fetch(`${GRAPH()}/${channel.phone_number_id}/whatsapp_business_profile`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${channel.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return { ok: true };
+  });
+
+// Phone number quality + status
+export const getWhatsAppPhoneHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.phone_number_id) return null;
+    const res = await fetch(
+      `${GRAPH()}/${channel.phone_number_id}?fields=display_phone_number,verified_name,quality_rating,name_status,code_verification_status,platform_type,throughput`,
+      { headers: { Authorization: `Bearer ${channel.access_token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return json;
+  });
+
+// List message templates
+export const listWhatsAppTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.business_account_id) return [];
+    const res = await fetch(
+      `${GRAPH()}/${channel.business_account_id}/message_templates?limit=100&fields=name,status,language,category,components,quality_score,id`,
+      { headers: { Authorization: `Bearer ${channel.access_token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return (json?.data ?? []) as any[];
+  });
+
+const CreateTemplateInput = z.object({
+  name: z.string().min(1).max(64).regex(/^[a-z0-9_]+$/, "Solo minúsculas, números y guion bajo"),
+  language: z.string().min(2).max(10),
+  category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"]),
+  body: z.string().min(1).max(1024),
+  footer: z.string().max(60).optional(),
+});
+
+export const createWhatsAppTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => CreateTemplateInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.business_account_id) throw new Error("Canal no conectado");
+    const components: any[] = [{ type: "BODY", text: data.body }];
+    if (data.footer) components.push({ type: "FOOTER", text: data.footer });
+    const res = await fetch(`${GRAPH()}/${channel.business_account_id}/message_templates`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${channel.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: data.name, language: data.language, category: data.category, components }),
+    });
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return { ok: true, id: json?.id };
+  });
+
+const DeleteTemplateInput = z.object({ name: z.string().min(1).max(64) });
+
+export const deleteWhatsAppTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => DeleteTemplateInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.business_account_id) throw new Error("Canal no conectado");
+    const res = await fetch(
+      `${GRAPH()}/${channel.business_account_id}/message_templates?name=${encodeURIComponent(data.name)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${channel.access_token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    return { ok: true };
+  });
+
+// Metrics — from local messages table (source of truth)
+export const getWhatsAppMetrics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    const since30 = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: rows } = await context.supabase
+      .from("messages")
+      .select("direction, status, created_at")
+      .eq("company_id", company_id)
+      .gte("created_at", since30)
+      .limit(50000);
+    const list = rows ?? [];
+    const buckets = { d1: { in: 0, out: 0 }, d7: { in: 0, out: 0 }, d30: { in: 0, out: 0 } };
+    const statusCount: Record<string, number> = {};
+    const daily = new Map<string, { in: number; out: number }>();
+    for (const m of list) {
+      const t = m.created_at as string;
+      const dir = m.direction as string;
+      if (t >= since24h) buckets.d1[dir === "inbound" ? "in" : "out"]++;
+      if (t >= since7) buckets.d7[dir === "inbound" ? "in" : "out"]++;
+      buckets.d30[dir === "inbound" ? "in" : "out"]++;
+      if (m.status) statusCount[m.status] = (statusCount[m.status] ?? 0) + 1;
+      const day = t.slice(0, 10);
+      const cur = daily.get(day) ?? { in: 0, out: 0 };
+      cur[dir === "inbound" ? "in" : "out"]++;
+      daily.set(day, cur);
+    }
+    const series = Array.from(daily.entries())
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([date, v]) => ({ date, ...v }));
+    return { buckets, statusCount, series, total30: list.length };
+  });
+
+// Recent messages activity feed
+export const getRecentWhatsAppActivity = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    const { data: msgs } = await context.supabase
+      .from("messages")
+      .select("id, direction, body, status, created_at, conversation_id, wa_message_id")
+      .eq("company_id", company_id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    return msgs ?? [];
+  });
+
+// Refresh channel info from Meta (re-fetch display phone etc.)
+export const refreshWhatsAppChannel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel?.access_token || !channel.phone_number_id) throw new Error("Canal no conectado");
+    const res = await fetch(
+      `${GRAPH()}/${channel.phone_number_id}?fields=display_phone_number,verified_name,quality_rating`,
+      { headers: { Authorization: `Bearer ${channel.access_token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // Token likely expired
+      await context.supabase.from("whatsapp_channels").update({ status: "error" }).eq("id", channel.id);
+      throw new Error(json?.error?.message ?? `Error ${res.status}`);
+    }
+    await context.supabase
+      .from("whatsapp_channels")
+      .update({
+        display_phone: json?.display_phone_number ?? channel.display_phone,
+        status: "connected",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", channel.id);
+    return { ok: true, meta: json };
+  });
+
+// Rotate webhook verify token
+export const rotateWhatsAppVerifyToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { channel } = await getCompanyChannel(context.supabase, context.userId);
+    if (!channel) throw new Error("No hay canal");
+    const verify_token = randomToken(24);
+    const { error } = await context.supabase
+      .from("whatsapp_channels")
+      .update({ webhook_verify_token: verify_token })
+      .eq("id", channel.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, verify_token };
+  });
