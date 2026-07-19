@@ -248,10 +248,11 @@ function EmbudoPage() {
       const ins = aggMap.get(c.id)?.insight;
       if (ins?.probability != null && Number(ins.probability) >= 0.7) hot++;
       if (ins?.churn_risk != null && Number(ins.churn_risk) >= 0.6) risk++;
-      const na = (c as any).next_activity_at as string | null | undefined;
+      const na = c.next_activity_at;
       if (na) {
         const d = new Date(na).getTime();
-        if (d - now < 86_400_000 && d >= now - 86_400_000) followupToday++;
+        // Cuenta seguimientos vencidos o dentro de las próximas 24 h.
+        if (d <= now + 86_400_000) followupToday++;
       }
     }
     return { stagnant, unassigned, hot, risk, followupToday };
