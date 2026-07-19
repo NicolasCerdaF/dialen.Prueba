@@ -964,7 +964,7 @@ import {
   REASON_CODES,
   type ReasonCode,
 } from "@/lib/recommender.functions";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
   const listCustomerP = useServerFn(listCustomerProducts);
