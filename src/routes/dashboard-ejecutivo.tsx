@@ -545,15 +545,32 @@ function TeamTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-3">
-        <Kpi label="Vendedores activos" value={dash.sellers.length} icon={Users} />
+        <Kpi
+          label="Vendedores activos"
+          value={dash.sellers.length > 0 ? dash.sellers.length : "—"}
+          icon={Users}
+        />
         <Kpi
           label="Respuestas humanas"
-          value={(dash.totals.outbound - dash.totals.outboundAi).toLocaleString()}
-          hint={`${100 - dash.totals.aiShare}% del total saliente`}
+          value={
+            dash.totals.outbound > 0
+              ? (dash.totals.outbound - dash.totals.outboundAi).toLocaleString()
+              : "—"
+          }
+          hint={
+            dash.totals.outbound > 0
+              ? `${100 - dash.totals.aiShare}% del total saliente`
+              : "Sin mensajes salientes"
+          }
           icon={MessageSquare}
         />
-        <Kpi label="Cotizaciones creadas" value={dash.totals.quotesSent.toLocaleString()} icon={TrendingUp} />
+        <Kpi
+          label="Cotizaciones creadas"
+          value={dash.totals.quotesSent > 0 ? dash.totals.quotesSent.toLocaleString() : "—"}
+          icon={TrendingUp}
+        />
       </div>
+
 
       <Card className="p-0">
         <div className="border-b border-border px-5 py-3 text-sm font-medium">Ranking de vendedores</div>
