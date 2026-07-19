@@ -640,10 +640,32 @@ function ProductsTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-3">
-        <Kpi label="Productos vendidos" value={dash.topProducts.reduce((a, p) => a + p.won, 0)} icon={Package} />
-        <Kpi label="Unidades" value={dash.topProducts.reduce((a, p) => a + p.units, 0).toLocaleString()} icon={TrendingUp} />
-        <Kpi label="Ingresos por producto" value={fmtMoney(totalRevenue, cur)} icon={DollarSign} tone="emerald" />
+        <Kpi
+          label="Productos vendidos"
+          value={
+            dash.topProducts.length > 0
+              ? dash.topProducts.reduce((a, p) => a + p.won, 0)
+              : "—"
+          }
+          icon={Package}
+        />
+        <Kpi
+          label="Unidades"
+          value={
+            dash.topProducts.length > 0
+              ? dash.topProducts.reduce((a, p) => a + p.units, 0).toLocaleString()
+              : "—"
+          }
+          icon={TrendingUp}
+        />
+        <Kpi
+          label="Ingresos por producto"
+          value={totalRevenue > 0 ? fmtMoney(totalRevenue, cur) : "—"}
+          icon={DollarSign}
+          tone="emerald"
+        />
       </div>
+
 
       <Card className="p-0">
         <div className="flex items-center justify-between border-b border-border px-5 py-3 text-sm">
