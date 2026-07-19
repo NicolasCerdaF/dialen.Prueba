@@ -55,7 +55,6 @@ import { cn } from "@/lib/utils";
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import {
   listQuotesAdvanced,
-  getQuotesOverview,
   getQuotesAdvancedKpis,
   getQuoteAlerts,
   setQuoteStatus,
@@ -87,6 +86,36 @@ function moneyFull(n: number, cur = "USD") {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: cur, maximumFractionDigits: 2 }).format(n || 0);
 }
 
+type ByCurrency = Record<string, { pipeline: number; won: number; wonCount: number; ticketSum: number }>;
+function multiCurrency(
+  bc: ByCurrency | undefined,
+  metric: "pipeline" | "won" | "ticket",
+): { value: string; hint: string } {
+  const entries = Object.entries(bc ?? {}).filter(([, v]) => {
+    if (metric === "pipeline") return v.pipeline > 0;
+    if (metric === "won") return v.won > 0;
+    return v.wonCount > 0;
+  });
+  if (entries.length === 0) {
+    return {
+      value: "—",
+      hint: metric === "ticket" ? "Sin ganadas aún" : metric === "won" ? "Sin ganadas aún" : "Sin cotizaciones activas",
+    };
+  }
+  const scored = entries.map(([cur, v]) => {
+    const amount =
+      metric === "pipeline" ? v.pipeline : metric === "won" ? v.won : v.ticketSum / v.wonCount;
+    return { cur, amount };
+  });
+  scored.sort((a, b) => b.amount - a.amount);
+  const top = scored[0];
+  const rest = scored.length - 1;
+  return {
+    value: money(top.amount, top.cur),
+    hint: rest > 0 ? `+${rest} moneda${rest > 1 ? "s" : ""} más` : top.cur,
+  };
+}
+
 const STATUS_META: Record<QuoteStatus, { label: string; color: string; icon: any }> = {
   draft: { label: "Borrador", color: "bg-muted text-muted-foreground", icon: FileText },
   sent: { label: "Enviada", color: "bg-blue-500/15 text-blue-500", icon: Send },
@@ -104,7 +133,6 @@ function QuotesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const list = useServerFn(listQuotesAdvanced);
-  const overview = useServerFn(getQuotesOverview);
   const kpisAdv = useServerFn(getQuotesAdvancedKpis);
   const alerts = useServerFn(getQuoteAlerts);
   const changeStatus = useServerFn(setQuoteStatus);
@@ -151,14 +179,13 @@ function QuotesPage() {
   });
   const quotes: Quote[] = quotesResp?.rows ?? [];
 
-  const { data: kpis } = useQuery({ queryKey: ["quotes-overview"], queryFn: () => overview() });
   const { data: adv } = useQuery({ queryKey: ["quotes-kpis-adv"], queryFn: () => kpisAdv({ data: { days: 30 } }) });
   const { data: alertsData } = useQuery({ queryKey: ["quotes-alerts"], queryFn: () => alerts() });
 
   useRealtimeInvalidate({
     channel: "quotes-index",
     tables: ["quotes", "quote_events"],
-    invalidate: [["quotes-adv"], ["quotes-overview"], ["quotes-kpis-adv"], ["quotes-alerts"]],
+    invalidate: [["quotes-adv"], ["quotes-kpis-adv"], ["quotes-alerts"]],
   });
 
   const { data: customerPickerData } = useQuery({
@@ -186,7 +213,7 @@ function QuotesPage() {
       await changeStatus({ data: { id, status: next } });
       toast.success(`Cotización marcada como ${STATUS_META[next].label.toLowerCase()}`);
       refetch();
-      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+      qc.invalidateQueries({ queryKey: ["quotes-kpis-adv"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al actualizar estado");
     }
@@ -234,7 +261,7 @@ function QuotesPage() {
       setSelected(new Set());
       setConfirmBulk(null);
       refetch();
-      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+      qc.invalidateQueries({ queryKey: ["quotes-kpis-adv"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error en acción masiva");
     }
@@ -359,14 +386,44 @@ function QuotesPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-            <Kpi label="Pipeline (30d)" value={money(adv?.pipeline ?? kpis?.pipelineValue ?? 0)} icon={<FileText className="h-4 w-4" />} />
-            <Kpi label="Ganado" value={money(adv?.won ?? kpis?.wonValue ?? 0)} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
-            <Kpi label="Tasa cierre" value={`${Math.round((adv?.conversion ?? kpis?.conversion ?? 0) * 100)}%`} />
-            <Kpi label="Ticket promedio" value={money(adv?.avgTicket ?? kpis?.avgTicket ?? 0)} />
-            <Kpi label="Tiempo a aceptar" value={`${adv?.avgTimeToAcceptHours ?? 0} h`} icon={<Clock className="h-4 w-4" />} />
+            <Kpi
+              label="Pipeline (30d)"
+              value={multiCurrency(adv?.byCurrency, "pipeline").value}
+              hint={multiCurrency(adv?.byCurrency, "pipeline").hint}
+              icon={<FileText className="h-4 w-4" />}
+            />
+            <Kpi
+              label="Ganado (30d)"
+              value={multiCurrency(adv?.byCurrency, "won").value}
+              hint={multiCurrency(adv?.byCurrency, "won").hint}
+              icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            />
+            <Kpi
+              label="Tasa cierre"
+              value={
+                adv && adv.sentCount > 0
+                  ? `${Math.round(adv.conversion * 100)}%`
+                  : "—"
+              }
+              hint={adv && adv.sentCount > 0 ? `${adv.wonCount}/${adv.sentCount} aceptadas` : "Sin envíos aún"}
+            />
+            <Kpi
+              label="Ticket promedio"
+              value={multiCurrency(adv?.byCurrency, "ticket").value}
+              hint={multiCurrency(adv?.byCurrency, "ticket").hint}
+            />
+            <Kpi
+              label="Tiempo a aceptar"
+              value={
+                adv && adv.acceptedWithSent > 0 ? `${adv.avgTimeToAcceptHours} h` : "—"
+              }
+              hint={adv && adv.acceptedWithSent > 0 ? `${adv.acceptedWithSent} aceptadas` : "Sin aceptadas aún"}
+              icon={<Clock className="h-4 w-4" />}
+            />
             <Kpi
               label="Conversión IA"
-              value={`${Math.round((adv?.aiConversion ?? 0) * 100)}%`}
+              value={adv && adv.aiCount > 0 ? `${Math.round(adv.aiConversion * 100)}%` : "—"}
+              hint={adv && adv.aiCount > 0 ? `${adv.aiWon}/${adv.aiCount} con IA` : "Sin propuestas IA"}
               icon={<Sparkles className="h-4 w-4 text-primary" />}
             />
           </div>
@@ -843,16 +900,30 @@ function KanbanView({
       {STATUS_ORDER.map((s) => {
         const M = STATUS_META[s];
         const list = byStatus[s];
-        const sum = list.reduce((a, q) => a + Number(q.total ?? 0), 0);
+        // Agrupa por moneda para no sumar MXN + USD como si fueran lo mismo.
+        const sumByCur = new Map<string, number>();
+        for (const q of list) {
+          const cur = q.currency || "USD";
+          sumByCur.set(cur, (sumByCur.get(cur) ?? 0) + Number(q.total ?? 0));
+        }
+        const curEntries = [...sumByCur.entries()].sort((a, b) => b[1] - a[1]);
+        const top = curEntries[0];
+        const rest = curEntries.length - 1;
         return (
           <div key={s} className="flex w-72 flex-none flex-col rounded-lg border border-border/60 bg-card/30">
             <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <M.icon className="h-3.5 w-3.5" />
-                <span className="text-sm font-medium">{M.label}</span>
-                <span className="text-xs text-muted-foreground">({list.length})</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <M.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate text-sm font-medium">{M.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">({list.length})</span>
               </div>
-              <span className="text-xs font-medium">{money(sum)}</span>
+              <span
+                className="shrink-0 text-xs font-medium tabular-nums"
+                title={curEntries.map(([c, v]) => `${money(v, c)}`).join(" · ")}
+              >
+                {top ? money(top[1], top[0]) : "—"}
+                {rest > 0 && <span className="ml-1 text-muted-foreground">+{rest}</span>}
+              </span>
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto p-2">
               {list.length === 0 && (
@@ -1038,14 +1109,27 @@ function EmptyState({ onNew }: { onNew: () => void }) {
   );
 }
 
-function Kpi({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function Kpi({
+  label,
+  value,
+  icon,
+  hint,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  hint?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        {icon}
+    <div className="min-w-0 rounded-lg border border-border/60 bg-card/40 p-3">
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="truncate">{label}</span>
+        <span className="shrink-0">{icon}</span>
       </div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
+      <div className="mt-1 truncate font-display text-lg font-semibold tabular-nums" title={value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }

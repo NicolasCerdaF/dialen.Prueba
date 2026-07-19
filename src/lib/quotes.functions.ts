@@ -1265,13 +1265,22 @@ export const getQuotesAdvancedKpis = createServerFn({ method: "POST" })
     let acceptedWithSent = 0;
     const aging: Record<string, number> = { "0-3d": 0, "4-7d": 0, "8-15d": 0, "16-30d": 0, "30+d": 0 };
     const byUser: Record<string, { sent: number; won: number; value: number }> = {};
+    const byCurrency: Record<string, { pipeline: number; won: number; wonCount: number; ticketSum: number }> = {};
 
     const now = Date.now();
     for (const q of list) {
-      if (q.status !== "rejected" && q.status !== "expired") pipeline += Number(q.total ?? 0);
+      const cur = (q.currency as string) || "USD";
+      byCurrency[cur] = byCurrency[cur] ?? { pipeline: 0, won: 0, wonCount: 0, ticketSum: 0 };
+      if (q.status !== "rejected" && q.status !== "expired") {
+        pipeline += Number(q.total ?? 0);
+        byCurrency[cur].pipeline += Number(q.total ?? 0);
+      }
       if (q.status === "accepted") {
         won += Number(q.total ?? 0);
         wonCount += 1;
+        byCurrency[cur].won += Number(q.total ?? 0);
+        byCurrency[cur].wonCount += 1;
+        byCurrency[cur].ticketSum += Number(q.total ?? 0);
         if (q.sent_at && q.accepted_at) {
           const dt = new Date(q.accepted_at).getTime() - new Date(q.sent_at).getTime();
           totalTimeToAccept += dt;
@@ -1310,10 +1319,13 @@ export const getQuotesAdvancedKpis = createServerFn({ method: "POST" })
       avgTicket: wonCount > 0 ? Number((won / wonCount).toFixed(2)) : 0,
       avgTimeToAcceptHours:
         acceptedWithSent > 0 ? Number((totalTimeToAccept / acceptedWithSent / 3600000).toFixed(1)) : 0,
+      acceptedWithSent,
       aging,
       aiCount,
+      aiWon,
       aiConversion: aiCount > 0 ? aiWon / aiCount : 0,
       byUser,
+      byCurrency,
     };
   });
 
