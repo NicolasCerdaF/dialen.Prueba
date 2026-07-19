@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { VirtualMessageList } from "@/components/inbox/virtual-message-list";
 import { supabase } from "@/integrations/supabase/client";
 import { sendWhatsAppMessage, toggleConversationAiPause } from "@/lib/whatsapp.functions";
 import {
