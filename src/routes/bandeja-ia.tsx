@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
@@ -36,6 +36,8 @@ import {
 } from "@/lib/bandeja-ia.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/bandeja-ia")({
   head: () => ({
@@ -45,6 +47,7 @@ export const Route = createFileRoute("/bandeja-ia")({
     ],
   }),
   component: BandejaIAPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
 type Tab = "high" | "follow" | "actions" | "analysis";
@@ -56,29 +59,43 @@ const TABS: { id: Tab; label: string; icon: typeof Flame }[] = [
   { id: "analysis", label: "Análisis", icon: BarChart3 },
 ];
 
+const BANDEJA_KEY = ["bandeja-ia"] as const;
+const BANDEJA_ACTIONS_KEY = ["bandeja-ia", "actions"] as const;
+const BANDEJA_ANALYSIS_KEY = ["bandeja-ia", "analysis"] as const;
+
+const bandejaQueryOptions = (fetcher: () => Promise<Awaited<ReturnType<typeof getBandejaIA>>>) =>
+  queryOptions({
+    queryKey: BANDEJA_KEY,
+    queryFn: fetcher,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
 function BandejaIAPage() {
   const [tab, setTab] = useState<Tab>("high");
   const fetchBandeja = useServerFn(getBandejaIA);
   const fetchActions = useServerFn(getPendingAIActions);
   const fetchAnalysis = useServerFn(getConversationAnalysis);
 
-  const bandejaQ = useQuery({
-    queryKey: ["bandeja-ia"],
-    queryFn: () => fetchBandeja({}),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  });
+  const bandejaQ = useSuspenseQuery(bandejaQueryOptions(() => fetchBandeja({})));
   const actionsQ = useQuery({
-    queryKey: ["bandeja-ia", "actions"],
+    queryKey: BANDEJA_ACTIONS_KEY,
     queryFn: () => fetchActions({}),
     staleTime: 30_000,
     enabled: tab === "actions",
   });
   const analysisQ = useQuery({
-    queryKey: ["bandeja-ia", "analysis"],
+    queryKey: BANDEJA_ANALYSIS_KEY,
     queryFn: () => fetchAnalysis({}),
     staleTime: 60_000,
     enabled: tab === "analysis",
+  });
+
+  // Realtime: refresh on any commercial event.
+  useRealtimeInvalidate({
+    channel: "bandeja-ia-live",
+    tables: ["messages", "ai_suggestions", "quotes", "conversations"],
+    invalidate: [BANDEJA_KEY, BANDEJA_ACTIONS_KEY, BANDEJA_ANALYSIS_KEY],
   });
 
   const counts = bandejaQ.data?.counts ?? { high: 0, follow: 0, opportunity: 0, total: 0 };
@@ -98,6 +115,8 @@ function BandejaIAPage() {
     if (tab === "actions") actionsQ.refetch();
     if (tab === "analysis") analysisQ.refetch();
   };
+
+
 
   return (
     <AppShell>
