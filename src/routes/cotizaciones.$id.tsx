@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -15,16 +15,55 @@ import {
   Sparkles,
   FileText,
   User as UserIcon,
+  Copy,
+  Printer,
+  MessageCircle,
+  BellRing,
+  RefreshCcw,
+  Link as LinkIcon,
+  MoreHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import {
   getQuote,
   updateQuote,
   setQuoteStatus,
+  deleteQuote,
+  duplicateQuote,
+  reviseQuote,
+  sendQuoteById,
+  scheduleQuoteFollowup,
   listQuoteEvents,
   type Quote,
   type QuoteItem,
@@ -77,9 +116,15 @@ const STATUS_META: Record<QuoteStatus, { label: string; color: string; icon: any
 function QuoteDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const get = useServerFn(getQuote);
   const update = useServerFn(updateQuote);
   const changeStatus = useServerFn(setQuoteStatus);
+  const delFn = useServerFn(deleteQuote);
+  const dupFn = useServerFn(duplicateQuote);
+  const reviseFn = useServerFn(reviseQuote);
+  const sendFn = useServerFn(sendQuoteById);
+  const followupFn = useServerFn(scheduleQuoteFollowup);
   const listEvents = useServerFn(listQuoteEvents);
   const listProds = useServerFn(listProducts);
 
@@ -87,7 +132,7 @@ function QuoteDetailPage() {
     queryKey: ["quote", id],
     queryFn: () => get({ data: { id } }),
   });
-  const { data: events = [] } = useQuery({
+  const { data: events = [], refetch: refetchEvents } = useQuery({
     queryKey: ["quote-events", id],
     queryFn: () => listEvents({ data: { quote_id: id } }),
     enabled: !!quote,
@@ -104,6 +149,19 @@ function QuoteDetailPage() {
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<QuoteStatus | null>(null);
+  const [followupOpen, setFollowupOpen] = useState(false);
+  const [followupHours, setFollowupHours] = useState<number>(48);
+  const [followupNote, setFollowupNote] = useState("");
+
+  useRealtimeInvalidate({
+    channel: `quote-${id}`,
+    tables: ["quotes", "quote_events"],
+    invalidate: [["quote", id], ["quote-events", id]],
+    filter: `id=eq.${id}`,
+    enabled: !!id,
+  });
 
   useEffect(() => {
     if (!quote) return;
@@ -217,7 +275,10 @@ function QuoteDetailPage() {
           })),
         },
       });
+      toast.success("Cotización guardada");
       await refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -225,8 +286,83 @@ function QuoteDetailPage() {
 
   async function onStatus(next: QuoteStatus) {
     if (!quote) return;
-    await changeStatus({ data: { id: quote.id, status: next } });
-    refetch();
+    try {
+      await changeStatus({ data: { id: quote.id, status: next } });
+      toast.success(`Marcada como ${STATUS_META[next].label.toLowerCase()}`);
+      refetch();
+      refetchEvents();
+      qc.invalidateQueries({ queryKey: ["quotes-adv"] });
+      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al cambiar estado");
+    } finally {
+      setConfirmStatus(null);
+    }
+  }
+
+  async function onSend() {
+    if (!quote) return;
+    try {
+      const res = await sendFn({ data: { id: quote.id, origin: window.location.origin } });
+      toast.success(`Enviada por WhatsApp (${res.status})`);
+      refetch();
+      refetchEvents();
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo enviar");
+    }
+  }
+  async function onDuplicate() {
+    if (!quote) return;
+    try {
+      const res = await dupFn({ data: { id: quote.id, reset_conversation: true } });
+      toast.success(`Duplicada como ${res.number}`);
+      navigate({ to: "/cotizaciones/$id", params: { id: res.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al duplicar");
+    }
+  }
+  async function onRevise() {
+    if (!quote) return;
+    try {
+      const res = await reviseFn({ data: { id: quote.id } });
+      toast.success(`Nueva versión ${res.number} creada`);
+      navigate({ to: "/cotizaciones/$id", params: { id: res.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al crear versión");
+    }
+  }
+  async function onDelete() {
+    if (!quote) return;
+    try {
+      await delFn({ data: { id: quote.id } });
+      toast.success("Cotización eliminada");
+      navigate({ to: "/cotizaciones" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al eliminar");
+    }
+  }
+  async function onScheduleFollowup() {
+    if (!quote) return;
+    try {
+      await followupFn({
+        data: { id: quote.id, hours: Math.max(1, Number(followupHours) || 48), note: followupNote || undefined },
+      });
+      toast.success(`Recordatorio en ${followupHours}h agendado`);
+      setFollowupOpen(false);
+      setFollowupNote("");
+      refetchEvents();
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo agendar");
+    }
+  }
+  function onPrint() {
+    window.print();
+  }
+  function onCopyShare() {
+    if (!quote?.share_token) return;
+    const url = `${window.location.origin}/cotizaciones/${quote.id}?t=${quote.share_token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Enlace copiado");
   }
 
   if (!quote) {
@@ -287,29 +423,40 @@ function QuoteDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {quote.conversation_id && (
+                <Link
+                  to="/conversaciones"
+                  search={{ conversation_id: quote.conversation_id } as any}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  title="Abrir conversación"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Conversación
+                </Link>
+              )}
               {quote.status === "draft" && (
                 <>
                   <Button variant="outline" size="sm" onClick={onSave} disabled={saving}>
                     <Save className="mr-1.5 h-3.5 w-3.5" />
                     {saving ? "Guardando…" : "Guardar"}
                   </Button>
-                  <Button size="sm" onClick={() => onStatus("sent")}>
+                  <Button size="sm" onClick={onSend}>
                     <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Enviar
+                    Enviar por WhatsApp
                   </Button>
                 </>
               )}
               {quote.status === "sent" && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("viewed")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("viewed")}>
                     <Eye className="mr-1.5 h-3.5 w-3.5" />
                     Marcar vista
                   </Button>
-                  <Button size="sm" onClick={() => onStatus("accepted")}>
+                  <Button size="sm" onClick={() => setConfirmStatus("accepted")}>
                     <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                     Aceptar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("rejected")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("rejected")}>
                     <XCircle className="mr-1.5 h-3.5 w-3.5" />
                     Rechazar
                   </Button>
@@ -317,16 +464,64 @@ function QuoteDetailPage() {
               )}
               {quote.status === "viewed" && (
                 <>
-                  <Button size="sm" onClick={() => onStatus("accepted")}>
+                  <Button size="sm" onClick={() => setConfirmStatus("accepted")}>
                     <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                     Aceptar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("rejected")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("rejected")}>
                     <XCircle className="mr-1.5 h-3.5 w-3.5" />
                     Rechazar
                   </Button>
                 </>
               )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={() => setFollowupOpen(true)}>
+                      <BellRing className="mr-2 h-3.5 w-3.5" /> Recordatorio de seguimiento
+                    </DropdownMenuItem>
+                  )}
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={onSend}>
+                      <Send className="mr-2 h-3.5 w-3.5" /> Reenviar por WhatsApp
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={onDuplicate}>
+                    <Copy className="mr-2 h-3.5 w-3.5" /> Duplicar
+                  </DropdownMenuItem>
+                  {["accepted", "rejected", "expired"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={onRevise}>
+                      <RefreshCcw className="mr-2 h-3.5 w-3.5" /> Nueva versión
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={onPrint}>
+                    <Printer className="mr-2 h-3.5 w-3.5" /> Imprimir / PDF
+                  </DropdownMenuItem>
+                  {quote.share_token && (
+                    <DropdownMenuItem onSelect={onCopyShare}>
+                      <LinkIcon className="mr-2 h-3.5 w-3.5" /> Copiar enlace público
+                    </DropdownMenuItem>
+                  )}
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={() => setConfirmStatus("expired")}>
+                      <Clock className="mr-2 h-3.5 w-3.5" /> Marcar expirada
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
@@ -558,6 +753,82 @@ function QuoteDetailPage() {
           </aside>
         </div>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar cotización</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán los ítems y el historial.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmStatus} onOpenChange={(o) => !o && setConfirmStatus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Cambiar estado a {confirmStatus ? STATUS_META[confirmStatus].label.toLowerCase() : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              El cambio se registrará en el historial y disparará automatizaciones asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmStatus && onStatus(confirmStatus)}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agendar recordatorio</DialogTitle>
+            <DialogDescription>
+              Se creará una tarea sobre el cliente para retomar el contacto.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">En cuántas horas</label>
+              <Input
+                type="number"
+                min={1}
+                value={followupHours}
+                onChange={(e) => setFollowupHours(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Nota (opcional)</label>
+              <Textarea
+                value={followupNote}
+                onChange={(e) => setFollowupNote(e.target.value)}
+                rows={3}
+                placeholder="Confirmar decisión, resolver dudas…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFollowupOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={onScheduleFollowup}>Agendar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

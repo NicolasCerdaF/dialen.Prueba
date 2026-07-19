@@ -938,3 +938,521 @@ export const draftQuoteFromMessage = createServerFn({ method: "POST" })
     return res;
   });
 
+
+// ==================================================================
+// PRODUCTION EXTENSIONS — advanced list, bulk, duplicate, revise,
+// expiry sweep, alerts, KPIs, quick draft, send-by-id, follow-ups.
+// ==================================================================
+
+// ---------- Advanced list with sort + pagination + rich filters ----------
+export const listQuotesAdvanced = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        search: z.string().optional(),
+        statuses: z.array(z.enum(["draft", "sent", "viewed", "accepted", "rejected", "expired"])).optional(),
+        customer_id: z.string().uuid().optional(),
+        assignee_id: z.string().uuid().optional(),
+        unassigned: z.boolean().optional(),
+        ai_only: z.boolean().optional(),
+        with_conversation: z.boolean().optional(),
+        min_total: z.number().optional(),
+        max_total: z.number().optional(),
+        currency: z.string().length(3).optional(),
+        created_from: z.string().optional(),
+        created_to: z.string().optional(),
+        expiring_within_days: z.number().int().min(0).max(365).optional(),
+        sort_by: z.enum(["created_at", "updated_at", "total", "valid_until", "status", "number"]).default("created_at"),
+        sort_dir: z.enum(["asc", "desc"]).default("desc"),
+        limit: z.number().int().min(1).max(500).default(100),
+        offset: z.number().int().min(0).default(0),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    let q = supabase
+      .from("quotes")
+      .select("*, customer:customers(id, name, company, email, phone, stage, assignee_id, priority)", { count: "exact" })
+      .order(data.sort_by, { ascending: data.sort_dir === "asc", nullsFirst: false })
+      .range(data.offset, data.offset + data.limit - 1);
+
+    if (data.statuses && data.statuses.length > 0) q = q.in("status", data.statuses);
+    if (data.customer_id) q = q.eq("customer_id", data.customer_id);
+    if (data.ai_only) q = q.eq("ai_generated", true);
+    if (data.with_conversation === true) q = q.not("conversation_id", "is", null);
+    if (data.with_conversation === false) q = q.is("conversation_id", null);
+    if (data.min_total !== undefined) q = q.gte("total", data.min_total);
+    if (data.max_total !== undefined) q = q.lte("total", data.max_total);
+    if (data.currency) q = q.eq("currency", data.currency);
+    if (data.created_from) q = q.gte("created_at", data.created_from);
+    if (data.created_to) q = q.lte("created_at", data.created_to);
+    if (data.expiring_within_days !== undefined) {
+      const now = new Date();
+      const to = new Date(now.getTime() + data.expiring_within_days * 24 * 60 * 60 * 1000);
+      q = q.gte("valid_until", now.toISOString().slice(0, 10)).lte("valid_until", to.toISOString().slice(0, 10));
+    }
+    if (data.search) {
+      const s = data.search.replace(/[%,]/g, "");
+      q = q.or(`number.ilike.%${s}%,title.ilike.%${s}%`);
+    }
+
+    const { data: rows, count, error } = await q;
+    if (error) throw new Error(error.message);
+    let list = (rows ?? []) as Quote[];
+
+    if (data.assignee_id || data.unassigned) {
+      list = list.filter((r) => {
+        const aid = r.customer?.assignee_id ?? null;
+        if (data.unassigned) return aid === null;
+        if (data.assignee_id) return aid === data.assignee_id;
+        return true;
+      });
+    }
+
+    return { rows: list, total: count ?? list.length };
+  });
+
+// ---------- Bulk actions (status/delete/expire) ----------
+export const bulkQuoteAction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        ids: z.array(z.string().uuid()).min(1).max(200),
+        action: z.enum(["delete", "send", "accept", "reject", "expire", "mark_viewed", "draft"]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    if (data.action === "delete") {
+      const { error } = await supabase.from("quotes").delete().in("id", data.ids);
+      if (error) throw new Error(error.message);
+      return { ok: true, affected: data.ids.length };
+    }
+    const statusMap: Record<string, QuoteStatus> = {
+      send: "sent",
+      accept: "accepted",
+      reject: "rejected",
+      expire: "expired",
+      mark_viewed: "viewed",
+      draft: "draft",
+    };
+    const next = statusMap[data.action];
+    const now = new Date().toISOString();
+    const patch: any = { status: next };
+    if (next === "sent") patch.sent_at = now;
+    if (next === "viewed") patch.viewed_at = now;
+    if (next === "accepted") patch.accepted_at = now;
+    if (next === "rejected") patch.rejected_at = now;
+    if (next === "expired") patch.expired_at = now;
+
+    const { data: updated, error } = await supabase
+      .from("quotes")
+      .update(patch)
+      .in("id", data.ids)
+      .select("id, company_id, customer_id, number, total");
+    if (error) throw new Error(error.message);
+    const rows = (updated ?? []) as any[];
+
+    if (rows.length > 0) {
+      await supabase.from("quote_events").insert(
+        rows.map((r) => ({
+          quote_id: r.id,
+          company_id: r.company_id,
+          actor_id: userId,
+          event_type: `bulk_${next}`,
+          payload: { number: r.number, total: r.total },
+        })),
+      );
+    }
+    return { ok: true, affected: rows.length };
+  });
+
+// ---------- Duplicate a quote as new draft ----------
+export const duplicateQuote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: z.string().uuid(), reset_conversation: z.boolean().default(true) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const [{ data: src }, { data: srcItems }] = await Promise.all([
+      supabase.from("quotes").select("*").eq("id", data.id).maybeSingle(),
+      supabase.from("quote_items").select("*").eq("quote_id", data.id).order("position", { ascending: true }),
+    ]);
+    if (!src) throw new Error("Cotización no encontrada");
+
+    const number = await nextQuoteNumber(supabase, src.company_id);
+    const share_token = crypto.randomUUID().replace(/-/g, "");
+    const { data: cloned, error } = await supabase
+      .from("quotes")
+      .insert({
+        company_id: src.company_id,
+        customer_id: src.customer_id,
+        conversation_id: data.reset_conversation ? null : src.conversation_id,
+        stage: src.stage,
+        number,
+        title: src.title ? `${src.title} (copia)` : `Copia de ${src.number}`,
+        status: "draft" as QuoteStatus,
+        currency: src.currency,
+        subtotal: src.subtotal,
+        discount_total: src.discount_total,
+        tax_total: src.tax_total,
+        total: src.total,
+        margin_total: src.margin_total,
+        notes: src.notes,
+        terms: src.terms,
+        valid_until: src.valid_until,
+        ai_generated: false,
+        ai_context: { duplicated_from: src.id },
+        share_token,
+        created_by: userId,
+      })
+      .select("id, company_id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const items = (srcItems ?? []) as any[];
+    if (items.length > 0) {
+      await supabase.from("quote_items").insert(
+        items.map((it, idx) => ({
+          quote_id: cloned.id,
+          product_id: it.product_id,
+          recommendation_id: null,
+          name: it.name,
+          sku: it.sku,
+          description: it.description,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          unit_cost: it.unit_cost,
+          discount_pct: it.discount_pct,
+          tax_pct: it.tax_pct,
+          line_total: it.line_total,
+          margin: it.margin,
+          position: idx,
+          ai_suggested: false,
+        })),
+      );
+    }
+
+    await supabase.from("quote_events").insert({
+      quote_id: cloned.id,
+      company_id: cloned.company_id,
+      actor_id: userId,
+      event_type: "duplicated",
+      payload: { source_id: src.id, source_number: src.number },
+    });
+
+    return { id: cloned.id as string, number };
+  });
+
+// ---------- Revise: clone a finalized quote as new draft ----------
+export const reviseQuote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const dupFn: any = (await import("./quotes.functions")).duplicateQuote;
+    const res = await dupFn.handler({ data: { id: data.id, reset_conversation: false }, context });
+    return res;
+  });
+
+// ---------- Expire overdue quotes (best-effort sweep) ----------
+export const expireOverdueQuotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: overdue } = await supabase
+      .from("quotes")
+      .select("id, company_id, customer_id, number, total")
+      .in("status", ["sent", "viewed"])
+      .lt("valid_until", today);
+    const rows = (overdue ?? []) as any[];
+    if (rows.length === 0) return { affected: 0 };
+    const now = new Date().toISOString();
+    await supabase
+      .from("quotes")
+      .update({ status: "expired", expired_at: now })
+      .in(
+        "id",
+        rows.map((r) => r.id),
+      );
+    await supabase.from("quote_events").insert(
+      rows.map((r) => ({
+        quote_id: r.id,
+        company_id: r.company_id,
+        actor_id: userId,
+        event_type: "auto_expired",
+        payload: { number: r.number, total: r.total },
+      })),
+    );
+    return { affected: rows.length };
+  });
+
+// ---------- Alerts: expiring soon, stagnant viewed, high-value pending ----------
+export const getQuoteAlerts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const today = new Date();
+    const in3 = new Date(today.getTime() + 3 * 86400000).toISOString().slice(0, 10);
+    const todayISO = today.toISOString().slice(0, 10);
+
+    const [{ data: expSoon }, { data: viewedStale }, { data: highValue }, { data: unopened }] = await Promise.all([
+      supabase
+        .from("quotes")
+        .select("id, number, total, currency, valid_until, customer:customers(id, name)")
+        .in("status", ["sent", "viewed"])
+        .gte("valid_until", todayISO)
+        .lte("valid_until", in3)
+        .order("valid_until", { ascending: true })
+        .limit(20),
+      supabase
+        .from("quotes")
+        .select("id, number, total, currency, viewed_at, customer:customers(id, name)")
+        .eq("status", "viewed")
+        .lt("viewed_at", new Date(today.getTime() - 2 * 86400000).toISOString())
+        .order("viewed_at", { ascending: true })
+        .limit(20),
+      supabase
+        .from("quotes")
+        .select("id, number, total, currency, sent_at, customer:customers(id, name)")
+        .in("status", ["sent", "viewed"])
+        .gte("total", 1000)
+        .order("total", { ascending: false })
+        .limit(20),
+      supabase
+        .from("quotes")
+        .select("id, number, total, currency, sent_at, customer:customers(id, name)")
+        .eq("status", "sent")
+        .lt("sent_at", new Date(today.getTime() - 3 * 86400000).toISOString())
+        .order("sent_at", { ascending: true })
+        .limit(20),
+    ]);
+
+    return {
+      expiringSoon: (expSoon ?? []) as any[],
+      viewedStale: (viewedStale ?? []) as any[],
+      highValuePending: (highValue ?? []) as any[],
+      unopened: (unopened ?? []) as any[],
+    };
+  });
+
+// ---------- Advanced KPIs (aging, win rate, time-to-close, by user) ----------
+export const getQuotesAdvancedKpis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ days: z.number().int().min(1).max(365).default(30) }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const from = new Date(Date.now() - data.days * 86400000).toISOString();
+
+    const { data: rows } = await supabase
+      .from("quotes")
+      .select("id, status, total, currency, created_at, sent_at, accepted_at, rejected_at, ai_generated, created_by")
+      .gte("created_at", from);
+    const list = (rows ?? []) as any[];
+
+    let pipeline = 0,
+      won = 0,
+      wonCount = 0,
+      sentCount = 0,
+      aiCount = 0,
+      aiWon = 0;
+    let totalTimeToAccept = 0;
+    let acceptedWithSent = 0;
+    const aging: Record<string, number> = { "0-3d": 0, "4-7d": 0, "8-15d": 0, "16-30d": 0, "30+d": 0 };
+    const byUser: Record<string, { sent: number; won: number; value: number }> = {};
+
+    const now = Date.now();
+    for (const q of list) {
+      if (q.status !== "rejected" && q.status !== "expired") pipeline += Number(q.total ?? 0);
+      if (q.status === "accepted") {
+        won += Number(q.total ?? 0);
+        wonCount += 1;
+        if (q.sent_at && q.accepted_at) {
+          const dt = new Date(q.accepted_at).getTime() - new Date(q.sent_at).getTime();
+          totalTimeToAccept += dt;
+          acceptedWithSent += 1;
+        }
+      }
+      if (["sent", "viewed", "accepted", "rejected"].includes(q.status)) sentCount += 1;
+      if (q.ai_generated) {
+        aiCount += 1;
+        if (q.status === "accepted") aiWon += 1;
+      }
+      if (["sent", "viewed"].includes(q.status) && q.sent_at) {
+        const days = Math.floor((now - new Date(q.sent_at).getTime()) / 86400000);
+        if (days <= 3) aging["0-3d"] += 1;
+        else if (days <= 7) aging["4-7d"] += 1;
+        else if (days <= 15) aging["8-15d"] += 1;
+        else if (days <= 30) aging["16-30d"] += 1;
+        else aging["30+d"] += 1;
+      }
+      const u = q.created_by ?? "sin_dueno";
+      byUser[u] = byUser[u] ?? { sent: 0, won: 0, value: 0 };
+      if (["sent", "viewed", "accepted", "rejected"].includes(q.status)) byUser[u].sent += 1;
+      if (q.status === "accepted") {
+        byUser[u].won += 1;
+        byUser[u].value += Number(q.total ?? 0);
+      }
+    }
+
+    return {
+      pipeline: Number(pipeline.toFixed(2)),
+      won: Number(won.toFixed(2)),
+      wonCount,
+      sentCount,
+      total: list.length,
+      conversion: sentCount > 0 ? wonCount / sentCount : 0,
+      avgTicket: wonCount > 0 ? Number((won / wonCount).toFixed(2)) : 0,
+      avgTimeToAcceptHours:
+        acceptedWithSent > 0 ? Number((totalTimeToAccept / acceptedWithSent / 3600000).toFixed(1)) : 0,
+      aging,
+      aiCount,
+      aiConversion: aiCount > 0 ? aiWon / aiCount : 0,
+      byUser,
+    };
+  });
+
+// ---------- Quick draft for a customer (manual create from list) ----------
+export const createDraftForCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        customer_id: z.string().uuid(),
+        title: z.string().max(200).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const company_id = await getCompanyId(supabase, userId);
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id, stage")
+      .eq("id", data.customer_id)
+      .maybeSingle();
+    if (!customer) throw new Error("Cliente no encontrado");
+    const number = await nextQuoteNumber(supabase, company_id);
+    const share_token = crypto.randomUUID().replace(/-/g, "");
+    const { data: quote, error } = await supabase
+      .from("quotes")
+      .insert({
+        company_id,
+        customer_id: data.customer_id,
+        stage: customer.stage ?? null,
+        number,
+        title: data.title ?? "Nueva propuesta",
+        status: "draft" as QuoteStatus,
+        currency: "USD",
+        share_token,
+        created_by: userId,
+      })
+      .select("id, company_id")
+      .single();
+    if (error) throw new Error(error.message);
+    await Promise.all([
+      supabase.from("quote_events").insert({
+        quote_id: quote.id,
+        company_id: quote.company_id,
+        actor_id: userId,
+        event_type: "created",
+        payload: { number, manual: true },
+      }),
+      supabase.from("customer_events").insert({
+        customer_id: data.customer_id,
+        company_id: quote.company_id,
+        actor_id: userId,
+        event_type: "quote_created",
+        payload: { quote_id: quote.id, number, manual: true },
+      }),
+    ]);
+    return { id: quote.id as string, number };
+  });
+
+// ---------- Send quote by id (resolves conversation automatically) ----------
+export const sendQuoteById = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: z.string().uuid(), origin: z.string().url().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("id, conversation_id, customer_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!quote) throw new Error("Cotización no encontrada");
+
+    let conversation_id = quote.conversation_id as string | null;
+    if (!conversation_id) {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("customer_id", quote.customer_id)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      conversation_id = conv?.id ?? null;
+    }
+    if (!conversation_id) {
+      throw new Error("Sin conversación disponible. Envía desde la Bandeja o crea una conversación primero.");
+    }
+    const sendFn: any = (await import("./quotes.functions")).sendQuoteFromConversation;
+    return await sendFn.handler({
+      data: { conversation_id, quote_id: data.id, origin: data.origin ?? "" },
+      context,
+    });
+  });
+
+// ---------- Schedule a follow-up reminder note ----------
+export const scheduleQuoteFollowup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        hours: z.number().int().min(1).max(720).default(48),
+        note: z.string().max(500).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("id, company_id, customer_id, number, total, currency, conversation_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!quote) throw new Error("Cotización no encontrada");
+    const due = new Date(Date.now() + data.hours * 3600000).toISOString();
+
+    await Promise.all([
+      supabase.from("quote_events").insert({
+        quote_id: quote.id,
+        company_id: quote.company_id,
+        actor_id: userId,
+        event_type: "followup_scheduled",
+        payload: { due_at: due, hours: data.hours, note: data.note ?? null },
+      }),
+      supabase.from("customers").update({ next_activity_at: due }).eq("id", quote.customer_id),
+      supabase.from("customer_events").insert({
+        customer_id: quote.customer_id,
+        company_id: quote.company_id,
+        actor_id: userId,
+        event_type: "followup_scheduled",
+        payload: {
+          quote_id: quote.id,
+          number: quote.number,
+          due_at: due,
+          note: data.note ?? null,
+        },
+      }),
+    ]);
+    return { ok: true, due_at: due };
+  });
