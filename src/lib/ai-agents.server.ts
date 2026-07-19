@@ -3,10 +3,10 @@
 // same logic without going through the client RPC boundary.
 
 import { SALES_AGENT_PROMPT, type AgentType } from "@/lib/ai-agents/registry";
-import { aiFetch, AiGatewayError } from "@/lib/ai-fetch";
+import { AiGatewayError } from "@/lib/ai-fetch";
+import { callChat } from "@/lib/ai-router.server";
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL_TAG = "openai/gpt-4o-mini"; // for audit trail only
 const HISTORY_LIMIT = 20;
 
 export type SalesAnalysis = {
@@ -69,33 +69,22 @@ export async function runSalesAnalysis(
     })
     .join("\n");
 
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("La IA no está configurada en el servidor");
-
-  let res: Response;
+  let raw: string;
   try {
-    res = await aiFetch(
-      AI_GATEWAY,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": apiKey,
-          Authorization: `Bearer ${apiKey}`,
+    raw = await callChat({
+      tier: "medium", // análisis multi-turno de ventas → OpenAI
+      scope: "ai-agents",
+      companyId: convo.company_id,
+      temperature: 0.3,
+      jsonMode: true,
+      messages: [
+        { role: "system", content: SALES_AGENT_PROMPT },
+        {
+          role: "user",
+          content: `Cliente: ${convo.customers?.name ?? "sin nombre"} · etapa actual: ${convo.customers?.stage ?? "—"}\n\nConversación:\n${transcript}`,
         },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: "system", content: SALES_AGENT_PROMPT },
-            {
-              role: "user",
-              content: `Cliente: ${convo.customers?.name ?? "sin nombre"} · etapa actual: ${convo.customers?.stage ?? "—"}\n\nConversación:\n${transcript}`,
-            },
-          ],
-        }),
-      },
-      { scope: "ai-agents", companyId: convo.company_id },
-    );
+      ],
+    });
   } catch (e: any) {
     if (e instanceof AiGatewayError) {
       if (e.status === 429) throw new Error("La IA está saturada. Reintenta en 1 minuto.");
@@ -103,8 +92,6 @@ export async function runSalesAnalysis(
     }
     throw new Error(e?.message ?? "IA no disponible");
   }
-  const json: any = await res.json();
-  const raw: string = json?.choices?.[0]?.message?.content ?? "";
   const parsed = safeParseJson(raw);
   if (!parsed) throw new Error("La IA devolvió un formato inesperado");
 
@@ -128,7 +115,7 @@ export async function runSalesAnalysis(
     confidence: parsed.quality_score ?? null,
     probability: parsed.probability ?? null,
     objections: (parsed.objections ?? []) as any,
-    model: MODEL,
+    model: MODEL_TAG,
     status: "pending" as any,
     payload: parsed as any,
     actor_id: userId,

@@ -3,12 +3,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, type AiStyle } from "@/lib/ai-styles";
-import { aiFetch } from "@/lib/ai-fetch";
 import { log } from "@/lib/logger";
 import { fetchKnowledgeContext } from "@/lib/knowledge-rag.server";
+import { callChat } from "@/lib/ai-router.server";
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
 const HISTORY_LIMIT = 12;
 
 type AdminClient = ReturnType<typeof createClient<Database>>;
@@ -93,34 +91,19 @@ export async function maybeAutoReply(opts: {
       })),
     ];
 
-    // 3) Llama a Lovable AI Gateway
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) {
-      console.error("[ai-reply] LOVABLE_API_KEY missing");
-      return;
-    }
-
-    let aiRes: Response;
+    // 3) Llama al router de IA (Gemini por defecto para auto-reply)
+    let reply = "";
     try {
-      aiRes = await aiFetch(
-        AI_GATEWAY,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Lovable-API-Key": apiKey,
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ model: MODEL, messages }),
-        },
-        { scope: "ai-reply", companyId },
-      );
+      reply = await callChat({
+        tier: "fast",
+        scope: "ai-reply",
+        companyId,
+        messages: messages as any,
+      });
     } catch (e) {
       log.error("ai-reply", "ai_gateway_failed", { company_id: companyId, err: e });
       return; // fail-safe: no auto-reply, chat keeps working
     }
-    const aiJson: any = await aiRes.json();
-    const reply: string = aiJson?.choices?.[0]?.message?.content?.trim() ?? "";
     if (!reply) return;
 
     // 4) Enviar por WhatsApp Cloud API

@@ -3,11 +3,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { aiFetch } from "@/lib/ai-fetch";
+import { callChat, embedTexts, EMBED_DIMS } from "@/lib/ai-router.server";
 
-const EMBEDDINGS_URL = "https://ai.gateway.lovable.dev/v1/embeddings";
-const EMBEDDING_MODEL = "openai/text-embedding-3-small";
-const EMBEDDING_DIMS = 1536;
+const EMBEDDING_DIMS = EMBED_DIMS;
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
 const EMBED_BATCH_SIZE = 32;
@@ -60,28 +58,7 @@ export function chunkText(text: string): string[] {
 }
 
 async function embedBatch(inputs: string[], scope: string, companyId: string): Promise<number[][]> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
-  const res = await aiFetch(
-    EMBEDDINGS_URL,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: inputs,
-        dimensions: EMBEDDING_DIMS,
-      }),
-    },
-    { scope, companyId },
-  );
-  const json: any = await res.json();
-  const data: any[] = json?.data ?? [];
-  return data.map((d) => d.embedding as number[]);
+  return embedTexts(inputs, { scope, companyId });
 }
 
 // ---------- Listar ----------
@@ -721,36 +698,25 @@ export const summarizeAndTagKnowledge = createServerFn({ method: "POST" })
       .join("\n---\n")
       .slice(0, 8000);
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
-    const res = await aiFetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+    const raw = await callChat({
+      tier: "fast",
+      scope: "knowledge-summarize",
+      companyId,
+      temperature: 0.2,
+      jsonMode: true,
+      timeoutMs: 30_000,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Eres un asistente que resume documentos empresariales para ventas por WhatsApp. Responde SOLO con JSON válido en el formato: {\"summary\":\"2-3 frases\",\"tags\":[\"kebab-case\",...],\"category\":\"catalogo|faq|politicas|playbook|manual|otro\"}",
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                "Eres un asistente que resume documentos empresariales para ventas por WhatsApp. Responde SOLO con JSON válido en el formato: {\"summary\":\"2-3 frases\",\"tags\":[\"kebab-case\",...],\"category\":\"catalogo|faq|politicas|playbook|manual|otro\"}",
-            },
-            {
-              role: "user",
-              content: `Resume estos fragmentos de un documento y sugiere 3-6 etiquetas cortas en kebab-case.\n\n${sample}`,
-            },
-          ],
-          temperature: 0.2,
-        }),
-      },
-      { scope: "knowledge-summarize", companyId, timeoutMs: 30_000 },
-    );
-    const json: any = await res.json();
-    const raw = json?.choices?.[0]?.message?.content ?? "{}";
+        {
+          role: "user",
+          content: `Resume estos fragmentos de un documento y sugiere 3-6 etiquetas cortas en kebab-case.\n\n${sample}`,
+        },
+      ],
+    });
     let parsed: { summary?: string; tags?: string[]; category?: string } = {};
     try {
       const cleaned = String(raw).replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();

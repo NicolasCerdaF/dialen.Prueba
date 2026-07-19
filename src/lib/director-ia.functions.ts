@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizeStage } from "@/lib/pipeline";
-import { aiFetch } from "@/lib/ai-fetch";
 import { log } from "@/lib/logger";
 
 /**
@@ -13,8 +12,7 @@ import { log } from "@/lib/logger";
  * (done / snoozed / dismissed) survives page reloads and sessions.
  */
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const AI_MODEL = "google/gemini-3-flash-preview";
+import { callChat } from "@/lib/ai-router.server";
 
 export type InsightCategory =
   | "contactar"
@@ -686,8 +684,9 @@ export const generateDirectorBriefing = createServerFn({ method: "POST" })
       return { text: "Sin recomendaciones activas ahora mismo. Tu operación está al día ✅" };
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) {
+    const hasAny =
+      process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!hasAny) {
       // Fallback determinístico si no hay IA disponible
       const top = rows.slice(0, 3).map((r, i) => `${i + 1}. ${r.title} — ${r.reason ?? ""}`).join("\n");
       return {
@@ -697,12 +696,12 @@ export const generateDirectorBriefing = createServerFn({ method: "POST" })
 
     const messages = [
       {
-        role: "system",
+        role: "system" as const,
         content:
           "Eres el Director Comercial IA de una empresa que vende por WhatsApp. En 4-6 líneas, resume las prioridades del día para el dueño/gerente en español neutro, profesional y accionable. Sin viñetas de asteriscos. Usa emojis mínimos (máx 1 al inicio). Menciona el impacto y termina con la primera acción concreta a tomar hoy.",
       },
       {
-        role: "user",
+        role: "user" as const,
         content:
           `Empresa: ${company?.name ?? "N/D"}. Recomendaciones pendientes:\n` +
           rows.map((r) =>
@@ -712,21 +711,13 @@ export const generateDirectorBriefing = createServerFn({ method: "POST" })
     ];
 
     try {
-      const res = await aiFetch(
-        AI_GATEWAY,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Lovable-API-Key": apiKey,
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ model: AI_MODEL, messages, temperature: 0.5 }),
-        },
-        { scope: "director-briefing", companyId: profile.company_id },
-      );
-      const json: any = await res.json();
-      const text: string = json?.choices?.[0]?.message?.content?.trim() ?? "";
+      const text = await callChat({
+        tier: "hard", // Director Comercial IA → Claude (decisión crítica)
+        scope: "director-briefing",
+        companyId: profile.company_id,
+        temperature: 0.5,
+        messages,
+      });
       return { text: text || "Prioridades listas. Revisa la lista de recomendaciones." };
     } catch (e) {
       log.error("director-ia", "briefing_failed", { err: (e as Error).message });

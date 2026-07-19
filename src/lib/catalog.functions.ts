@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { callChat } from "@/lib/ai-router.server";
 
 // ---------- Types ----------
 export type Product = {
@@ -713,24 +714,17 @@ export const aiEnrichProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId, supabase } = context;
     await getCompanyId(supabase, userId);
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY no configurada");
     const prompt = `Eres un experto en catálogos de e-commerce en español. Devuelve JSON con: description (2-3 frases claras, orientadas a beneficio comercial), tags (array de 3-6 keywords cortas en minúsculas, sin # ni comas).
 Producto: ${data.name}
 ${data.category ? `Categoría: ${data.category}` : ""}
 ${data.current_description ? `Descripción actual: ${data.current_description}` : ""}
 Responde SOLO con JSON válido: {"description":"...","tags":["..."]}`;
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const raw = await callChat({
+      tier: "fast",
+      scope: "catalog-enrich",
+      jsonMode: true,
+      messages: [{ role: "user", content: prompt }],
     });
-    if (!res.ok) throw new Error(`AI ${res.status}`);
-    const json: any = await res.json();
-    const raw: string = json?.choices?.[0]?.message?.content ?? "";
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) throw new Error("Respuesta IA no válida");
     let parsed: any;
