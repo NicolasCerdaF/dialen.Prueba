@@ -52,7 +52,7 @@ import {
 } from "@/lib/crm.functions";
 import { orchestrateCustomer } from "@/lib/ai-orchestrator.functions";
 import { listQuotes } from "@/lib/quotes.functions";
-import { STAGES, normalizeStage, stageStyle } from "@/lib/pipeline";
+import { STAGES, normalizeStage } from "@/lib/pipeline";
 
 type TeamMember = { id: string; full_name: string | null; email: string | null };
 
