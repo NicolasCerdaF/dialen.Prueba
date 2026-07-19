@@ -4,7 +4,6 @@ import {
   Users,
   Settings,
   Sparkles,
-  CircleDot,
   LogOut,
   TrendingUp,
   Zap,
@@ -20,11 +19,7 @@ import {
   Bot,
   Brain,
   BarChart3,
-  LineChart,
-  PieChart,
   Cog,
-  Plug,
-  UserCog,
   ChevronDown,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
@@ -96,7 +91,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia" },
       { label: "Automatizaciones", icon: Zap, to: "/automatizaciones" },
-      { label: "Base de Conocimiento IA", icon: BookOpen, to: "/conocimiento" },
+      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento" },
       { label: "Análisis IA", icon: Brain, to: "/metricas-ia" },
     ],
   },
@@ -106,9 +101,6 @@ const navGroups: NavGroup[] = [
     icon: BarChart3,
     items: [
       { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo" },
-      { label: "Conversaciones", icon: MessageSquare, soon: true },
-      { label: "Ventas", icon: LineChart, soon: true },
-      { label: "Conversiones", icon: PieChart, soon: true },
     ],
   },
   {
@@ -117,8 +109,6 @@ const navGroups: NavGroup[] = [
     icon: Cog,
     items: [
       { label: "WhatsApp", icon: MessageSquare, to: "/onboarding/whatsapp" },
-      { label: "Integraciones", icon: Plug, soon: true },
-      { label: "Usuarios", icon: UserCog, soon: true },
       { label: "Configuración", icon: Settings, to: "/configuracion" },
     ],
   },
