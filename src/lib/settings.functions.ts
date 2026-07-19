@@ -12,15 +12,12 @@ async function ensureOwnerAdminRole(supabase: any, userId: string, companyId: st
     .maybeSingle();
   if (company?.owner_id !== userId) return;
 
-  const { error } = await supabase.from("user_roles").upsert(
-    {
-      user_id: userId,
-      company_id: companyId,
-      role: "admin",
-    },
-    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
-  );
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("user_roles").insert({
+    user_id: userId,
+    company_id: companyId,
+    role: "admin",
+  });
+  if (error && error.code !== "23505") throw new Error(error.message);
 }
 
 async function getCompanyId(supabase: any, userId: string): Promise<string> {
