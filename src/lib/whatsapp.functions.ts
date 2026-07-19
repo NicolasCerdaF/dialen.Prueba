@@ -532,6 +532,7 @@ export const getWhatsAppMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    if (!company_id) return { buckets: { d1: { in: 0, out: 0 }, d7: { in: 0, out: 0 }, d30: { in: 0, out: 0 } }, statusCount: {} as Record<string, number>, series: [] as { date: string; in: number; out: number }[], total30: 0 };
     const since30 = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
     const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
     const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
