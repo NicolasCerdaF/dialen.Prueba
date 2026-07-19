@@ -13,15 +13,20 @@ declare global {
   }
 }
 
+const DEBUG = import.meta.env.DEV;
+
 function log(msg: string, data?: any) {
-  // eslint-disable-next-line no-console
-  console.log(`[WA-Signup] ${msg}`, data ?? "");
+  if (DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log(`[WA-Signup] ${msg}`, data ?? "");
+  }
   try {
     window.__wa_debug?.(msg, data);
   } catch {
     // ignore
   }
 }
+
 
 function loadFbSdk(appId: string, version: string): Promise<void> {
   return new Promise((resolve, reject) => {
