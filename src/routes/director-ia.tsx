@@ -460,9 +460,7 @@ function DirectorIA() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     Categoría:{" "}
-                    {categoryFilter === "all"
-                      ? "todas"
-                      : CAT_META[categoryFilter].title.split(" ")[0].toLowerCase()}
+                    {categoryFilter === "all" ? "todas" : CAT_META[categoryFilter].title}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
