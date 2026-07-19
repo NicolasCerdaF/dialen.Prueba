@@ -1946,6 +1946,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
-
-// Keep `listProducts` referenced so it doesn't get tree-shaken from the module map (used elsewhere).
-export const __ensureListProducts = listProducts;
