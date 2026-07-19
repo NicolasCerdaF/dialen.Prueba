@@ -21,6 +21,9 @@ export type BandejaItem = {
   currency: string;
   stage: string | null;
   elapsedLabel: string;
+  lastMessagePreview: string | null;
+  aiSummary: string | null;
+  productMention: string | null;
   suggestedAction:
     | { kind: "open"; label: string }
     | { kind: "quote"; label: string; conversationId: string }
