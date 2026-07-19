@@ -79,7 +79,7 @@ function ContactosPage() {
 
   useRealtimeInvalidate({
     channel: "contacts-live",
-    tables: ["customers", "messages"],
+    tables: ["customers", "messages", "quotes"],
     invalidate: [["contacts"]],
   });
 
