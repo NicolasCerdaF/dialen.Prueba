@@ -17,6 +17,7 @@ import { Route as DirectorIaRouteImport } from './routes/director-ia'
 import { Route as DashboardEjecutivoRouteImport } from './routes/dashboard-ejecutivo'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
+import { Route as ConversacionesRouteImport } from './routes/conversaciones'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ConocimientoRouteImport } from './routes/conocimiento'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
@@ -69,6 +70,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const CotizacionesRoute = CotizacionesRouteImport.update({
   id: '/cotizaciones',
   path: '/cotizaciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConversacionesRoute = ConversacionesRouteImport.update({
+  id: '/conversaciones',
+  path: '/conversaciones',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactosRoute = ContactosRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/contactos': typeof ContactosRoute
+  '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/contactos': typeof ContactosRoute
+  '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
   '/contactos': typeof ContactosRoute
+  '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/conocimiento'
     | '/contactos'
+    | '/conversaciones'
     | '/cotizaciones'
     | '/dashboard'
     | '/dashboard-ejecutivo'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/conocimiento'
     | '/contactos'
+    | '/conversaciones'
     | '/cotizaciones'
     | '/dashboard'
     | '/dashboard-ejecutivo'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/conocimiento'
     | '/contactos'
+    | '/conversaciones'
     | '/cotizaciones'
     | '/dashboard'
     | '/dashboard-ejecutivo'
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
   ContactosRoute: typeof ContactosRoute
+  ConversacionesRoute: typeof ConversacionesRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   DashboardEjecutivoRoute: typeof DashboardEjecutivoRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/cotizaciones'
       fullPath: '/cotizaciones'
       preLoaderRoute: typeof CotizacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conversaciones': {
+      id: '/conversaciones'
+      path: '/conversaciones'
+      fullPath: '/conversaciones'
+      preLoaderRoute: typeof ConversacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contactos': {
@@ -488,6 +508,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
   ContactosRoute: ContactosRoute,
+  ConversacionesRoute: ConversacionesRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
   DashboardRoute: DashboardRoute,
   DashboardEjecutivoRoute: DashboardEjecutivoRoute,
