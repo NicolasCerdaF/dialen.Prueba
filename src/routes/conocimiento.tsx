@@ -643,12 +643,12 @@ function KPI({
             ? "text-violet-500"
             : "text-primary";
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <Icon className={`h-3.5 w-3.5 ${toneCls}`} />
-        {label}
+    <div className="min-w-0 rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-2 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
+        <Icon className={`h-3.5 w-3.5 shrink-0 ${toneCls}`} />
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-1 font-display text-2xl font-semibold">{value.toLocaleString()}</div>
+      <div className="mt-1 truncate font-display text-2xl font-semibold tabular-nums">{value.toLocaleString()}</div>
     </div>
   );
 }
