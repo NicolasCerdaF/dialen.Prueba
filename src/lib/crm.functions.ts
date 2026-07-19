@@ -375,3 +375,164 @@ export const listTeamMembers = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []) as { id: string; full_name: string | null; email: string | null }[];
   });
+
+// ============================================================================
+// Bulk / import / delete — used by Embudo Comercial and CRM.
+// ============================================================================
+
+const BulkPatch = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(500),
+    stage: z.string().max(60).nullable().optional(),
+    priority: z.string().max(20).nullable().optional(),
+    status: z.string().max(40).nullable().optional(),
+    assignee_id: z.string().uuid().nullable().optional(),
+    // tags_add / tags_remove operate additively without overwriting existing.
+    tags_add: z.array(z.string().max(40)).max(30).optional(),
+    tags_remove: z.array(z.string().max(40)).max(30).optional(),
+    tags_set: z.array(z.string().max(40)).max(30).optional(),
+    next_activity_at: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).some((k) => k !== "ids"), {
+    message: "Nothing to update",
+  });
+
+export const bulkUpdateCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => BulkPatch.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: rows, error: readErr } = await supabase
+      .from("customers")
+      .select("id, company_id, stage, priority, status, assignee_id, tags, next_activity_at")
+      .in("id", data.ids);
+    if (readErr) throw new Error(readErr.message);
+    if (!rows || rows.length === 0) return { updated: 0 };
+
+    let updated = 0;
+    for (const before of rows) {
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      for (const k of ["stage", "priority", "status", "assignee_id", "next_activity_at"] as const) {
+        if (data[k] !== undefined) patch[k] = data[k];
+      }
+      const current = new Set<string>(((before as any).tags ?? []) as string[]);
+      if (data.tags_set) {
+        patch.tags = Array.from(new Set(data.tags_set));
+      } else {
+        (data.tags_add ?? []).forEach((t) => current.add(t));
+        (data.tags_remove ?? []).forEach((t) => current.delete(t));
+        if (data.tags_add || data.tags_remove) patch.tags = Array.from(current);
+      }
+
+      const { error } = await supabase
+        .from("customers")
+        .update(patch as any)
+        .eq("id", (before as any).id);
+      if (error) continue;
+
+      const changes: Record<string, { from: unknown; to: unknown }> = {};
+      for (const k of Object.keys(patch)) {
+        if (k === "updated_at") continue;
+        const b = (before as Record<string, unknown>)[k];
+        const a = patch[k];
+        if (JSON.stringify(b) !== JSON.stringify(a)) changes[k] = { from: b, to: a };
+      }
+      if (Object.keys(changes).length > 0) {
+        await supabase.from("customer_events").insert({
+          customer_id: (before as any).id,
+          company_id: (before as any).company_id,
+          actor_id: userId,
+          event_type: "bulk_updated",
+          payload: { changes } as any,
+        });
+      }
+      updated++;
+    }
+    return { updated };
+  });
+
+// ---------- Delete customers (used by Embudo bulk archive/eliminación) ----------
+export const deleteCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(200) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error, count } = await supabase
+      .from("customers")
+      .delete({ count: "exact" })
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    return { deleted: count ?? 0 };
+  });
+
+// ---------- Bulk import from CSV (used by Embudo import dialog) ----------
+const ImportRow = z.object({
+  phone: z.string().min(4).max(40),
+  name: z.string().max(200).optional().nullable(),
+  email: z.string().max(200).optional().nullable(),
+  company: z.string().max(200).optional().nullable(),
+  stage: z.string().max(60).optional().nullable(),
+  priority: z.string().max(20).optional().nullable(),
+  tags: z.array(z.string().max(40)).optional().nullable(),
+  estimated_value: z.number().optional().nullable(),
+  assignee_id: z.string().uuid().optional().nullable(),
+  notes: z.string().max(4000).optional().nullable(),
+});
+
+export const bulkImportCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ rows: z.array(ImportRow).min(1).max(500) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const companyId = (profile as any)?.company_id as string | undefined;
+    if (!companyId) throw new Error("Sin empresa activa");
+
+    // Dedupe against existing phones for this company.
+    const phones = data.rows.map((r) => r.phone.trim()).filter(Boolean);
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("phone")
+      .eq("company_id", companyId)
+      .in("phone", phones);
+    const seen = new Set<string>(((existing ?? []) as any[]).map((r) => r.phone));
+
+    const inserts: any[] = [];
+    let skipped = 0;
+    for (const r of data.rows) {
+      const phone = r.phone.trim();
+      if (!phone || seen.has(phone)) {
+        skipped++;
+        continue;
+      }
+      seen.add(phone);
+      inserts.push({
+        company_id: companyId,
+        phone,
+        name: r.name ?? null,
+        email: r.email ?? null,
+        company: r.company ?? null,
+        stage: r.stage ?? "nuevo_lead",
+        priority: r.priority ?? "normal",
+        status: "active",
+        assignee_id: r.assignee_id ?? null,
+        tags: r.tags ?? [],
+        estimated_value: r.estimated_value ?? null,
+        notes: r.notes ?? null,
+        channel: "import",
+      });
+    }
+    if (inserts.length === 0) return { created: 0, skipped };
+    const { error } = await supabase.from("customers").insert(inserts as any);
+    if (error) throw new Error(error.message);
+    return { created: inserts.length, skipped };
+  });
+
