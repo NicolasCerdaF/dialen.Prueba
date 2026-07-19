@@ -949,6 +949,14 @@ function AlertChip({ alert }: { alert: ExecutiveDashboard["alerts"][number] }) {
 // ---------- Charts ----------
 
 function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series"]; currency: string }) {
+  const totalRev = series.reduce((a, s) => a + s.revenue, 0);
+  if (totalRev === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin ingresos registrados en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.revenue));
   return (
     <div className="flex h-48 items-end gap-1">
@@ -956,7 +964,7 @@ function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series
         <div
           key={s.date}
           className="group relative flex-1"
-          title={`${s.date} · ${fmtMoney(s.revenue, currency)}`}
+          title={`${s.date} · ${s.revenue > 0 ? fmtMoney(s.revenue, currency) : "Sin ingresos"}`}
         >
           <div
             className="w-full rounded-t bg-gradient-to-t from-emerald-500/60 to-emerald-500/20"
@@ -967,6 +975,7 @@ function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series
     </div>
   );
 }
+
 
 function VolumeChart({ series }: { series: ExecutiveDashboard["series"] }) {
   const max = Math.max(1, ...series.map((s) => s.inbound + s.outbound));
