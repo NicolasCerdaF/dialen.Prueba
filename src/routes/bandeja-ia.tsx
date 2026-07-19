@@ -31,7 +31,6 @@ import {
   getConversationAnalysis,
   resolvePendingAction,
   type BandejaItem,
-  type BandejaCategory,
   type PendingAction,
 } from "@/lib/bandeja-ia.functions";
 import { cn } from "@/lib/utils";
