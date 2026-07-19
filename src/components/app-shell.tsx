@@ -341,15 +341,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar (mobile: hamburger + brand; desktop: just theme toggle on the right) */}
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-sidebar px-3">
+        {/* Top bar (mobile: hamburger + brand; desktop: theme toggle on the right) */}
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border/70 bg-background/80 px-3 backdrop-blur-md">
           <button
             onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary md:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-md transition-smooth hover:bg-secondary md:hidden"
             aria-label="Abrir menú"
           >
             <Menu className="h-5 w-5" />
           </button>
+
           <div className="flex items-center gap-2 md:hidden">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-primary">
               <Sparkles className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
