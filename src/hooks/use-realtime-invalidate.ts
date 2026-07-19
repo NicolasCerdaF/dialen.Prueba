@@ -12,7 +12,9 @@ export type RealtimeTable =
   | "customers"
   | "customer_events"
   | "customer_notes"
-  | "ai_suggestions";
+  | "ai_suggestions"
+  | "ai_insights"
+  | "product_recommendations";
 
 
 type Options = {
