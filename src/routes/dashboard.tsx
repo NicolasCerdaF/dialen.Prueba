@@ -130,9 +130,75 @@ function DashboardPage() {
               <EmptyRow message="Aparecerán aquí las cotizaciones aceptadas" />
             </Card>
           </div>
+
+          {/* Actividad reciente */}
+          <section className="mt-6">
+            <ActivityTimeline />
+          </section>
         </div>
       </div>
     </AppShell>
+  );
+}
+
+/* ---------- Activity timeline ---------- */
+
+type ActivityKind =
+  | "conversation"
+  | "quote"
+  | "sale"
+  | "opportunity"
+  | "automation"
+  | "ai";
+
+function ActivityTimeline() {
+  // Placeholder — empty state shell. Cuando el sistema registre eventos
+  // (conversaciones respondidas, cotizaciones, ventas, oportunidades,
+  // automatizaciones y recomendaciones IA) aparecerán aquí como línea de tiempo.
+  const legend: { kind: ActivityKind; label: string; icon: typeof MessageSquare; tone: string }[] = [
+    { kind: "conversation", label: "Conversaciones", icon: MessageSquare, tone: "text-primary bg-primary/10" },
+    { kind: "opportunity", label: "Oportunidades", icon: Target, tone: "text-sky-500 bg-sky-500/10" },
+    { kind: "quote", label: "Cotizaciones", icon: FileText, tone: "text-amber-500 bg-amber-500/10" },
+    { kind: "sale", label: "Ventas", icon: DollarSign, tone: "text-emerald-500 bg-emerald-500/10" },
+    { kind: "automation", label: "Automatizaciones", icon: Zap, tone: "text-violet-500 bg-violet-500/10" },
+    { kind: "ai", label: "IA", icon: Sparkles, tone: "text-fuchsia-500 bg-fuchsia-500/10" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader
+        title="Actividad reciente"
+        icon={Clock}
+        action={
+          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            En vivo
+          </span>
+        }
+      />
+      <div className="px-5 pb-5 pt-4">
+        <div className="mb-4 flex flex-wrap gap-2">
+          {legend.map((l) => (
+            <span
+              key={l.kind}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-[11px] text-muted-foreground"
+            >
+              <span className={cn("flex h-4 w-4 items-center justify-center rounded-full", l.tone)}>
+                <l.icon className="h-2.5 w-2.5" />
+              </span>
+              {l.label}
+            </span>
+          ))}
+        </div>
+        <div className="relative rounded-lg border border-dashed border-border bg-secondary/30 px-6 py-10 text-center">
+          <Activity className="mx-auto mb-2 h-5 w-5 text-muted-foreground opacity-60" />
+          <p className="text-sm font-medium">Sin actividad reciente</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cada conversación respondida, cotización, venta, oportunidad, automatización
+            y recomendación IA aparecerá aquí como línea de tiempo ejecutiva.
+          </p>
+        </div>
+      </div>
+    </Card>
   );
 }
 
