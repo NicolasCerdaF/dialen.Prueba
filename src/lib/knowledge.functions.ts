@@ -3,11 +3,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { aiFetch } from "@/lib/ai-fetch";
+import { callChat, embedTexts, EMBED_DIMS } from "@/lib/ai-router.server";
 
-const EMBEDDINGS_URL = "https://ai.gateway.lovable.dev/v1/embeddings";
-const EMBEDDING_MODEL = "openai/text-embedding-3-small";
-const EMBEDDING_DIMS = 1536;
+const EMBEDDING_DIMS = EMBED_DIMS;
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
 const EMBED_BATCH_SIZE = 32;
