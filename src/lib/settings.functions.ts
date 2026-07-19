@@ -7,11 +7,53 @@ type Role = "admin" | "manager" | "vendedor";
 async function getCompanyId(supabase: any, userId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
-    .select("company_id")
+    .select("company_id, email, full_name")
     .eq("id", userId)
     .maybeSingle();
-  if (!data?.company_id) throw new Error("No se encontró la empresa");
-  return data.company_id as string;
+  if (data?.company_id) return data.company_id as string;
+
+  // Bootstrap para cuentas existentes en proyectos remixados: si el trigger de
+  // alta no creó empresa/perfil/rol, lo resolvemos antes de cargar Configuración.
+  const { data: authUser } = await supabase.auth.getUser();
+  const email: string | null = data?.email ?? authUser?.user?.email ?? null;
+  const fullName: string =
+    data?.full_name ??
+    (authUser?.user?.user_metadata as any)?.full_name ??
+    (email ? email.split("@")[0] : "Mi empresa");
+
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .insert({ name: `${fullName} Workspace`, owner_id: userId })
+    .select("id")
+    .single();
+  if (companyError || !company?.id) {
+    throw new Error(companyError?.message || "No se pudo crear la empresa");
+  }
+
+  if (data) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ company_id: company.id })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("profiles").insert({
+      id: userId,
+      full_name: fullName,
+      email,
+      company_id: company.id,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  const { error: roleError } = await supabase.from("user_roles").insert({
+    user_id: userId,
+    company_id: company.id,
+    role: "admin",
+  });
+  if (roleError) throw new Error(roleError.message);
+
+  return company.id as string;
 }
 
 async function assertAdmin(supabase: any, userId: string, companyId: string) {
