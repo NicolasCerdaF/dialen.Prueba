@@ -274,7 +274,10 @@ function QuoteDetailPage() {
           })),
         },
       });
+      toast.success("Cotización guardada");
       await refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -282,8 +285,83 @@ function QuoteDetailPage() {
 
   async function onStatus(next: QuoteStatus) {
     if (!quote) return;
-    await changeStatus({ data: { id: quote.id, status: next } });
-    refetch();
+    try {
+      await changeStatus({ data: { id: quote.id, status: next } });
+      toast.success(`Marcada como ${STATUS_META[next].label.toLowerCase()}`);
+      refetch();
+      refetchEvents();
+      qc.invalidateQueries({ queryKey: ["quotes-adv"] });
+      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al cambiar estado");
+    } finally {
+      setConfirmStatus(null);
+    }
+  }
+
+  async function onSend() {
+    if (!quote) return;
+    try {
+      const res = await sendFn({ data: { id: quote.id, origin: window.location.origin } });
+      toast.success(`Enviada por WhatsApp (${res.status})`);
+      refetch();
+      refetchEvents();
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo enviar");
+    }
+  }
+  async function onDuplicate() {
+    if (!quote) return;
+    try {
+      const res = await dupFn({ data: { id: quote.id, reset_conversation: true } });
+      toast.success(`Duplicada como ${res.number}`);
+      navigate({ to: "/cotizaciones/$id", params: { id: res.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al duplicar");
+    }
+  }
+  async function onRevise() {
+    if (!quote) return;
+    try {
+      const res = await reviseFn({ data: { id: quote.id } });
+      toast.success(`Nueva versión ${res.number} creada`);
+      navigate({ to: "/cotizaciones/$id", params: { id: res.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al crear versión");
+    }
+  }
+  async function onDelete() {
+    if (!quote) return;
+    try {
+      await delFn({ data: { id: quote.id } });
+      toast.success("Cotización eliminada");
+      navigate({ to: "/cotizaciones" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al eliminar");
+    }
+  }
+  async function onScheduleFollowup() {
+    if (!quote) return;
+    try {
+      await followupFn({
+        data: { id: quote.id, hours: Math.max(1, Number(followupHours) || 48), note: followupNote || undefined },
+      });
+      toast.success(`Recordatorio en ${followupHours}h agendado`);
+      setFollowupOpen(false);
+      setFollowupNote("");
+      refetchEvents();
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo agendar");
+    }
+  }
+  function onPrint() {
+    window.print();
+  }
+  function onCopyShare() {
+    if (!quote?.share_token) return;
+    const url = `${window.location.origin}/cotizaciones/${quote.id}?t=${quote.share_token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Enlace copiado");
   }
 
   if (!quote) {
