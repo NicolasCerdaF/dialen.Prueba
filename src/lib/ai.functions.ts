@@ -2,40 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AI_STYLES, buildSystemPrompt, type AiStyle } from "@/lib/ai-styles";
+import { callChat } from "@/lib/ai-router.server";
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const DEFAULT_MODEL = "google/gemini-3-flash-preview";
-
-async function callAi(opts: {
-  system: string;
-  user: string;
-  model?: string;
-}): Promise<string> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("La IA no está configurada en el servidor");
-  const res = await fetch(AI_GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": key,
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: opts.model ?? DEFAULT_MODEL,
-      messages: [
-        { role: "system", content: opts.system },
-        { role: "user", content: opts.user },
-      ],
-    }),
+async function callAi(opts: { system: string; user: string }): Promise<string> {
+  return callChat({
+    tier: "fast",
+    scope: "ai-preview",
+    messages: [
+      { role: "system", content: opts.system },
+      { role: "user", content: opts.user },
+    ],
   });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("La IA está saturada. Intenta de nuevo en 1 minuto.");
-    if (res.status === 402) throw new Error("Sin créditos de IA. Recarga en Configuración.");
-    throw new Error(`IA falló (${res.status}): ${t.slice(0, 200)}`);
-  }
-  const json: any = await res.json();
-  return json?.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
 // ---------- Read AI settings ----------
