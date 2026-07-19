@@ -110,7 +110,7 @@ const navGroups: NavGroup[] = [
     label: "Administración",
     icon: Cog,
     items: [
-      { label: "WhatsApp", icon: MessageSquare, to: "/onboarding/whatsapp" },
+      { label: "WhatsApp", icon: MessageSquare, to: "/whatsapp" },
       { label: "Configuración", icon: Settings, to: "/configuracion" },
     ],
   },
