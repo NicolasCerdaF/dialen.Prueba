@@ -1103,9 +1103,10 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 // ---------- Utils ----------
 
 function fmtMoney(n: number, currency: string): string {
-  if (!n) return `${currency} 0`;
+  if (!n || n <= 0) return "—";
   return `${currency} ${Math.round(n).toLocaleString()}`;
 }
+
 
 function fmtDuration(seconds: number): string {
   if (!seconds) return "—";
