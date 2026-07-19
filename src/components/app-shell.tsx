@@ -289,18 +289,9 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
 
-      {/* Footer */}
       <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 transition-smooth hover:bg-secondary/70">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-          </span>
-          <div className="text-xs leading-tight">
-            <div className="font-medium">WhatsApp no conectado</div>
-            <div className="text-[11px] text-muted-foreground">Configura en ajustes</div>
-          </div>
-        </div>
+        <SidebarSystemStatus />
+
         <div className="mt-3 flex items-center gap-3 px-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-[11px] font-semibold text-primary-foreground shadow-[var(--shadow-xs)]">
             {initials}
