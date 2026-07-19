@@ -3,10 +3,10 @@
 // same logic without going through the client RPC boundary.
 
 import { SALES_AGENT_PROMPT, type AgentType } from "@/lib/ai-agents/registry";
-import { aiFetch, AiGatewayError } from "@/lib/ai-fetch";
+import { AiGatewayError } from "@/lib/ai-fetch";
+import { callChat } from "@/lib/ai-router.server";
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL_TAG = "openai/gpt-4o-mini"; // for audit trail only
 const HISTORY_LIMIT = 20;
 
 export type SalesAnalysis = {
