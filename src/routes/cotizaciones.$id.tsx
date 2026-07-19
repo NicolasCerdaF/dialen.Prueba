@@ -148,9 +148,11 @@ function QuoteDetailPage() {
   const [terms, setTerms] = useState("");
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<QuoteStatus | null>(null);
+  const [confirmSend, setConfirmSend] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
   const [followupHours, setFollowupHours] = useState<number>(48);
   const [followupNote, setFollowupNote] = useState("");
@@ -302,13 +304,17 @@ function QuoteDetailPage() {
 
   async function onSend() {
     if (!quote) return;
+    setSending(true);
     try {
       const res = await sendFn({ data: { id: quote.id, origin: window.location.origin } });
       toast.success(`Enviada por WhatsApp (${res.status})`);
       refetch();
       refetchEvents();
+      setConfirmSend(false);
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo enviar");
+    } finally {
+      setSending(false);
     }
   }
   async function onDuplicate() {
@@ -440,9 +446,9 @@ function QuoteDetailPage() {
                     <Save className="mr-1.5 h-3.5 w-3.5" />
                     {saving ? "Guardando…" : "Guardar"}
                   </Button>
-                  <Button size="sm" onClick={onSend}>
+                  <Button size="sm" onClick={() => setConfirmSend(true)} disabled={sending}>
                     <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Enviar por WhatsApp
+                    {sending ? "Enviando…" : "Enviar por WhatsApp"}
                   </Button>
                 </>
               )}
@@ -488,7 +494,7 @@ function QuoteDetailPage() {
                     </DropdownMenuItem>
                   )}
                   {["sent", "viewed"].includes(quote.status) && (
-                    <DropdownMenuItem onSelect={onSend}>
+                    <DropdownMenuItem onSelect={() => setConfirmSend(true)}>
                       <Send className="mr-2 h-3.5 w-3.5" /> Reenviar por WhatsApp
                     </DropdownMenuItem>
                   )}
@@ -792,6 +798,35 @@ function QuoteDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={confirmSend}
+        onOpenChange={(o) => !o && !sending && setConfirmSend(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enviar cotización por WhatsApp</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se enviará <strong>{quote?.number}</strong> al cliente por WhatsApp con un
+              resumen y el enlace público. Podrás reenviarla luego si es necesario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={sending}
+              onClick={(e) => {
+                e.preventDefault();
+                onSend();
+              }}
+            >
+              {sending ? "Enviando…" : "Enviar ahora"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
 
       <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
         <DialogContent>

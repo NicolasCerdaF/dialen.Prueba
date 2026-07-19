@@ -161,6 +161,12 @@ function QuotesPage() {
     label: string;
     danger?: boolean;
   }>(null);
+  const [confirmSingle, setConfirmSingle] = useState<null | {
+    id: string;
+    kind: "send" | "delete";
+    number?: string;
+  }>(null);
+  const [singleBusy, setSingleBusy] = useState(false);
 
   const params = useMemo(() => {
     const p: any = { sort_by: sortBy, sort_dir: sortDir, limit: 200 };
@@ -596,9 +602,15 @@ function QuotesPage() {
               quotes={quotes}
               onOpen={(id) => navigate({ to: "/cotizaciones/$id", params: { id } })}
               onStatus={onStatus}
-              onDelete={onDelete}
+              onDelete={(id) => {
+                const q = quotes.find((x) => x.id === id);
+                setConfirmSingle({ id, kind: "delete", number: q?.number });
+              }}
               onDuplicate={onDuplicate}
-              onSend={onSendById}
+              onSend={(id) => {
+                const q = quotes.find((x) => x.id === id);
+                setConfirmSingle({ id, kind: "send", number: q?.number });
+              }}
             />
           ) : (
             <table className="w-full text-sm">
@@ -623,9 +635,13 @@ function QuotesPage() {
                     selected={selected.has(q.id)}
                     onToggle={() => toggleOne(q.id)}
                     onStatus={onStatus}
-                    onDelete={onDelete}
+                    onDelete={(id) =>
+                      setConfirmSingle({ id, kind: "delete", number: q.number })
+                    }
                     onDuplicate={onDuplicate}
-                    onSend={onSendById}
+                    onSend={(id) =>
+                      setConfirmSingle({ id, kind: "send", number: q.number })
+                    }
                   />
                 ))}
               </tbody>
@@ -633,6 +649,7 @@ function QuotesPage() {
           )}
         </div>
       </div>
+
 
       {/* Confirmation dialog */}
       <AlertDialog open={!!confirmBulk} onOpenChange={(o) => !o && setConfirmBulk(null)}>
@@ -655,6 +672,67 @@ function QuotesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Single-row send/delete confirmation */}
+      <AlertDialog
+        open={!!confirmSingle}
+        onOpenChange={(o) => !o && !singleBusy && setConfirmSingle(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmSingle?.kind === "delete"
+                ? "Eliminar cotización"
+                : "Enviar cotización por WhatsApp"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmSingle?.kind === "delete" ? (
+                <>
+                  ¿Eliminar la cotización{" "}
+                  <strong>{confirmSingle?.number ?? ""}</strong>? Esta acción no se puede
+                  deshacer.
+                </>
+              ) : (
+                <>
+                  Se enviará la cotización{" "}
+                  <strong>{confirmSingle?.number ?? ""}</strong> al cliente por WhatsApp.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={singleBusy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={singleBusy}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!confirmSingle) return;
+                setSingleBusy(true);
+                try {
+                  if (confirmSingle.kind === "delete") await onDelete(confirmSingle.id);
+                  else await onSendById(confirmSingle.id);
+                  setConfirmSingle(null);
+                } finally {
+                  setSingleBusy(false);
+                }
+              }}
+              className={
+                confirmSingle?.kind === "delete"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              {singleBusy
+                ? "Procesando…"
+                : confirmSingle?.kind === "delete"
+                  ? "Eliminar"
+                  : "Enviar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
 
       {/* Nueva cotización dialog */}
       <Dialog open={newDlgOpen} onOpenChange={setNewDlgOpen}>
