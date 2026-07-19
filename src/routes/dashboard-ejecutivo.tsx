@@ -978,6 +978,14 @@ function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series
 
 
 function VolumeChart({ series }: { series: ExecutiveDashboard["series"] }) {
+  const totalMsgs = series.reduce((a, s) => a + s.inbound + s.outbound, 0);
+  if (totalMsgs === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin conversaciones en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.inbound + s.outbound));
   return (
     <>
@@ -1013,6 +1021,14 @@ function VolumeChart({ series }: { series: ExecutiveDashboard["series"] }) {
 }
 
 function SalesStackedChart({ series }: { series: ExecutiveDashboard["series"] }) {
+  const totalSent = series.reduce((a, s) => a + s.quotesSent, 0);
+  if (totalSent === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin cotizaciones enviadas en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.quotesSent));
   return (
     <>
@@ -1041,6 +1057,7 @@ function SalesStackedChart({ series }: { series: ExecutiveDashboard["series"] })
     </>
   );
 }
+
 
 function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
   const totals = series.reduce(
