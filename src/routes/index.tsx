@@ -1118,20 +1118,6 @@ function Section({
   );
 }
 
-function ComingSoon({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      disabled
-      className="flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1.5 text-[10px] text-muted-foreground opacity-70"
-      title="Próximamente"
-    >
-      {icon}
-      <span className="flex-1 truncate text-left">{label}</span>
-      <Lock className="h-2.5 w-2.5" />
-    </button>
-  );
-}
-
 function eventLabel(type: string) {
   switch (type) {
     case "assigned":
