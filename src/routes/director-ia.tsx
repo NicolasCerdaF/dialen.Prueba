@@ -348,21 +348,39 @@ function DirectorIA() {
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
             <ExecStat
               label="Recomendaciones activas"
-              value={String(summary?.totals.pending ?? 0)}
+              value={summary ? String(summary.totals.pending) : "—"}
               tone="primary"
             />
-            <ExecStat
-              label="Ingresos potenciales"
-              value={
-                summary
-                  ? `${Number(summary.totals.potentialValue).toLocaleString("es-ES")} ${summary.totals.currency}`
-                  : "—"
+            {(() => {
+              const entries = Object.entries(summary?.potentialByCurrency ?? {})
+                .filter(([, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+              if (!summary || entries.length === 0) {
+                return (
+                  <ExecStat
+                    label="Ingresos potenciales"
+                    value="—"
+                    tone="success"
+                    hint={summary ? "Sin valor estimado en pendientes" : undefined}
+                  />
+                );
               }
-              tone="success"
-            />
+              const [cur, val] = entries[0];
+              const rest = entries.length - 1;
+              const full = entries.map(([c, v]) => `${Number(v).toLocaleString("es-ES")} ${c}`).join(" · ");
+              return (
+                <ExecStat
+                  label="Ingresos potenciales"
+                  value={`${Number(val).toLocaleString("es-ES")} ${cur}`}
+                  tone="success"
+                  hint={rest > 0 ? `+${rest} moneda${rest === 1 ? "" : "s"} más` : undefined}
+                  title={full}
+                />
+              );
+            })()}
             <ExecStat
               label="Riesgos detectados"
-              value={String(summary?.totals.risks ?? 0)}
+              value={summary ? String(summary.totals.risks) : "—"}
               tone="danger"
             />
           </div>
