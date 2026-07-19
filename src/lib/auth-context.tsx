@@ -23,14 +23,29 @@ type AuthCtx = {
 const Ctx = createContext<AuthCtx | null>(null);
 
 async function ensureWorkspaceForUser(user: User, profile: Profile | null): Promise<Profile> {
-  if (profile?.company_id) return profile;
-
   const email = profile?.email ?? user.email ?? null;
   const fullName =
     profile?.full_name ??
     (user.user_metadata as any)?.full_name ??
     (user.user_metadata as any)?.name ??
     (email ? email.split("@")[0] : "Mi empresa");
+
+  if (profile?.company_id) {
+    const { data: company } = await supabase
+      .from("companies")
+      .select("owner_id")
+      .eq("id", profile.company_id)
+      .maybeSingle();
+
+    if (company?.owner_id === user.id) {
+      await supabase.from("user_roles").upsert(
+        { user_id: user.id, company_id: profile.company_id, role: "admin" },
+        { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
+      );
+    }
+
+    return profile;
+  }
 
   const { data: existingCompany } = await supabase
     .from("companies")
