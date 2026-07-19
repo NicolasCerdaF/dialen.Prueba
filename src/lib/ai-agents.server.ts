@@ -115,7 +115,7 @@ export async function runSalesAnalysis(
     confidence: parsed.quality_score ?? null,
     probability: parsed.probability ?? null,
     objections: (parsed.objections ?? []) as any,
-    model: MODEL,
+    model: MODEL_TAG,
     status: "pending" as any,
     payload: parsed as any,
     actor_id: userId,
