@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
-import { getDashboardData, type AiPriority, type AttentionBucket, type FunnelStageMini } from "@/lib/dashboard.functions";
+import { getDashboardData, type AiPriority, type AttentionBucket, type AttentionItem, type FunnelStageMini } from "@/lib/dashboard.functions";
 import { STAGE_STYLES } from "@/lib/pipeline";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
