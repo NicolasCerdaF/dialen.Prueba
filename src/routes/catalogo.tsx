@@ -1149,6 +1149,8 @@ function ProductDetailSheet({
     toast.success("Actualizado");
     qc.invalidateQueries({ queryKey: ["product-details", id] });
     qc.invalidateQueries({ queryKey: ["catalog-adv"] });
+    qc.invalidateQueries({ queryKey: ["catalog-overview"] });
+    qc.invalidateQueries({ queryKey: ["catalog-alerts"] });
   }
 
   return (
