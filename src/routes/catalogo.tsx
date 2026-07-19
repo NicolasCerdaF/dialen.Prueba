@@ -305,20 +305,26 @@ function CatalogPage() {
     (priceMin ? 1 : 0) +
     (priceMax ? 1 : 0);
 
+  // Pipeline dominant currency (no mezclamos MXN + USD).
+  const pipelineByCur = kpis?.pipelineByCurrency ?? {};
+  const pipelineEntries = Object.entries(pipelineByCur).sort((a, b) => (b[1] as number) - (a[1] as number));
+  const pipelineTop = pipelineEntries[0];
+  const pipelineRest = pipelineEntries.length - 1;
+
   return (
     <AppShell>
       <div className="flex h-full w-full flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b px-6 py-4">
-          <div>
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-6">
+          <div className="min-w-0">
             <h1 className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight">
-              <Package className="h-6 w-6 text-primary" />
-              Catálogo comercial
+              <Package className="h-6 w-6 shrink-0 text-primary" />
+              <span className="truncate">Catálogo comercial</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               Fuente única de productos. Conectado a Bandeja, CRM, Embudo, Cotizaciones, IA y Automatizaciones.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={products.length === 0}>
               <Download className="mr-1.5 h-3.5 w-3.5" /> Exportar
             </Button>
@@ -331,21 +337,46 @@ function CatalogPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6 space-y-4">
+        <div className="flex-1 space-y-4 overflow-auto p-4 sm:p-6">
           {/* KPIs */}
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <Kpi
               icon={Boxes}
               label="Productos activos"
-              value={`${kpis?.totals.active ?? 0}/${kpis?.totals.products ?? 0}`}
+              value={kpis ? `${kpis.totals.active}/${kpis.totals.products}` : "—"}
             />
-            <Kpi icon={TrendingUp} label="Vinculados a clientes" value={String(kpis?.totals.linked ?? 0)} />
-            <Kpi icon={DollarSign} label="Pipeline en catálogo" value={money(kpis?.totals.pipelineValue ?? 0)} />
-            <Kpi icon={Sparkles} label="Recomendaciones IA" value={String(kpis?.totals.recommendations ?? 0)} />
+            <Kpi
+              icon={TrendingUp}
+              label="Vinculados a clientes"
+              value={kpis ? String(kpis.totals.linkedProducts) : "—"}
+              hint={
+                kpis && kpis.totals.linkedRecords !== kpis.totals.linkedProducts
+                  ? `${kpis.totals.linkedRecords} vínculos totales`
+                  : undefined
+              }
+            />
+            <Kpi
+              icon={DollarSign}
+              label="Pipeline en catálogo"
+              value={pipelineTop ? money(pipelineTop[1] as number, pipelineTop[0]) : "—"}
+              hint={
+                pipelineTop
+                  ? pipelineRest > 0
+                    ? `+${pipelineRest} moneda${pipelineRest === 1 ? "" : "s"} más`
+                    : undefined
+                  : "Sin vínculos aún"
+              }
+              title={pipelineEntries.map(([c, v]) => money(v as number, c)).join(" · ") || undefined}
+            />
+            <Kpi
+              icon={Sparkles}
+              label="Recomendaciones IA"
+              value={kpis ? String(kpis.totals.recommendations) : "—"}
+            />
             <Kpi
               icon={AlertTriangle}
               label="Bajo stock"
-              value={String(kpis?.totals.lowStock ?? 0)}
+              value={kpis ? String(kpis.totals.lowStock) : "—"}
               tone={kpis?.totals.lowStock ? "warn" : "default"}
             />
           </div>
@@ -367,7 +398,7 @@ function CatalogPage() {
                 title="Más pipeline"
                 icon={DollarSign}
                 rows={kpis.topPipeline}
-                format={(p: any) => money(p.pipeline_value)}
+                format={(p: any) => money(p.pipeline_value, p.currency)}
                 onPick={(id) => setDetailId(id)}
               />
               <InsightList
