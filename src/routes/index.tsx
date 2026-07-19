@@ -79,7 +79,20 @@ type Conversation = {
   customers: { name: string | null; phone: string; tags: string[] | null; stage: string | null } | null;
 };
 
-type FilterKey = "all" | "mine" | "unassigned" | "unread" | "resolved";
+type FilterKey =
+  | "all"
+  | "mine"
+  | "unassigned"
+  | "unread"
+  | "resolved"
+  | "stage:nuevo_lead"
+  | "stage:interesado"
+  | "stage:cotizado"
+  | "stage:negociando"
+  | "stage:ganado"
+  | "stage:perdido";
+
+import { normalizeStage, getStage, STAGES, STAGE_STYLES } from "@/lib/pipeline";
 
 function InboxPage() {
   const qc = useQueryClient();
