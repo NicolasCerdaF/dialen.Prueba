@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
@@ -201,9 +200,3 @@ export const listClients = createServerFn({ method: "GET" })
     return rows;
   });
 
-export const getClientsSummary = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    void context;
-    return { ok: true };
-  });

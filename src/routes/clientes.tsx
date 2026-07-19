@@ -127,12 +127,24 @@ function ClientsPage() {
       return (
         (c.name ?? "").toLowerCase().includes(s) ||
         (c.company ?? "").toLowerCase().includes(s) ||
-        c.phone.includes(s)
+        c.phone.includes(s) ||
+        (c.tags ?? []).some((t) => t.toLowerCase().includes(s))
       );
     });
   }, [clients, filter, search]);
 
-  const totalSpent = clients.reduce((s, c) => s + c.total_spent, 0);
+  // Aggregate spend per currency (avoids mixing MXN/USD in one figure).
+  const spendByCurrency = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of clients) map.set(c.currency, (map.get(c.currency) ?? 0) + c.total_spent);
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [clients]);
+  const totalLabel =
+    spendByCurrency.length === 0
+      ? "—"
+      : spendByCurrency.length === 1
+      ? formatMoney(spendByCurrency[0][1], spendByCurrency[0][0])
+      : `${formatMoney(spendByCurrency[0][1], spendByCurrency[0][0])} +${spendByCurrency.length - 1}`;
 
   return (
     <AppShell>
@@ -154,7 +166,7 @@ function ClientsPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar cliente, empresa, teléfono…"
+              placeholder="Buscar cliente, empresa, teléfono, etiqueta…"
               className="pl-9"
             />
           </div>
@@ -182,9 +194,10 @@ function ClientsPage() {
           />
           <KpiCard
             label="Valor total"
-            value={formatMoney(totalSpent, clients[0]?.currency ?? "MXN")}
+            value={totalLabel}
             icon={Sparkles}
             tone="violet"
+            hint={spendByCurrency.length > 1 ? `${spendByCurrency.length} monedas` : undefined}
           />
         </section>
 
@@ -345,11 +358,13 @@ function KpiCard({
   value,
   icon: Icon,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
   icon: typeof Users;
   tone: "default" | "emerald" | "amber" | "violet";
+  hint?: string;
 }) {
   const toneClass = {
     default: "text-muted-foreground",
@@ -363,7 +378,8 @@ function KpiCard({
         <Icon className={cn("h-3.5 w-3.5", toneClass)} />
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 truncate text-xl font-semibold tabular-nums">{value}</div>
+      {hint && <div className="mt-0.5 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
