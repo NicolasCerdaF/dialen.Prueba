@@ -78,6 +78,7 @@ export async function maybeAutoReply(opts: {
         companyId,
         query: lastInbound,
         limit: 4,
+        conversationId,
       });
       if (context) {
         system += `\n\n---\nCONTEXTO DE LA EMPRESA (usa esta información como fuente de verdad si aplica; no la inventes):\n${context}`;

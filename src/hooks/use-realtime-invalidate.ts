@@ -21,7 +21,10 @@ export type RealtimeTable =
   | "director_insights"
   | "automations"
   | "automation_runs"
-  | "automation_versions";
+  | "automation_versions"
+  | "knowledge_documents"
+  | "knowledge_document_events"
+  | "knowledge_usage";
 
 
 type Options = {
