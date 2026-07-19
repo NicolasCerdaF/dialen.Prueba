@@ -1268,12 +1268,15 @@ function RunsGlobalTab({ onOpenAutomation }: { onOpenAutomation: (id: string) =>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1">
-              <Filter className="h-3.5 w-3.5" /> {statusF === "all" ? "Estado" : statusF}
+              <Filter className="h-3.5 w-3.5" /> {statusF === "all" ? "Estado" : runStatusLabel(statusF)}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
+            <DropdownMenuLabel>Estado</DropdownMenuLabel>
             {(["all", "success", "skipped", "error"] as const).map((s) => (
-              <DropdownMenuItem key={s} onSelect={() => setStatusF(s)}>{s}</DropdownMenuItem>
+              <DropdownMenuItem key={s} onSelect={() => setStatusF(s)}>
+                {s === "all" ? "Todos" : runStatusLabel(s)}
+              </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
