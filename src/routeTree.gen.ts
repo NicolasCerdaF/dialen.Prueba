@@ -28,6 +28,7 @@ import { Route as AutomatizacionesRouteImport } from './routes/automatizaciones'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
+import { Route as ContactosIdRouteImport } from './routes/contactos.$id'
 import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
@@ -127,6 +128,11 @@ const CotizacionesIdRoute = CotizacionesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CotizacionesRoute,
 } as any)
+const ContactosIdRoute = ContactosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ContactosRoute,
+} as any)
 const ClientesIdRoute = ClientesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -153,7 +159,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
-  '/contactos': typeof ContactosRoute
+  '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
+  '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
@@ -177,7 +184,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
-  '/contactos': typeof ContactosRoute
+  '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
+  '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
@@ -202,7 +210,7 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRouteWithChildren
   '/configuracion': typeof ConfiguracionRoute
   '/conocimiento': typeof ConocimientoRoute
-  '/contactos': typeof ContactosRoute
+  '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/dashboard': typeof DashboardRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/clientes/$id': typeof ClientesIdRoute
+  '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/metricas-ia'
     | '/oportunidades'
     | '/clientes/$id'
+    | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
     | '/api/public/hooks/follow-up-check'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/metricas-ia'
     | '/oportunidades'
     | '/clientes/$id'
+    | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
     | '/api/public/hooks/follow-up-check'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/metricas-ia'
     | '/oportunidades'
     | '/clientes/$id'
+    | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
     | '/api/public/hooks/follow-up-check'
@@ -301,7 +313,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRouteWithChildren
   ConfiguracionRoute: typeof ConfiguracionRoute
   ConocimientoRoute: typeof ConocimientoRoute
-  ContactosRoute: typeof ContactosRoute
+  ContactosRoute: typeof ContactosRouteWithChildren
   ConversacionesRoute: typeof ConversacionesRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
   DashboardRoute: typeof DashboardRoute
@@ -451,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CotizacionesIdRouteImport
       parentRoute: typeof CotizacionesRoute
     }
+    '/contactos/$id': {
+      id: '/contactos/$id'
+      path: '/$id'
+      fullPath: '/contactos/$id'
+      preLoaderRoute: typeof ContactosIdRouteImport
+      parentRoute: typeof ContactosRoute
+    }
     '/clientes/$id': {
       id: '/clientes/$id'
       path: '/$id'
@@ -487,6 +506,18 @@ const ClientesRouteWithChildren = ClientesRoute._addFileChildren(
   ClientesRouteChildren,
 )
 
+interface ContactosRouteChildren {
+  ContactosIdRoute: typeof ContactosIdRoute
+}
+
+const ContactosRouteChildren: ContactosRouteChildren = {
+  ContactosIdRoute: ContactosIdRoute,
+}
+
+const ContactosRouteWithChildren = ContactosRoute._addFileChildren(
+  ContactosRouteChildren,
+)
+
 interface CotizacionesRouteChildren {
   CotizacionesIdRoute: typeof CotizacionesIdRoute
 }
@@ -507,7 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRouteWithChildren,
   ConfiguracionRoute: ConfiguracionRoute,
   ConocimientoRoute: ConocimientoRoute,
-  ContactosRoute: ContactosRoute,
+  ContactosRoute: ContactosRouteWithChildren,
   ConversacionesRoute: ConversacionesRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
   DashboardRoute: DashboardRoute,
