@@ -519,10 +519,10 @@ function LiveFunnel({ funnel }: { funnel: FunnelStageMini[] }) {
 
 function QuickActions() {
   const actions: { to: string; icon: typeof MessageSquare; label: string; desc: string }[] = [
-    { to: "/", icon: MessageSquare, label: "Nueva conversación", desc: "Abrir bandeja" },
-    { to: "/clientes", icon: UserPlus, label: "Crear contacto", desc: "Añadir cliente" },
-    { to: "/cotizaciones", icon: FileText, label: "Nueva cotización", desc: "Generar documento" },
-    { to: "/conocimiento", icon: BookOpen, label: "Cargar conocimiento", desc: "Base para la IA" },
+    { to: "/", icon: MessageSquare, label: "Abrir bandeja", desc: "Ver conversaciones" },
+    { to: "/contactos", icon: UserPlus, label: "Contactos", desc: "Directorio de personas" },
+    { to: "/cotizaciones", icon: FileText, label: "Cotizaciones", desc: "Crear y enviar" },
+    { to: "/conocimiento", icon: BookOpen, label: "Conocimiento", desc: "Base para la IA" },
   ];
   return (
     <Card className="md:col-span-2">
