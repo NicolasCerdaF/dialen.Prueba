@@ -740,6 +740,86 @@ export type Database = {
           },
         ]
       }
+      director_insights: {
+        Row: {
+          action_search: Json
+          action_to: string | null
+          benefit: string | null
+          category: string
+          company_id: string
+          created_at: string
+          currency: string
+          fingerprint: string
+          id: string
+          meta: Json
+          potential_value: number
+          reason: string | null
+          ref_id: string | null
+          ref_type: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          snooze_until: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_search?: Json
+          action_to?: string | null
+          benefit?: string | null
+          category: string
+          company_id: string
+          created_at?: string
+          currency?: string
+          fingerprint: string
+          id?: string
+          meta?: Json
+          potential_value?: number
+          reason?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          snooze_until?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_search?: Json
+          action_to?: string | null
+          benefit?: string | null
+          category?: string
+          company_id?: string
+          created_at?: string
+          currency?: string
+          fingerprint?: string
+          id?: string
+          meta?: Json
+          potential_value?: number
+          reason?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          snooze_until?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "director_insights_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_chunks: {
         Row: {
           chunk_index: number
