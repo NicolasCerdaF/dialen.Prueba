@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import {
-  listAutomations, listAutomationsAdvanced, getAutomation, createAutomation, saveAutomation,
+  listAutomationsAdvanced, getAutomation, createAutomation, saveAutomation,
   setAutomationStatus, duplicateAutomation, deleteAutomation,
   importAutomation, listAutomationRuns, runAutomationForCustomer,
   bulkAutomationAction, exportAutomationsBundle,
