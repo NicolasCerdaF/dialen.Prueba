@@ -865,39 +865,120 @@ export type Database = {
           },
         ]
       }
-      knowledge_documents: {
+      knowledge_document_events: {
         Row: {
+          actor_id: string | null
           company_id: string
           created_at: string
+          document_id: string | null
+          event_type: string
           id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          document_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          document_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_document_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_document_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_documents: {
+        Row: {
+          chars: number | null
+          chunks_count: number
+          company_id: string
+          created_at: string
+          description: string | null
+          folder: string | null
+          id: string
+          last_used_at: string | null
           name: string
+          pinned: boolean
           size_bytes: number | null
           status: Database["public"]["Enums"]["document_status"]
           storage_path: string | null
+          summary: string | null
+          tags: string[]
+          title: string | null
           type: string | null
+          updated_at: string
+          updated_by: string | null
           uploaded_by: string | null
+          version: number
         }
         Insert: {
+          chars?: number | null
+          chunks_count?: number
           company_id: string
           created_at?: string
+          description?: string | null
+          folder?: string | null
           id?: string
+          last_used_at?: string | null
           name: string
+          pinned?: boolean
           size_bytes?: number | null
           status?: Database["public"]["Enums"]["document_status"]
           storage_path?: string | null
+          summary?: string | null
+          tags?: string[]
+          title?: string | null
           type?: string | null
+          updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
+          version?: number
         }
         Update: {
+          chars?: number | null
+          chunks_count?: number
           company_id?: string
           created_at?: string
+          description?: string | null
+          folder?: string | null
           id?: string
+          last_used_at?: string | null
           name?: string
+          pinned?: boolean
           size_bytes?: number | null
           status?: Database["public"]["Enums"]["document_status"]
           storage_path?: string | null
+          summary?: string | null
+          tags?: string[]
+          title?: string | null
           type?: string | null
+          updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -905,6 +986,54 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_usage: {
+        Row: {
+          chunk_index: number | null
+          company_id: string
+          conversation_id: string | null
+          created_at: string
+          document_id: string | null
+          id: string
+          message_id: string | null
+          similarity: number | null
+        }
+        Insert: {
+          chunk_index?: number | null
+          company_id: string
+          conversation_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          message_id?: string | null
+          similarity?: number | null
+        }
+        Update: {
+          chunk_index?: number | null
+          company_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          message_id?: string | null
+          similarity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_usage_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_usage_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
             referencedColumns: ["id"]
           },
         ]

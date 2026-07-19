@@ -45,8 +45,10 @@ export async function fetchKnowledgeContext(opts: {
   companyId: string;
   query: string;
   limit?: number;
+  conversationId?: string | null;
+  messageId?: string | null;
 }): Promise<string | null> {
-  const { supabase, companyId, query } = opts;
+  const { supabase, companyId, query, conversationId = null, messageId = null } = opts;
   if (!query || query.trim().length < 3) return null;
   try {
     // Fast-check antes de gastar en embeddings
@@ -66,6 +68,28 @@ export async function fetchKnowledgeContext(opts: {
       match_count: opts.limit ?? 4,
     });
     if (error || !rows?.length) return null;
+
+    // Registrar uso (fire-and-forget) para métricas y ranking de documentos
+    try {
+      const usageRows = rows.map((r: any) => ({
+        company_id: companyId,
+        document_id: r.document_id,
+        chunk_index: r.chunk_index,
+        conversation_id: conversationId,
+        message_id: messageId,
+        similarity: r.similarity,
+      }));
+      await supabase.from("knowledge_usage").insert(usageRows);
+      const docIds = Array.from(new Set(rows.map((r: any) => r.document_id))) as string[];
+      if (docIds.length) {
+        await supabase
+          .from("knowledge_documents")
+          .update({ last_used_at: new Date().toISOString() })
+          .in("id", docIds);
+      }
+    } catch (e) {
+      log.warn("knowledge-rag", "usage_log_failed", { company_id: companyId, err: e });
+    }
 
     const snippet = rows
       .map((r: any, i: number) => `[${i + 1}] ${String(r.content).trim()}`)
