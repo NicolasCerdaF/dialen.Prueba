@@ -221,7 +221,7 @@ function ContactosPage() {
           onCreated={(id) => {
             setShowNew(false);
             qc.invalidateQueries({ queryKey: ["contacts"] });
-            navigate({ to: "/clientes/$id", params: { id } });
+            navigate({ to: "/contactos/$id", params: { id } });
           }}
         />
       )}
