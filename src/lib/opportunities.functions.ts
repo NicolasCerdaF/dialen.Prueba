@@ -24,9 +24,9 @@ export type Opportunity = {
   detected_at: string;
   last_interaction_at: string | null;
   days_since_interaction: number | null;
-  intent: string | null;            // frase IA
-  next_step: string | null;
-  probability: number;              // 0..100
+  intent: string | null;            // frase IA (solo si existe)
+  next_step: string | null;         // solo si existe
+  probability: number | null;       // 0..100 — null cuando no hay señal IA
   estimated_value: number | null;
   currency: string;
   products: string[];
@@ -81,13 +81,17 @@ export const listOpportunities = createServerFn({ method: "GET" })
     (acceptedQuotes ?? []).forEach((q: any) => q.customer_id && clientSet.add(q.customer_id));
 
     const opportunities = new Map<string, Opportunity>();
+    const maxProb = (a: number | null, b: number | null): number | null => {
+      if (a === null) return b;
+      if (b === null) return a;
+      return Math.max(a, b);
+    };
     const addOrMerge = (key: string, opp: Opportunity) => {
       const existing = opportunities.get(key);
       if (!existing) { opportunities.set(key, opp); return; }
-      // Merge: prefer higher stage & higher probability, unir productos
       const stageRank: Record<OpportunityStage, number> = { detected: 0, qualified: 1, negotiation: 2 };
       const winner = stageRank[opp.stage] > stageRank[existing.stage] ? opp : existing;
-      winner.probability = Math.max(existing.probability, opp.probability);
+      winner.probability = maxProb(existing.probability, opp.probability);
       winner.estimated_value = winner.estimated_value ?? opp.estimated_value ?? existing.estimated_value;
       winner.products = Array.from(new Set([...existing.products, ...opp.products])).slice(0, 6);
       winner.intent = winner.intent ?? opp.intent ?? existing.intent;
@@ -95,7 +99,7 @@ export const listOpportunities = createServerFn({ method: "GET" })
       opportunities.set(key, winner);
     };
 
-    // 1) Cotizaciones activas => Negociación
+    // 1) Cotizaciones activas => Negociación. Sin fabricar intent/probabilidad.
     for (const q of quotes ?? []) {
       const cust = custMap.get(q.customer_id);
       if (!cust) continue;
@@ -114,11 +118,9 @@ export const listOpportunities = createServerFn({ method: "GET" })
         detected_at: q.created_at,
         last_interaction_at: cust.last_interaction_at ?? lastAt,
         days_since_interaction: daysSince(cust.last_interaction_at ?? lastAt),
-        intent: q.status === "viewed" ? "Cotización vista — negociación activa" : "Cotización enviada, esperando respuesta",
-        next_step: q.status === "viewed"
-          ? "Cliente vio la cotización. Enviar seguimiento personalizado."
-          : "Confirmar recepción y agendar seguimiento.",
-        probability: q.status === "viewed" ? 80 : 65,
+        intent: null,
+        next_step: null,
+        probability: null,
         estimated_value: Number(q.total ?? 0) || null,
         currency: q.currency || "MXN",
         products,
@@ -172,7 +174,7 @@ export const listOpportunities = createServerFn({ method: "GET" })
     const rank: Record<OpportunityStage, number> = { negotiation: 0, qualified: 1, detected: 2 };
     list.sort((a, b) =>
       rank[a.stage] - rank[b.stage] ||
-      b.probability - a.probability ||
+      (b.probability ?? -1) - (a.probability ?? -1) ||
       new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime(),
     );
 
