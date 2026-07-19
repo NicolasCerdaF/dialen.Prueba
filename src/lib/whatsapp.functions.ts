@@ -569,6 +569,7 @@ export const getRecentWhatsAppActivity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    if (!company_id) return [];
     const { data: msgs } = await context.supabase
       .from("messages")
       .select("id, direction, body, status, created_at, conversation_id, wa_message_id")
