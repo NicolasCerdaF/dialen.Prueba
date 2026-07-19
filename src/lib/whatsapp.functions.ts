@@ -344,16 +344,50 @@ export const toggleConversationAiPause = createServerFn({ method: "POST" })
 // PRODUCTION MODULE — Channel management, templates, metrics
 // ============================================================
 
-async function getCompanyChannel(supabase: any, userId: string) {
+async function ensureCompanyId(supabase: any, userId: string): Promise<string | null> {
   const { data: profile } = await supabase
-    .from("profiles").select("company_id").eq("id", userId).maybeSingle();
-  if (!profile?.company_id) throw new Error("No se encontró la empresa");
+    .from("profiles").select("company_id, email, full_name").eq("id", userId).maybeSingle();
+  if (profile?.company_id) return profile.company_id as string;
+
+  // Bootstrap: create a company + link profile + assign admin role.
+  // Fallback for accounts created before handle_new_user trigger existed (e.g. remixed projects).
+  const { data: userRes } = await supabase.auth.getUser();
+  const email: string | null = profile?.email ?? userRes?.user?.email ?? null;
+  const displayName: string =
+    profile?.full_name ??
+    (userRes?.user?.user_metadata as any)?.full_name ??
+    (email ? email.split("@")[0] : "Mi empresa");
+  const companyName = `${displayName} Workspace`;
+
+  const { data: company, error: companyErr } = await supabase
+    .from("companies")
+    .insert({ name: companyName, owner_id: userId })
+    .select("id")
+    .single();
+  if (companyErr || !company?.id) return null;
+
+  if (profile) {
+    await supabase.from("profiles").update({ company_id: company.id }).eq("id", userId);
+  } else {
+    await supabase.from("profiles").insert({
+      id: userId, full_name: displayName, email, company_id: company.id,
+    });
+  }
+  await supabase.from("user_roles").insert({
+    user_id: userId, company_id: company.id, role: "admin",
+  });
+  return company.id as string;
+}
+
+async function getCompanyChannel(supabase: any, userId: string) {
+  const company_id = await ensureCompanyId(supabase, userId);
+  if (!company_id) return { company_id: null as string | null, channel: null as any };
   const { data: ch } = await supabase
     .from("whatsapp_channels")
     .select("*")
-    .eq("company_id", profile.company_id)
+    .eq("company_id", company_id)
     .maybeSingle();
-  return { company_id: profile.company_id as string, channel: ch };
+  return { company_id, channel: ch };
 }
 
 // Full channel info (token redacted)
@@ -498,6 +532,7 @@ export const getWhatsAppMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    if (!company_id) return { buckets: { d1: { in: 0, out: 0 }, d7: { in: 0, out: 0 }, d30: { in: 0, out: 0 } }, statusCount: {} as Record<string, number>, series: [] as { date: string; in: number; out: number }[], total30: 0 };
     const since30 = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
     const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
     const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -534,6 +569,7 @@ export const getRecentWhatsAppActivity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { company_id } = await getCompanyChannel(context.supabase, context.userId);
+    if (!company_id) return [];
     const { data: msgs } = await context.supabase
       .from("messages")
       .select("id, direction, body, status, created_at, conversation_id, wa_message_id")
