@@ -141,13 +141,23 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
     .slice(0, 2)
     .toUpperCase();
 
-  // Open the group that contains the active route by default
+  // Open groups: persist user choice in localStorage; only ever add the
+  // active group, never auto-close groups the user opened.
+  const STORAGE_KEY = "dialen.sidebar.openGroups";
   const initialOpen = () => {
-    const map: Record<string, boolean> = {};
-    for (const g of navGroups) {
-      map[g.id] = g.items.some((i) => isItemActive(pathname, i.to));
+    let stored: Record<string, boolean> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) stored = JSON.parse(raw) as Record<string, boolean>;
+      } catch {
+        stored = {};
+      }
     }
-    // Ensure "Inicio" is open on the home route
+    const map: Record<string, boolean> = { ...stored };
+    for (const g of navGroups) {
+      if (g.items.some((i) => isItemActive(pathname, i.to))) map[g.id] = true;
+    }
     if (!Object.values(map).some(Boolean)) map["inicio"] = true;
     return map;
   };
@@ -162,6 +172,15 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
       return next;
     });
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(open));
+    } catch {
+      // ignore
+    }
+  }, [open]);
 
   return (
     <div className="flex h-full flex-col">
