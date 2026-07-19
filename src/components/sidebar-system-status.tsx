@@ -36,8 +36,8 @@ export function SidebarSystemStatus() {
 
   const connected = statusQ.data?.connected === true;
   const phone = statusQ.data?.display_phone ?? null;
-  const health: Health = statusQ.isLoading
-    ? "disconnected"
+  const health: Health = statusQ.isError
+    ? "error"
     : connected
       ? "connected"
       : "disconnected";
