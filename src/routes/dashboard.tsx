@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
-import { getDashboardData, type AiPriority, type AttentionBucket, type FunnelStageMini } from "@/lib/dashboard.functions";
+import { getDashboardData, type AiPriority, type AttentionBucket, type AttentionItem, type FunnelStageMini } from "@/lib/dashboard.functions";
 import { STAGE_STYLES } from "@/lib/pipeline";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
@@ -250,7 +250,14 @@ function PriorityCard({ priority, rank }: { priority: AiPriority; rank: number }
         </span>
       </div>
       <button
-        onClick={() => navigate({ to: priority.action.to as string, search: priority.action.search as never, params: priority.action.search as never })}
+        onClick={() =>
+          navigate({
+            to: priority.action.to as string,
+            params: (priority.action.params ?? {}) as never,
+            search: (priority.action.search ?? {}) as never,
+            hash: priority.action.hash,
+          })
+        }
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-600"
       >
         {priority.action.label}
@@ -430,12 +437,19 @@ function AttentionInbox({ buckets }: { buckets: AttentionBucket[] }) {
   );
 }
 
-function AttentionRow({ item }: { item: { id: string; customerName: string; detail: string; elapsedLabel: string; to: string; search?: Record<string, string> } }) {
+function AttentionRow({ item }: { item: AttentionItem }) {
   const navigate = useNavigate();
   return (
     <li>
       <button
-        onClick={() => navigate({ to: item.to as string, search: item.search as never, params: item.search as never })}
+        onClick={() =>
+          navigate({
+            to: item.to as string,
+            params: (item.params ?? {}) as never,
+            search: (item.search ?? {}) as never,
+            hash: item.hash,
+          })
+        }
         className="group flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-secondary/60"
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">

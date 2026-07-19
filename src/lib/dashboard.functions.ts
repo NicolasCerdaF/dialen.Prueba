@@ -15,7 +15,9 @@ export type AiPriority = {
   action: {
     label: string;
     to: string;
+    params?: Record<string, string>;
     search?: Record<string, string>;
+    hash?: string;
   };
 };
 
@@ -26,7 +28,9 @@ export type AttentionItem = {
   detail: string;
   elapsedLabel: string;
   to: string;
+  params?: Record<string, string>;
   search?: Record<string, string>;
+  hash?: string;
 };
 
 export type AttentionBucket = {
@@ -146,6 +150,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
       { data: customers },
       { data: quotes },
       { data: recentMessages },
+      { data: quoteIntents },
     ] = await Promise.all([
       supabase
         .from("whatsapp_channels")
@@ -177,6 +182,14 @@ export const getDashboardData = createServerFn({ method: "GET" })
         .gte("created_at", weekAgo)
         .order("created_at", { ascending: false })
         .limit(3000),
+      supabase
+        .from("ai_suggestions")
+        .select("conversation_id, probability, created_at")
+        .eq("company_id", companyId)
+        .is("used_at", null)
+        .gte("probability", 0.5)
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
 
     const convoList = convos ?? [];
@@ -226,10 +239,14 @@ export const getDashboardData = createServerFn({ method: "GET" })
         ? quotesSent7d > 0 ? 100 : 0
         : Math.round(((quotesSent7d - quotesSent7to14) / quotesSent7to14) * 100);
 
-    const salesMonth = quoteList
-      .filter((q) => q.status === "accepted" && q.accepted_at && new Date(q.accepted_at) >= monthStart)
-      .reduce((a, q) => a + Number(q.total ?? 0), 0);
-    const currency = quoteList[0]?.currency ?? "USD";
+    const acceptedThisMonth = quoteList.filter(
+      (q) => q.status === "accepted" && q.accepted_at && new Date(q.accepted_at) >= monthStart,
+    );
+    const salesMonth = acceptedThisMonth.reduce((a, q) => a + Number(q.total ?? 0), 0);
+    const currency =
+      acceptedThisMonth[0]?.currency ??
+      quoteList.find((q) => q.currency)?.currency ??
+      "USD";
 
     // ---- Funnel mini
     const funnel: FunnelStageMini[] = STAGES.filter((s) => s.kind !== "lost").map((s) => {
@@ -266,32 +283,44 @@ export const getDashboardData = createServerFn({ method: "GET" })
           : "Sin actividad",
         elapsedLabel: elapsedLabel(c.last_message_at),
         to: "/",
-        search: { conversationId: c.id },
+        hash: `conv=${c.id}`,
       };
     });
 
-    // Esperando cotización: conversación activa sin quote draft/sent y sin cotización aceptada
+    // Esperando cotización: conversaciones con intención IA (probabilidad alta) sin cotización activa
     const conversationsWithActiveQuote = new Set(
       quoteList
         .filter((q) => q.conversation_id && ["draft", "sent", "viewed"].includes(q.status))
         .map((q) => q.conversation_id as string),
     );
+    const intentByConv = new Map<string, { probability: number; created_at: string }>();
+    for (const s of quoteIntents ?? []) {
+      if (!s.conversation_id) continue;
+      if (!intentByConv.has(s.conversation_id)) {
+        intentByConv.set(s.conversation_id, {
+          probability: Number(s.probability ?? 0),
+          created_at: s.created_at,
+        });
+      }
+    }
     const awaitingQuote = convoList
       .filter(
         (c) =>
           !conversationsWithActiveQuote.has(c.id) &&
-          lastDirByConv.get(c.id)?.direction === "inbound",
+          intentByConv.has(c.id),
       )
-      .slice(0, 5);
-    const awaitingQuoteItems: AttentionItem[] = awaitingQuote.map((c) => {
+      .slice(0, 20);
+    const awaitingQuoteItems: AttentionItem[] = awaitingQuote.slice(0, 5).map((c) => {
       const cust = customerById.get(c.customer_id);
+      const intent = intentByConv.get(c.id)!;
       return {
         id: c.id,
         customerId: c.customer_id,
         customerName: cust?.name ?? cust?.phone ?? "Cliente",
-        detail: "Sin cotización activa",
-        elapsedLabel: elapsedLabel(c.last_message_at),
-        to: "/cotizaciones",
+        detail: `Intención IA ${Math.round(intent.probability * 100)}% · sin cotización`,
+        elapsedLabel: elapsedLabel(intent.created_at),
+        to: "/",
+        hash: `conv=${c.id}`,
       };
     });
 
@@ -308,7 +337,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         detail: `${q.status === "viewed" ? "Vista" : "Enviada"} · ${Number(q.total).toLocaleString()} ${q.currency}`,
         elapsedLabel: elapsedLabel(q.sent_at ?? q.created_at),
         to: "/cotizaciones/$id",
-        search: { id: q.id },
+        params: { id: q.id },
       };
     });
 
@@ -334,7 +363,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
       detail: `Etapa: ${normalizeStage(c.stage)}`,
       elapsedLabel: elapsedLabel(c.last_interaction_at),
       to: "/clientes/$id",
-      search: { id: c.id },
+      params: { id: c.id },
     }));
 
     const attention: AttentionBucket[] = [
@@ -367,7 +396,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Abrir cotización",
           to: "/cotizaciones/$id",
-          search: { id: q.id },
+          params: { id: q.id },
         },
       });
     }
@@ -390,7 +419,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Abrir conversación",
           to: "/",
-          search: { conversationId: c.id },
+          hash: `conv=${c.id}`,
         },
       });
     }
@@ -415,7 +444,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Ver cliente",
           to: "/clientes/$id",
-          search: { id: c.id },
+          params: { id: c.id },
         },
       });
     }
