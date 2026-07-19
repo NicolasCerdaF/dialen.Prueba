@@ -23,7 +23,9 @@ import {
   Send,
   Trash2,
   Package,
+  Sparkles,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
