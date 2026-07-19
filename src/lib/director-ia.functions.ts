@@ -56,10 +56,9 @@ export type DirectorSummary = {
     done: number;
     snoozed: number;
     dismissed: number;
-    potentialValue: number;
-    currency: string;
     risks: number;
   };
+  potentialByCurrency: Record<string, number>;
   byCategory: Record<InsightCategory, number>;
   hasWhatsapp: boolean;
   lastComputedAt: string | null;
