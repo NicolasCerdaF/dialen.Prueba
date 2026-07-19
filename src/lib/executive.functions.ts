@@ -180,11 +180,19 @@ async function computeTotalsBlock(supabase: any, companyId: string, from: string
   const sg = sugs ?? [];
   const rs = runs ?? [];
 
-  const currency = qs.find((q: any) => q.currency)?.currency ?? "USD";
+  // Pick dominant currency by total invoiced amount to avoid mixing currencies
+  const currencyTotals = new Map<string, number>();
+  for (const q of qs as any[]) {
+    const c = q.currency ?? "USD";
+    currencyTotals.set(c, (currencyTotals.get(c) ?? 0) + Number(q.total ?? 0));
+  }
+  const currency =
+    Array.from(currencyTotals.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "USD";
+  const qsCur = (qs as any[]).filter((q) => (q.currency ?? "USD") === currency);
   const sentStatuses = new Set(["sent", "viewed", "accepted"]);
-  const quotesSent = qs.filter((q: any) => sentStatuses.has(q.status)).length;
-  const quotesAccepted = qs.filter((q: any) => q.status === "accepted").length;
-  const revenue = qs
+  const quotesSent = qsCur.filter((q: any) => sentStatuses.has(q.status)).length;
+  const quotesAccepted = qsCur.filter((q: any) => q.status === "accepted").length;
+  const revenue = qsCur
     .filter((q: any) => q.status === "accepted")
     .reduce((a: number, q: any) => a + Number(q.total ?? 0), 0);
   const acceptRate = quotesSent ? Math.round((quotesAccepted / quotesSent) * 100) : 0;
