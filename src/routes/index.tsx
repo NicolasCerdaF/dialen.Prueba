@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Pause,
   Play,
-  
   Search,
   UserPlus,
   UserCheck,
@@ -21,16 +20,13 @@ import {
   StickyNote,
   Tag,
   Phone,
-  Building2,
-  Calendar,
-  ShoppingBag,
   FileText,
   ClipboardList,
   Users as UsersIcon,
-  Lock,
   X,
   Plus,
   History,
+  ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
