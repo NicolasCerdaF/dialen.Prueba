@@ -49,7 +49,7 @@ function WhatsAppModule() {
     queryKey: CHANNEL_KEY,
     queryFn: () => channelFn(),
   });
-  useRealtimeInvalidate({ table: "whatsapp_channels", queryKeys: [CHANNEL_KEY] });
+  /* no realtime for channels */
 
   const connected = channel?.status === "connected";
 
@@ -189,7 +189,7 @@ function OverviewTab({ channel }: { channel: any }) {
   const { data: health } = useQuery({ queryKey: ["whatsapp", "health"], queryFn: () => healthFn() });
   const { data: metrics } = useQuery({ queryKey: ["whatsapp", "metrics"], queryFn: () => metricsFn() });
   const { data: activity } = useQuery({ queryKey: ["whatsapp", "activity"], queryFn: () => activityFn() });
-  useRealtimeInvalidate({ table: "messages", queryKeys: [["whatsapp", "metrics"], ["whatsapp", "activity"]] });
+  useRealtimeInvalidate({ channel: "wa-overview", tables: ["messages"], invalidate: [["whatsapp", "metrics"], ["whatsapp", "activity"]] });
 
   const qualityColor = (q?: string) =>
     q === "GREEN" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
@@ -504,7 +504,7 @@ function TemplateCreateDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 function MetricsTab() {
   const metricsFn = useServerFn(getWhatsAppMetrics);
   const { data } = useQuery({ queryKey: ["whatsapp", "metrics"], queryFn: () => metricsFn() });
-  useRealtimeInvalidate({ table: "messages", queryKeys: [["whatsapp", "metrics"]] });
+  useRealtimeInvalidate({ channel: "wa-metrics", tables: ["messages"], invalidate: [["whatsapp", "metrics"]] });
 
   const max = Math.max(1, ...(data?.series ?? []).map((d: any) => d.in + d.out));
 
@@ -660,7 +660,7 @@ function DiagnosticsTab() {
         </Button>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        <Row label="META_APP_ID configurado" ok={ok(s?.meta_app_id_set)} extra={s?.meta_app_id_preview} />
+        <Row label="META_APP_ID configurado" ok={ok(s?.meta_app_id_set)} extra={s?.meta_app_id_preview ?? undefined} />
         <Row label="META_APP_SECRET configurado" ok={ok(s?.meta_app_secret_set)} />
         <Row label="Versión Graph API" ok={<Badge variant="outline">{s?.graph_version}</Badge>} />
         <Row label="Meta App alcanzable" ok={ok(s?.meta_app_reachable)} extra={s?.meta_app_error ?? undefined} />
