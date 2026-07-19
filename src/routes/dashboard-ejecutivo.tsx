@@ -276,66 +276,91 @@ function OverviewTab({
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Kpi
           label="Ingresos"
-          value={fmtMoney(t.revenue, cur)}
-          hint={`${t.quotesAccepted} cotizaciones ganadas`}
-          delta={d.revenue}
+          value={t.revenue > 0 ? fmtMoney(t.revenue, cur) : "—"}
+          hint={
+            t.quotesAccepted > 0
+              ? `${t.quotesAccepted} cotizaciones ganadas`
+              : "Sin ventas cerradas aún"
+          }
+          delta={t.revenue > 0 ? d.revenue : undefined}
           icon={DollarSign}
           tone="emerald"
         />
         <Kpi
           label="Conversión"
-          value={`${t.conversionRate}%`}
-          hint={`${t.wonCustomers}/${t.newCustomers} nuevos clientes`}
-          delta={d.conversionRate}
+          value={t.newCustomers > 0 ? `${t.conversionRate}%` : "—"}
+          hint={
+            t.newCustomers > 0
+              ? `${t.wonCustomers}/${t.newCustomers} nuevos clientes`
+              : "Sin nuevos clientes en el periodo"
+          }
+          delta={t.newCustomers > 0 ? d.conversionRate : undefined}
           deltaSuffix=" pts"
           icon={Target}
         />
         <Kpi
           label="Aceptación"
-          value={`${t.acceptRate}%`}
-          hint={`${t.quotesAccepted} de ${t.quotesSent} enviadas`}
-          delta={d.acceptRate}
+          value={t.quotesSent > 0 ? `${t.acceptRate}%` : "—"}
+          hint={
+            t.quotesSent > 0
+              ? `${t.quotesAccepted} de ${t.quotesSent} enviadas`
+              : "Sin cotizaciones enviadas"
+          }
+          delta={t.quotesSent > 0 ? d.acceptRate : undefined}
           deltaSuffix=" pts"
           icon={Percent}
-          tone={t.acceptRate >= 30 ? "emerald" : "amber"}
+          tone={t.quotesSent > 0 && t.acceptRate >= 30 ? "emerald" : "amber"}
         />
         <Kpi
           label="Ticket promedio"
-          value={fmtMoney(t.avgTicket, cur)}
-          hint="Valor medio de venta"
-          delta={d.avgTicket}
+          value={t.quotesAccepted > 0 ? fmtMoney(t.avgTicket, cur) : "—"}
+          hint={t.quotesAccepted > 0 ? "Valor medio de venta" : "Sin ventas cerradas"}
+          delta={t.quotesAccepted > 0 ? d.avgTicket : undefined}
           icon={Wallet}
         />
         <Kpi
           label="Tiempo de respuesta"
           value={fmtDuration(t.avgResponseSeconds)}
-          hint={`${t.responseUnderSlaPct}% bajo 15 min`}
-          delta={-d.avgResponseSeconds}
+          hint={
+            t.avgResponseSeconds > 0
+              ? `${t.responseUnderSlaPct}% bajo 15 min`
+              : "Sin conversaciones respondidas"
+          }
+          delta={t.avgResponseSeconds > 0 ? -d.avgResponseSeconds : undefined}
           icon={Timer}
-          tone={t.avgResponseSeconds < 900 ? "emerald" : "amber"}
+          tone={t.avgResponseSeconds > 0 && t.avgResponseSeconds < 900 ? "emerald" : "amber"}
         />
         <Kpi
           label="Clientes nuevos"
-          value={t.newCustomers.toLocaleString()}
-          hint="Ingresos al CRM"
-          delta={d.newCustomers}
+          value={t.newCustomers > 0 ? t.newCustomers.toLocaleString() : "—"}
+          hint={t.newCustomers > 0 ? "Ingresos al CRM" : "Sin nuevos leads"}
+          delta={t.newCustomers > 0 ? d.newCustomers : undefined}
           icon={Users}
         />
         <Kpi
           label="Pipeline abierto"
-          value={fmtMoney(t.openPipeline, cur)}
-          hint={`${t.openOpportunities} oportunidades activas`}
+          value={t.openOpportunities > 0 ? fmtMoney(t.openPipeline, cur) : "—"}
+          hint={
+            t.openOpportunities > 0
+              ? `${t.openOpportunities} oportunidades activas`
+              : "Sin oportunidades abiertas"
+          }
           icon={TrendingUp}
           tone="violet"
         />
         <Kpi
           label="Forecast ponderado"
-          value={fmtMoney(t.weightedPipeline, cur)}
-          hint="Ajustado por probabilidad de etapa"
+          value={t.openOpportunities > 0 ? fmtMoney(t.weightedPipeline, cur) : "—"}
+          hint={
+            t.openOpportunities > 0
+              ? "Ajustado por probabilidad de etapa"
+              : "Sin oportunidades para proyectar"
+          }
           icon={Sparkles}
           tone="violet"
         />
       </div>
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
@@ -419,18 +444,44 @@ function SalesTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-4">
-        <Kpi label="Ingresos" value={fmtMoney(t.revenue, cur)} icon={DollarSign} tone="emerald" delta={dash.deltas.revenue} />
-        <Kpi label="Cotizaciones enviadas" value={t.quotesSent.toLocaleString()} icon={TrendingUp} delta={dash.deltas.quotesSent} />
-        <Kpi label="Aceptadas" value={t.quotesAccepted.toLocaleString()} hint={`${t.acceptRate}% aceptación`} icon={CheckCircle2} tone="emerald" />
-        <Kpi label="Ticket promedio" value={fmtMoney(t.avgTicket, cur)} icon={Wallet} delta={dash.deltas.avgTicket} />
+        <Kpi
+          label="Ingresos"
+          value={t.revenue > 0 ? fmtMoney(t.revenue, cur) : "—"}
+          icon={DollarSign}
+          tone="emerald"
+          delta={t.revenue > 0 ? dash.deltas.revenue : undefined}
+        />
+        <Kpi
+          label="Cotizaciones enviadas"
+          value={t.quotesSent > 0 ? t.quotesSent.toLocaleString() : "—"}
+          icon={TrendingUp}
+          delta={t.quotesSent > 0 ? dash.deltas.quotesSent : undefined}
+        />
+        <Kpi
+          label="Aceptadas"
+          value={t.quotesSent > 0 ? t.quotesAccepted.toLocaleString() : "—"}
+          hint={t.quotesSent > 0 ? `${t.acceptRate}% aceptación` : "Sin envíos"}
+          icon={CheckCircle2}
+          tone="emerald"
+        />
+        <Kpi
+          label="Ticket promedio"
+          value={t.quotesAccepted > 0 ? fmtMoney(t.avgTicket, cur) : "—"}
+          icon={Wallet}
+          delta={t.quotesAccepted > 0 ? dash.deltas.avgTicket : undefined}
+        />
       </div>
+
 
       <Card className="p-5">
         <div className="mb-3 flex items-center justify-between text-sm font-medium">
           <span>Cotizaciones y ventas por día</span>
           <span className="text-xs text-muted-foreground">
-            Total periodo: {fmtMoney(totalRevenue, cur)} · Mejor día: {bestDay?.date ?? "—"}
+            {totalRevenue > 0
+              ? `Total periodo: ${fmtMoney(totalRevenue, cur)} · Mejor día: ${bestDay?.date ?? "—"}`
+              : "Sin ventas en el periodo"}
           </span>
+
         </div>
         <SalesStackedChart series={dash.series} />
       </Card>
@@ -455,9 +506,22 @@ function SalesTab({ dash }: { dash: ExecutiveDashboard }) {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Pipeline abierto" value={fmtMoney(t.openPipeline, cur)} hint={`${t.openOpportunities} oportunidades`} />
-            <MiniStat label="Forecast ponderado" value={fmtMoney(t.weightedPipeline, cur)} hint="Ajustado por etapa" />
+            <MiniStat
+              label="Pipeline abierto"
+              value={t.openOpportunities > 0 ? fmtMoney(t.openPipeline, cur) : "—"}
+              hint={
+                t.openOpportunities > 0
+                  ? `${t.openOpportunities} oportunidades`
+                  : "Sin oportunidades abiertas"
+              }
+            />
+            <MiniStat
+              label="Forecast ponderado"
+              value={t.openOpportunities > 0 ? fmtMoney(t.weightedPipeline, cur) : "—"}
+              hint={t.openOpportunities > 0 ? "Ajustado por etapa" : "Sin datos para proyectar"}
+            />
           </div>
+
           <div className="mt-4 space-y-2">
             {dash.funnel
               .filter((f) => f.kind === "open")
@@ -484,15 +548,32 @@ function TeamTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-3">
-        <Kpi label="Vendedores activos" value={dash.sellers.length} icon={Users} />
+        <Kpi
+          label="Vendedores activos"
+          value={dash.sellers.length > 0 ? dash.sellers.length : "—"}
+          icon={Users}
+        />
         <Kpi
           label="Respuestas humanas"
-          value={(dash.totals.outbound - dash.totals.outboundAi).toLocaleString()}
-          hint={`${100 - dash.totals.aiShare}% del total saliente`}
+          value={
+            dash.totals.outbound > 0
+              ? (dash.totals.outbound - dash.totals.outboundAi).toLocaleString()
+              : "—"
+          }
+          hint={
+            dash.totals.outbound > 0
+              ? `${100 - dash.totals.aiShare}% del total saliente`
+              : "Sin mensajes salientes"
+          }
           icon={MessageSquare}
         />
-        <Kpi label="Cotizaciones creadas" value={dash.totals.quotesSent.toLocaleString()} icon={TrendingUp} />
+        <Kpi
+          label="Cotizaciones creadas"
+          value={dash.totals.quotesSent > 0 ? dash.totals.quotesSent.toLocaleString() : "—"}
+          icon={TrendingUp}
+        />
       </div>
+
 
       <Card className="p-0">
         <div className="border-b border-border px-5 py-3 text-sm font-medium">Ranking de vendedores</div>
@@ -528,17 +609,22 @@ function TeamTab({ dash }: { dash: ExecutiveDashboard }) {
                     <td className="px-4 py-3 text-right tabular-nums">{s.quotesSent}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{s.quotesWon}</td>
                     <td className="px-4 py-3 text-right">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "rounded",
-                          s.acceptRate >= 30 && "border-emerald-500/30 text-emerald-500",
-                          s.acceptRate < 15 && s.quotesSent > 0 && "border-amber-500/30 text-amber-600",
-                        )}
-                      >
-                        {s.acceptRate}%
-                      </Badge>
+                      {s.quotesSent > 0 ? (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "rounded",
+                            s.acceptRate >= 30 && "border-emerald-500/30 text-emerald-500",
+                            s.acceptRate < 15 && "border-amber-500/30 text-amber-600",
+                          )}
+                        >
+                          {s.acceptRate}%
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
+
                     <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtMoney(s.revenue, cur)}</td>
                   </tr>
                 ))}
@@ -557,10 +643,32 @@ function ProductsTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-3">
-        <Kpi label="Productos vendidos" value={dash.topProducts.reduce((a, p) => a + p.won, 0)} icon={Package} />
-        <Kpi label="Unidades" value={dash.topProducts.reduce((a, p) => a + p.units, 0).toLocaleString()} icon={TrendingUp} />
-        <Kpi label="Ingresos por producto" value={fmtMoney(totalRevenue, cur)} icon={DollarSign} tone="emerald" />
+        <Kpi
+          label="Productos vendidos"
+          value={
+            dash.topProducts.length > 0
+              ? dash.topProducts.reduce((a, p) => a + p.won, 0)
+              : "—"
+          }
+          icon={Package}
+        />
+        <Kpi
+          label="Unidades"
+          value={
+            dash.topProducts.length > 0
+              ? dash.topProducts.reduce((a, p) => a + p.units, 0).toLocaleString()
+              : "—"
+          }
+          icon={TrendingUp}
+        />
+        <Kpi
+          label="Ingresos por producto"
+          value={totalRevenue > 0 ? fmtMoney(totalRevenue, cur) : "—"}
+          icon={DollarSign}
+          tone="emerald"
+        />
       </div>
+
 
       <Card className="p-0">
         <div className="flex items-center justify-between border-b border-border px-5 py-3 text-sm">
@@ -597,10 +705,15 @@ function ProductsTab({ dash }: { dash: ExecutiveDashboard }) {
                       <td className="px-4 py-3 text-right tabular-nums">{p.units.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtMoney(p.revenue, cur)}</td>
                       <td className="px-4 py-3 text-right">
-                        <Badge variant="outline" className="rounded">
-                          {winRate}%
-                        </Badge>
+                        {p.quoted > 0 ? (
+                          <Badge variant="outline" className="rounded">
+                            {winRate}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
+
                     </tr>
                   );
                 })}
@@ -618,28 +731,37 @@ function OperationsTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-4">
-        <Kpi label="Chats abiertos" value={t.activeConversations.toLocaleString()} icon={MessageSquare} />
+        <Kpi
+          label="Chats abiertos"
+          value={t.activeConversations > 0 ? t.activeConversations.toLocaleString() : "—"}
+          icon={MessageSquare}
+        />
         <Kpi
           label="% de respuestas IA"
-          value={`${t.aiShare}%`}
-          hint={`${t.outboundAi} de ${t.outbound}`}
+          value={t.outbound > 0 ? `${t.aiShare}%` : "—"}
+          hint={t.outbound > 0 ? `${t.outboundAi} de ${t.outbound}` : "Sin salientes"}
           icon={Bot}
           tone="violet"
         />
         <Kpi
           label="Automatizaciones"
-          value={t.automationRuns.toLocaleString()}
-          hint={`${t.automationErrors} con error`}
+          value={t.automationRuns > 0 ? t.automationRuns.toLocaleString() : "—"}
+          hint={t.automationRuns > 0 ? `${t.automationErrors} con error` : "Sin ejecuciones"}
           icon={Sparkles}
           tone={t.automationErrors ? "amber" : "emerald"}
         />
         <Kpi
           label="Tiempo de respuesta"
           value={fmtDuration(t.avgResponseSeconds)}
-          hint={`${t.responseUnderSlaPct}% ≤ 15 min`}
+          hint={
+            t.avgResponseSeconds > 0
+              ? `${t.responseUnderSlaPct}% ≤ 15 min`
+              : "Sin datos de respuesta"
+          }
           icon={Timer}
         />
       </div>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
@@ -830,6 +952,14 @@ function AlertChip({ alert }: { alert: ExecutiveDashboard["alerts"][number] }) {
 // ---------- Charts ----------
 
 function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series"]; currency: string }) {
+  const totalRev = series.reduce((a, s) => a + s.revenue, 0);
+  if (totalRev === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin ingresos registrados en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.revenue));
   return (
     <div className="flex h-48 items-end gap-1">
@@ -837,7 +967,7 @@ function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series
         <div
           key={s.date}
           className="group relative flex-1"
-          title={`${s.date} · ${fmtMoney(s.revenue, currency)}`}
+          title={`${s.date} · ${s.revenue > 0 ? fmtMoney(s.revenue, currency) : "Sin ingresos"}`}
         >
           <div
             className="w-full rounded-t bg-gradient-to-t from-emerald-500/60 to-emerald-500/20"
@@ -849,7 +979,16 @@ function RevenueChart({ series, currency }: { series: ExecutiveDashboard["series
   );
 }
 
+
 function VolumeChart({ series }: { series: ExecutiveDashboard["series"] }) {
+  const totalMsgs = series.reduce((a, s) => a + s.inbound + s.outbound, 0);
+  if (totalMsgs === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin conversaciones en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.inbound + s.outbound));
   return (
     <>
@@ -885,6 +1024,14 @@ function VolumeChart({ series }: { series: ExecutiveDashboard["series"] }) {
 }
 
 function SalesStackedChart({ series }: { series: ExecutiveDashboard["series"] }) {
+  const totalSent = series.reduce((a, s) => a + s.quotesSent, 0);
+  if (totalSent === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+        Sin cotizaciones enviadas en este periodo.
+      </div>
+    );
+  }
   const max = Math.max(1, ...series.map((s) => s.quotesSent));
   return (
     <>
@@ -914,6 +1061,7 @@ function SalesStackedChart({ series }: { series: ExecutiveDashboard["series"] })
   );
 }
 
+
 function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
   const totals = series.reduce(
     (a, r) => {
@@ -923,7 +1071,14 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
     },
     { human: 0, ai: 0 },
   );
-  const total = totals.human + totals.ai || 1;
+  const total = totals.human + totals.ai;
+  if (total === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Aún no hay respuestas salientes en este periodo.
+      </div>
+    );
+  }
   const humanPct = Math.round((totals.human / total) * 100);
   const aiPct = 100 - humanPct;
   return (
@@ -935,12 +1090,16 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-md border border-border p-3">
           <div className="text-xs text-muted-foreground">Humanos</div>
-          <div className="font-display text-lg font-semibold">{totals.human.toLocaleString()}</div>
+          <div className="font-display text-lg font-semibold tabular-nums">
+            {totals.human.toLocaleString()}
+          </div>
           <div className="text-xs text-muted-foreground">{humanPct}% del total</div>
         </div>
         <div className="rounded-md border border-border p-3">
           <div className="text-xs text-muted-foreground">IA</div>
-          <div className="font-display text-lg font-semibold">{totals.ai.toLocaleString()}</div>
+          <div className="font-display text-lg font-semibold tabular-nums">
+            {totals.ai.toLocaleString()}
+          </div>
           <div className="text-xs text-muted-foreground">{aiPct}% del total</div>
         </div>
       </div>
@@ -948,8 +1107,17 @@ function HumanVsAi({ series }: { series: ExecutiveDashboard["series"] }) {
   );
 }
 
+
 function FunnelBar({ funnel, currency }: { funnel: ExecutiveDashboard["funnel"]; currency: string }) {
   const rows = funnel.filter((f) => f.kind !== "lost");
+  const totalCount = rows.reduce((a, r) => a + r.count, 0);
+  if (totalCount === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Aún no hay clientes en el embudo.
+      </div>
+    );
+  }
   const maxCount = Math.max(1, ...rows.map((r) => r.count));
   return (
     <div className="space-y-2">
@@ -964,13 +1132,14 @@ function FunnelBar({ funnel, currency }: { funnel: ExecutiveDashboard["funnel"];
           </div>
           <span className="w-14 text-right tabular-nums">{s.count}</span>
           <span className="w-24 text-right text-muted-foreground tabular-nums">
-            {fmtMoney(s.value, currency)}
+            {s.value > 0 ? fmtMoney(s.value, currency) : "—"}
           </span>
         </div>
       ))}
     </div>
   );
 }
+
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
@@ -984,9 +1153,10 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 // ---------- Utils ----------
 
 function fmtMoney(n: number, currency: string): string {
-  if (!n) return `${currency} 0`;
+  if (!n || n <= 0) return "—";
   return `${currency} ${Math.round(n).toLocaleString()}`;
 }
+
 
 function fmtDuration(seconds: number): string {
   if (!seconds) return "—";
