@@ -213,7 +213,7 @@ function QuotesPage() {
       await changeStatus({ data: { id, status: next } });
       toast.success(`Cotización marcada como ${STATUS_META[next].label.toLowerCase()}`);
       refetch();
-      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+      qc.invalidateQueries({ queryKey: ["quotes-kpis-adv"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al actualizar estado");
     }
@@ -261,7 +261,7 @@ function QuotesPage() {
       setSelected(new Set());
       setConfirmBulk(null);
       refetch();
-      qc.invalidateQueries({ queryKey: ["quotes-overview"] });
+      qc.invalidateQueries({ queryKey: ["quotes-kpis-adv"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error en acción masiva");
     }
