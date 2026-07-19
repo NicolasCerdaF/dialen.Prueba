@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { VirtualMessageList } from "@/components/inbox/virtual-message-list";
 import { supabase } from "@/integrations/supabase/client";
 import { sendWhatsAppMessage, toggleConversationAiPause } from "@/lib/whatsapp.functions";
 import {
@@ -439,7 +440,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
   const [sending, setSending] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", conversationId],
@@ -477,9 +478,6 @@ function ChatView({ conversationId }: { conversationId: string }) {
     },
   });
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages.length]);
 
   // Auto mark-read when opening
   useEffect(() => {
@@ -688,42 +686,8 @@ function ChatView({ conversationId }: { conversationId: string }) {
         </button>
       </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-5 py-4">
-        {messages.map((m) => {
-          const fromAi = m.direction === "outbound" && !m.sender_id;
-          return (
-            <div
-              key={m.id}
-              className={cn("flex", m.direction === "outbound" ? "justify-end" : "justify-start")}
-            >
-              <div
-                className={cn(
-                  "max-w-[70%] rounded-2xl px-3.5 py-2 text-sm",
-                  m.direction === "outbound"
-                    ? fromAi
-                      ? "bg-primary/85 text-primary-foreground ring-1 ring-primary/40"
-                      : "bg-primary text-primary-foreground"
-                    : "bg-secondary text-foreground",
-                )}
-              >
-                {fromAi && (
-                  <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase opacity-80">
-                    <Sparkles className="h-2.5 w-2.5" /> IA
-                  </div>
-                )}
-                <div className="whitespace-pre-wrap break-words">{m.body}</div>
-                <div className="mt-1 text-[10px] opacity-70">
-                  {new Date(m.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Messages (virtualized) */}
+      <VirtualMessageList messages={messages as any} />
 
       {/* Composer */}
       <form

@@ -17,10 +17,12 @@ import { ReactNode, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type NavItem = {
   to:
     | "/"
+    | "/metricas-ia"
     | "/embudo"
     | "/clientes"
     | "/catalogo"
@@ -34,6 +36,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquare },
+  { to: "/metricas-ia", label: "Métricas IA", icon: Sparkles },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/catalogo", label: "Catálogo", icon: Package },
@@ -153,20 +156,23 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile top bar */}
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-sidebar px-3 md:hidden">
+        {/* Top bar (mobile: hamburger + brand; desktop: just theme toggle on the right) */}
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-sidebar px-3">
           <button
             onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary"
+            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary md:hidden"
             aria-label="Abrir menú"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:hidden">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-primary">
               <Sparkles className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
             </div>
             <span className="font-display text-base font-semibold text-gradient-primary">Dialen</span>
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
