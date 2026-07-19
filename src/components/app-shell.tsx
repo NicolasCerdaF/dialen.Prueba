@@ -4,7 +4,6 @@ import {
   Users,
   Settings,
   Sparkles,
-  CircleDot,
   LogOut,
   TrendingUp,
   Zap,
@@ -20,11 +19,7 @@ import {
   Bot,
   Brain,
   BarChart3,
-  LineChart,
-  PieChart,
   Cog,
-  Plug,
-  UserCog,
   ChevronDown,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
