@@ -60,7 +60,7 @@ export type AiAnalytics = {
     agent_type: string;
     suggestions: number;
     accepted: number;
-    dismissed: number;
+    discarded: number;
     pending: number;
     accept_rate: number;
     avg_confidence: number;
@@ -428,7 +428,7 @@ export const getAiAnalytics = createServerFn({ method: "POST" })
         agentMap.get(agent) ?? { s: 0, a: 0, d: 0, p: 0, conf: [], prob: [] };
       a.s++;
       if (isAccepted) a.a++;
-      else if (s.status === "dismissed") a.d++;
+      else if (s.status === "discarded") a.d++;
       else a.p++;
       if (typeof s.confidence === "number") a.conf.push(s.confidence);
       if (typeof s.probability === "number") a.prob.push(s.probability);
@@ -451,7 +451,7 @@ export const getAiAnalytics = createServerFn({ method: "POST" })
         agent_type,
         suggestions: v.s,
         accepted: v.a,
-        dismissed: v.d,
+        discarded: v.d,
         pending: v.p,
         accept_rate: v.s ? Math.round((v.a / v.s) * 100) : 0,
         avg_confidence: v.conf.length
@@ -709,7 +709,7 @@ export const listAnalyticsSuggestions = createServerFn({ method: "POST" })
       .object({
         range: z.union([z.literal(7), z.literal(14), z.literal(30), z.literal(60), z.literal(90)]).default(30),
         agent_type: z.string().nullable().optional(),
-        status: z.enum(["pending", "used", "dismissed"]).nullable().optional(),
+        status: z.enum(["pending", "used", "discarded"]).nullable().optional(),
         search: z.string().nullable().optional(),
         limit: z.number().int().min(1).max(200).default(60),
       })
@@ -781,7 +781,7 @@ export const setSuggestionFeedback = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        outcome: z.enum(["used", "dismissed", "pending"]),
+        outcome: z.enum(["used", "discarded", "pending"]),
       })
       .parse(input),
   )
