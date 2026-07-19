@@ -269,7 +269,7 @@ export const exportData = createServerFn({ method: "POST" })
       },
     };
     const cfg = map[data.entity];
-    const { data: rows, error } = await supabase
+    const { data: rows, error } = await (supabase as any)
       .from(cfg.table)
       .select(cfg.cols)
       .eq("company_id", companyId)
