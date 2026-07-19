@@ -86,6 +86,36 @@ function moneyFull(n: number, cur = "USD") {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: cur, maximumFractionDigits: 2 }).format(n || 0);
 }
 
+type ByCurrency = Record<string, { pipeline: number; won: number; wonCount: number; ticketSum: number }>;
+function multiCurrency(
+  bc: ByCurrency | undefined,
+  metric: "pipeline" | "won" | "ticket",
+): { value: string; hint: string } {
+  const entries = Object.entries(bc ?? {}).filter(([, v]) => {
+    if (metric === "pipeline") return v.pipeline > 0;
+    if (metric === "won") return v.won > 0;
+    return v.wonCount > 0;
+  });
+  if (entries.length === 0) {
+    return {
+      value: "—",
+      hint: metric === "ticket" ? "Sin ganadas aún" : metric === "won" ? "Sin ganadas aún" : "Sin cotizaciones activas",
+    };
+  }
+  const scored = entries.map(([cur, v]) => {
+    const amount =
+      metric === "pipeline" ? v.pipeline : metric === "won" ? v.won : v.ticketSum / v.wonCount;
+    return { cur, amount };
+  });
+  scored.sort((a, b) => b.amount - a.amount);
+  const top = scored[0];
+  const rest = scored.length - 1;
+  return {
+    value: money(top.amount, top.cur),
+    hint: rest > 0 ? `+${rest} moneda${rest > 1 ? "s" : ""} más` : top.cur,
+  };
+}
+
 const STATUS_META: Record<QuoteStatus, { label: string; color: string; icon: any }> = {
   draft: { label: "Borrador", color: "bg-muted text-muted-foreground", icon: FileText },
   sent: { label: "Enviada", color: "bg-blue-500/15 text-blue-500", icon: Send },
