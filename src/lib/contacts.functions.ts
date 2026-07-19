@@ -247,3 +247,187 @@ export const createContact = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { id: (row as any).id, duplicate: false };
   });
+
+// ---------- AI-focused contact context ----------
+export type ContactProductInterest = {
+  productId: string | null;
+  name: string;
+  mentions: number;
+  source: "quote" | "suggestion";
+};
+
+export type ContactAiSuggestion = {
+  id: string;
+  createdAt: string;
+  intent: string | null;
+  text: string | null;
+  nextStep: string | null;
+  confidence: number | null;
+  probability: number | null;
+  objections: string[];
+  agentType: string | null;
+};
+
+export type ContactQuoteSummary = {
+  id: string;
+  number: string | null;
+  title: string | null;
+  status: string;
+  total: number | null;
+  currency: string | null;
+  createdAt: string;
+  sentAt: string | null;
+  acceptedAt: string | null;
+};
+
+export type ContactAiContext = {
+  conversationId: string | null;
+  totalConversations: number;
+  totalMessages: number;
+  lastMessage: { direction: string; body: string | null; created_at: string } | null;
+  aiSummary: string | null;
+  intentLabel: string | null;
+  probability: number | null;
+  nextRecommendedAction: string | null;
+  suggestions: ContactAiSuggestion[];
+  productsOfInterest: ContactProductInterest[];
+  quotes: ContactQuoteSummary[];
+};
+
+export const getContactAiContext = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<ContactAiContext> => {
+    const { supabase } = context;
+
+    const { data: convos } = await supabase
+      .from("conversations")
+      .select("id, last_message_at")
+      .eq("customer_id", data.id)
+      .order("last_message_at", { ascending: false, nullsFirst: false });
+    const convoList = convos ?? [];
+    const convoIds = convoList.map((c: any) => c.id);
+    const primaryConvo = convoList[0]?.id ?? null;
+
+    const [suggRes, quotesRes, msgsRes, itemsRes] = await Promise.all([
+      convoIds.length
+        ? supabase
+            .from("ai_suggestions")
+            .select(
+              "id, conversation_id, text, intent, next_step, sources, objections, confidence, probability, agent_type, created_at",
+            )
+            .in("conversation_id", convoIds)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] as any[] }),
+      supabase
+        .from("quotes")
+        .select(
+          "id, number, title, status, total, currency, created_at, sent_at, accepted_at",
+        )
+        .eq("customer_id", data.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      convoIds.length
+        ? supabase
+            .from("messages")
+            .select("conversation_id, direction, body, created_at")
+            .in("conversation_id", convoIds)
+            .order("created_at", { ascending: false })
+            .limit(1)
+        : Promise.resolve({ data: [] as any[] }),
+      // Products actually quoted to this customer
+      supabase
+        .from("quote_items")
+        .select("product_id, name, quote_id, quotes!inner(customer_id)")
+        .eq("quotes.customer_id", data.id)
+        .limit(200),
+    ]);
+
+    const suggestions: ContactAiSuggestion[] = (suggRes.data ?? []).map((s: any) => ({
+      id: s.id,
+      createdAt: s.created_at,
+      intent: s.intent ?? null,
+      text: s.text ?? null,
+      nextStep: s.next_step ?? null,
+      confidence: s.confidence != null ? Number(s.confidence) : null,
+      probability: s.probability != null ? Number(s.probability) : null,
+      objections: Array.isArray(s.objections) ? (s.objections as string[]) : [],
+      agentType: s.agent_type ?? null,
+    }));
+
+    const latest = suggestions[0] ?? null;
+
+    // Aggregate products of interest
+    const productMap = new Map<string, ContactProductInterest>();
+    for (const it of (itemsRes.data ?? []) as any[]) {
+      const key = it.product_id ?? `name:${it.name}`;
+      const existing = productMap.get(key);
+      if (existing) existing.mentions += 1;
+      else
+        productMap.set(key, {
+          productId: it.product_id ?? null,
+          name: it.name ?? "Producto",
+          mentions: 1,
+          source: "quote",
+        });
+    }
+    for (const s of (suggRes.data ?? []) as any[]) {
+      const sources = Array.isArray(s.sources) ? s.sources : [];
+      for (const src of sources) {
+        if (!src || typeof src !== "object") continue;
+        const pid = (src as any).product_id ?? (src as any).id ?? null;
+        const name = (src as any).name ?? (src as any).title ?? null;
+        if (!pid && !name) continue;
+        const key = pid ?? `name:${name}`;
+        const existing = productMap.get(key);
+        if (existing) existing.mentions += 1;
+        else
+          productMap.set(key, {
+            productId: pid,
+            name: name ?? "Producto",
+            mentions: 1,
+            source: "suggestion",
+          });
+      }
+    }
+    const productsOfInterest = Array.from(productMap.values())
+      .sort((a, b) => b.mentions - a.mentions)
+      .slice(0, 8);
+
+    // Total messages count
+    const { count: msgCount } = convoIds.length
+      ? await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .in("conversation_id", convoIds)
+      : { count: 0 };
+
+    const quotes: ContactQuoteSummary[] = (quotesRes.data ?? []).map((q: any) => ({
+      id: q.id,
+      number: q.number,
+      title: q.title,
+      status: q.status,
+      total: q.total != null ? Number(q.total) : null,
+      currency: q.currency,
+      createdAt: q.created_at,
+      sentAt: q.sent_at,
+      acceptedAt: q.accepted_at,
+    }));
+
+    return {
+      conversationId: primaryConvo,
+      totalConversations: convoList.length,
+      totalMessages: msgCount ?? 0,
+      lastMessage: (msgsRes.data ?? [])[0] ?? null,
+      aiSummary: latest?.text ?? null,
+      intentLabel: latest?.intent ?? null,
+      probability: latest?.probability ?? null,
+      nextRecommendedAction: latest?.nextStep ?? null,
+      suggestions,
+      productsOfInterest,
+      quotes,
+    };
+  });
