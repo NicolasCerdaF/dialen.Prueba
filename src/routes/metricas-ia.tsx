@@ -544,7 +544,7 @@ function SuggestionCard({
         )}
         <Link
           to="/conversaciones"
-          search={{ id: row.conversation_id } as any}
+          hash={`conv=${row.conversation_id}`}
           className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 hover:bg-muted"
         >
           <MessageSquare className="h-3 w-3" /> Abrir chat
