@@ -423,6 +423,20 @@ function InboxPage() {
                       <span className="truncate text-xs text-muted-foreground">
                         {c.customers?.phone}
                       </span>
+                      {(() => {
+                        const st = getStage(normalizeStage(c.customers?.stage));
+                        if (!st) return null;
+                        const style = STAGE_STYLES[st.color];
+                        return (
+                          <span className={cn(
+                            "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                            style.badge,
+                          )}>
+                            <span className={cn("h-1 w-1 rounded-full", style.bar)} />
+                            {st.label}
+                          </span>
+                        );
+                      })()}
                       {c.is_demo && (
                         <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
                           Demo
