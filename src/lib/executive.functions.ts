@@ -661,8 +661,9 @@ export const generateExecutiveBriefing = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data, context }): Promise<{ briefing: string }> => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY no configurada");
+    const hasAny =
+      process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY;
+    if (!hasAny) throw new Error("Falta configurar al menos una API key de IA");
     const dash = await getExecutiveDashboard({ data: { range: data.range } });
     void context; // ensure auth
 
@@ -703,34 +704,16 @@ export const generateExecutiveBriefing = createServerFn({ method: "POST" })
 4) 1 acción prioritaria para el gerente.
 Sé específico, sin cifras redundantes. Datos: ${JSON.stringify(summary)}`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-    try {
-      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": key,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: "Eres analista comercial senior. Directo, ejecutivo, español." },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.4,
-          max_tokens: 400,
-        }),
-      });
-      if (!resp.ok) {
-        const t = await resp.text().catch(() => "");
-        throw new Error(`AI ${resp.status}: ${t.slice(0, 160)}`);
-      }
-      const json = (await resp.json()) as any;
-      const briefing = json?.choices?.[0]?.message?.content?.trim() ?? "Sin briefing disponible.";
-      return { briefing };
-    } finally {
-      clearTimeout(timeout);
-    }
+    const briefing = await callChat({
+      tier: "medium", // briefing ejecutivo → OpenAI
+      scope: "exec-briefing",
+      temperature: 0.4,
+      maxTokens: 500,
+      timeoutMs: 30_000,
+      messages: [
+        { role: "system", content: "Eres analista comercial senior. Directo, ejecutivo, español." },
+        { role: "user", content: prompt },
+      ],
+    });
+    return { briefing: briefing || "Sin briefing disponible." };
   });
