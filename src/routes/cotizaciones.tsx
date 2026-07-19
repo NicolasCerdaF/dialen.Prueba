@@ -356,14 +356,44 @@ function QuotesPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-            <Kpi label="Pipeline (30d)" value={money(adv?.pipeline ?? kpis?.pipelineValue ?? 0)} icon={<FileText className="h-4 w-4" />} />
-            <Kpi label="Ganado" value={money(adv?.won ?? kpis?.wonValue ?? 0)} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
-            <Kpi label="Tasa cierre" value={`${Math.round((adv?.conversion ?? kpis?.conversion ?? 0) * 100)}%`} />
-            <Kpi label="Ticket promedio" value={money(adv?.avgTicket ?? kpis?.avgTicket ?? 0)} />
-            <Kpi label="Tiempo a aceptar" value={`${adv?.avgTimeToAcceptHours ?? 0} h`} icon={<Clock className="h-4 w-4" />} />
+            <Kpi
+              label="Pipeline (30d)"
+              value={multiCurrency(adv?.byCurrency, "pipeline").value}
+              hint={multiCurrency(adv?.byCurrency, "pipeline").hint}
+              icon={<FileText className="h-4 w-4" />}
+            />
+            <Kpi
+              label="Ganado (30d)"
+              value={multiCurrency(adv?.byCurrency, "won").value}
+              hint={multiCurrency(adv?.byCurrency, "won").hint}
+              icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            />
+            <Kpi
+              label="Tasa cierre"
+              value={
+                adv && adv.sentCount > 0
+                  ? `${Math.round(adv.conversion * 100)}%`
+                  : "—"
+              }
+              hint={adv && adv.sentCount > 0 ? `${adv.wonCount}/${adv.sentCount} aceptadas` : "Sin envíos aún"}
+            />
+            <Kpi
+              label="Ticket promedio"
+              value={multiCurrency(adv?.byCurrency, "ticket").value}
+              hint={multiCurrency(adv?.byCurrency, "ticket").hint}
+            />
+            <Kpi
+              label="Tiempo a aceptar"
+              value={
+                adv && adv.acceptedWithSent > 0 ? `${adv.avgTimeToAcceptHours} h` : "—"
+              }
+              hint={adv && adv.acceptedWithSent > 0 ? `${adv.acceptedWithSent} aceptadas` : "Sin aceptadas aún"}
+              icon={<Clock className="h-4 w-4" />}
+            />
             <Kpi
               label="Conversión IA"
-              value={`${Math.round((adv?.aiConversion ?? 0) * 100)}%`}
+              value={adv && adv.aiCount > 0 ? `${Math.round(adv.aiConversion * 100)}%` : "—"}
+              hint={adv && adv.aiCount > 0 ? `${adv.aiWon}/${adv.aiCount} con IA` : "Sin propuestas IA"}
               icon={<Sparkles className="h-4 w-4 text-primary" />}
             />
           </div>
