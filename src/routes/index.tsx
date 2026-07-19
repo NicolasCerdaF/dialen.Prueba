@@ -102,6 +102,21 @@ function InboxPage() {
   const [search, setSearch] = useState("");
   const [rtOk, setRtOk] = useState(false);
 
+  // Deep-link handoff from Bandeja IA: /conversaciones#conv=<id>
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const applyHash = () => {
+      const m = window.location.hash.match(/conv=([\w-]+)/);
+      if (m?.[1]) {
+        setActiveId(m[1]);
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
   const { data: channel } = useQuery({
     queryKey: ["wa-channel-status"],
     queryFn: async () => {
