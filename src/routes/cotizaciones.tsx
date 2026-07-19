@@ -1095,14 +1095,27 @@ function EmptyState({ onNew }: { onNew: () => void }) {
   );
 }
 
-function Kpi({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function Kpi({
+  label,
+  value,
+  icon,
+  hint,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  hint?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        {icon}
+    <div className="min-w-0 rounded-lg border border-border/60 bg-card/40 p-3">
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="truncate">{label}</span>
+        <span className="shrink-0">{icon}</span>
       </div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
+      <div className="mt-1 truncate font-display text-lg font-semibold tabular-nums" title={value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
