@@ -174,7 +174,7 @@ export const listOpportunities = createServerFn({ method: "GET" })
     const rank: Record<OpportunityStage, number> = { negotiation: 0, qualified: 1, detected: 2 };
     list.sort((a, b) =>
       rank[a.stage] - rank[b.stage] ||
-      b.probability - a.probability ||
+      (b.probability ?? -1) - (a.probability ?? -1) ||
       new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime(),
     );
 
