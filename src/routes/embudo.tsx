@@ -357,7 +357,7 @@ function EmbudoPage() {
         a?.insight?.probability ?? "",
         a?.insight?.intent ?? "",
         a?.quotes.active_number ?? "",
-        (c as any).next_activity_at ?? "",
+        c.next_activity_at ?? "",
       ];
     });
     const csv = [header, ...rows]
