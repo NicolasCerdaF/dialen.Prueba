@@ -1094,29 +1094,6 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         </div>
       </Section>
 
-      {/* Coming soon integrations */}
-      <Section icon={<Sparkles className="h-3.5 w-3.5" />} title="Acciones comerciales">
-        <div className="grid grid-cols-2 gap-1.5">
-          <ComingSoon icon={<ShoppingBag className="h-3 w-3" />} label="Nuevo pedido" />
-          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Factura" />
-          <ComingSoon icon={<Calendar className="h-3 w-3" />} label="Agendar" />
-          <ComingSoon icon={<Building2 className="h-3 w-3" />} label="Oportunidad" />
-        </div>
-      </Section>
-
-      <Section icon={<ShoppingBag className="h-3.5 w-3.5" />} title="Historial de compras">
-        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
-          <Lock className="mx-auto mb-1 h-3 w-3" />
-          Próximamente — al conectar el módulo de Pedidos.
-        </div>
-      </Section>
-
-      <Section icon={<Calendar className="h-3.5 w-3.5" />} title="Agenda y campañas">
-        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
-          <Lock className="mx-auto mb-1 h-3 w-3" />
-          Próximamente — módulos de Agenda, Campañas y Automatizaciones.
-        </div>
-      </Section>
     </div>
   );
 }
