@@ -4,14 +4,93 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Role = "admin" | "manager" | "vendedor";
 
+async function ensureOwnerAdminRole(supabase: any, userId: string, companyId: string) {
+  const { data: company } = await supabase
+    .from("companies")
+    .select("owner_id")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (company?.owner_id !== userId) return;
+
+  const { error } = await supabase.from("user_roles").insert({
+    user_id: userId,
+    company_id: companyId,
+    role: "admin",
+  });
+  if (error && error.code !== "23505") throw new Error(error.message);
+}
+
 async function getCompanyId(supabase: any, userId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
-    .select("company_id")
+    .select("company_id, email, full_name")
     .eq("id", userId)
     .maybeSingle();
-  if (!data?.company_id) throw new Error("No se encontró la empresa");
-  return data.company_id as string;
+  if (data?.company_id) {
+    const companyId = data.company_id as string;
+    await ensureOwnerAdminRole(supabase, userId, companyId);
+    return companyId;
+  }
+
+  // Bootstrap para cuentas existentes en proyectos remixados: si el trigger de
+  // alta no creó empresa/perfil/rol, lo resolvemos antes de cargar Configuración.
+  const { data: authUser } = await supabase.auth.getUser();
+  const email: string | null = data?.email ?? authUser?.user?.email ?? null;
+  const fullName: string =
+    data?.full_name ??
+    (authUser?.user?.user_metadata as any)?.full_name ??
+    (email ? email.split("@")[0] : "Mi empresa");
+
+  const { data: existingCompany } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const companyId = existingCompany?.id
+    ? existingCompany.id
+    : (await supabase
+        .from("companies")
+        .insert({ name: `${fullName} Workspace`, owner_id: userId })
+        .select("id")
+        .single()).data?.id;
+
+  if (!companyId) {
+    throw new Error("No se pudo crear la empresa");
+  }
+
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (companyError || !company?.id) {
+    throw new Error(companyError?.message || "No se pudo cargar la empresa");
+  }
+
+  const resolvedCompanyId = company.id as string;
+
+  if (data) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ company_id: resolvedCompanyId })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("profiles").insert({
+      id: userId,
+      full_name: fullName,
+      email,
+      company_id: resolvedCompanyId,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  await ensureOwnerAdminRole(supabase, userId, resolvedCompanyId);
+
+  return resolvedCompanyId;
 }
 
 async function assertAdmin(supabase: any, userId: string, companyId: string) {
