@@ -239,10 +239,14 @@ export const getDashboardData = createServerFn({ method: "GET" })
         ? quotesSent7d > 0 ? 100 : 0
         : Math.round(((quotesSent7d - quotesSent7to14) / quotesSent7to14) * 100);
 
-    const salesMonth = quoteList
-      .filter((q) => q.status === "accepted" && q.accepted_at && new Date(q.accepted_at) >= monthStart)
-      .reduce((a, q) => a + Number(q.total ?? 0), 0);
-    const currency = quoteList[0]?.currency ?? "USD";
+    const acceptedThisMonth = quoteList.filter(
+      (q) => q.status === "accepted" && q.accepted_at && new Date(q.accepted_at) >= monthStart,
+    );
+    const salesMonth = acceptedThisMonth.reduce((a, q) => a + Number(q.total ?? 0), 0);
+    const currency =
+      acceptedThisMonth[0]?.currency ??
+      quoteList.find((q) => q.currency)?.currency ??
+      "USD";
 
     // ---- Funnel mini
     const funnel: FunnelStageMini[] = STAGES.filter((s) => s.kind !== "lost").map((s) => {
