@@ -444,11 +444,34 @@ function SalesTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-4">
-        <Kpi label="Ingresos" value={fmtMoney(t.revenue, cur)} icon={DollarSign} tone="emerald" delta={dash.deltas.revenue} />
-        <Kpi label="Cotizaciones enviadas" value={t.quotesSent.toLocaleString()} icon={TrendingUp} delta={dash.deltas.quotesSent} />
-        <Kpi label="Aceptadas" value={t.quotesAccepted.toLocaleString()} hint={`${t.acceptRate}% aceptación`} icon={CheckCircle2} tone="emerald" />
-        <Kpi label="Ticket promedio" value={fmtMoney(t.avgTicket, cur)} icon={Wallet} delta={dash.deltas.avgTicket} />
+        <Kpi
+          label="Ingresos"
+          value={t.revenue > 0 ? fmtMoney(t.revenue, cur) : "—"}
+          icon={DollarSign}
+          tone="emerald"
+          delta={t.revenue > 0 ? dash.deltas.revenue : undefined}
+        />
+        <Kpi
+          label="Cotizaciones enviadas"
+          value={t.quotesSent > 0 ? t.quotesSent.toLocaleString() : "—"}
+          icon={TrendingUp}
+          delta={t.quotesSent > 0 ? dash.deltas.quotesSent : undefined}
+        />
+        <Kpi
+          label="Aceptadas"
+          value={t.quotesSent > 0 ? t.quotesAccepted.toLocaleString() : "—"}
+          hint={t.quotesSent > 0 ? `${t.acceptRate}% aceptación` : "Sin envíos"}
+          icon={CheckCircle2}
+          tone="emerald"
+        />
+        <Kpi
+          label="Ticket promedio"
+          value={t.quotesAccepted > 0 ? fmtMoney(t.avgTicket, cur) : "—"}
+          icon={Wallet}
+          delta={t.quotesAccepted > 0 ? dash.deltas.avgTicket : undefined}
+        />
       </div>
+
 
       <Card className="p-5">
         <div className="mb-3 flex items-center justify-between text-sm font-medium">
