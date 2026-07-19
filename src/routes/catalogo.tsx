@@ -37,7 +37,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import {
   listProductsAdvanced,
-  listProducts,
+  
   upsertProduct,
   deleteProduct,
   duplicateProduct,
@@ -237,6 +237,7 @@ function CatalogPage() {
       toast.success(`"${p.name}" eliminado`);
       qc.invalidateQueries({ queryKey: ["catalog-adv"] });
       qc.invalidateQueries({ queryKey: ["catalog-overview"] });
+      qc.invalidateQueries({ queryKey: ["catalog-alerts"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al eliminar");
     } finally {
@@ -249,6 +250,7 @@ function CatalogPage() {
       const row = await dup({ data: { id: p.id } });
       toast.success(`Duplicado: ${row.name}`);
       qc.invalidateQueries({ queryKey: ["catalog-adv"] });
+      qc.invalidateQueries({ queryKey: ["catalog-overview"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al duplicar");
     }
@@ -305,20 +307,26 @@ function CatalogPage() {
     (priceMin ? 1 : 0) +
     (priceMax ? 1 : 0);
 
+  // Pipeline dominant currency (no mezclamos MXN + USD).
+  const pipelineByCur = kpis?.pipelineByCurrency ?? {};
+  const pipelineEntries = Object.entries(pipelineByCur).sort((a, b) => (b[1] as number) - (a[1] as number));
+  const pipelineTop = pipelineEntries[0];
+  const pipelineRest = pipelineEntries.length - 1;
+
   return (
     <AppShell>
       <div className="flex h-full w-full flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b px-6 py-4">
-          <div>
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-6">
+          <div className="min-w-0">
             <h1 className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight">
-              <Package className="h-6 w-6 text-primary" />
-              Catálogo comercial
+              <Package className="h-6 w-6 shrink-0 text-primary" />
+              <span className="truncate">Catálogo comercial</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               Fuente única de productos. Conectado a Bandeja, CRM, Embudo, Cotizaciones, IA y Automatizaciones.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={products.length === 0}>
               <Download className="mr-1.5 h-3.5 w-3.5" /> Exportar
             </Button>
@@ -331,21 +339,46 @@ function CatalogPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6 space-y-4">
+        <div className="flex-1 space-y-4 overflow-auto p-4 sm:p-6">
           {/* KPIs */}
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <Kpi
               icon={Boxes}
               label="Productos activos"
-              value={`${kpis?.totals.active ?? 0}/${kpis?.totals.products ?? 0}`}
+              value={kpis ? `${kpis.totals.active}/${kpis.totals.products}` : "—"}
             />
-            <Kpi icon={TrendingUp} label="Vinculados a clientes" value={String(kpis?.totals.linked ?? 0)} />
-            <Kpi icon={DollarSign} label="Pipeline en catálogo" value={money(kpis?.totals.pipelineValue ?? 0)} />
-            <Kpi icon={Sparkles} label="Recomendaciones IA" value={String(kpis?.totals.recommendations ?? 0)} />
+            <Kpi
+              icon={TrendingUp}
+              label="Vinculados a clientes"
+              value={kpis ? String(kpis.totals.linkedProducts) : "—"}
+              hint={
+                kpis && kpis.totals.linkedRecords !== kpis.totals.linkedProducts
+                  ? `${kpis.totals.linkedRecords} vínculos totales`
+                  : undefined
+              }
+            />
+            <Kpi
+              icon={DollarSign}
+              label="Pipeline en catálogo"
+              value={pipelineTop ? money(pipelineTop[1] as number, pipelineTop[0]) : "—"}
+              hint={
+                pipelineTop
+                  ? pipelineRest > 0
+                    ? `+${pipelineRest} moneda${pipelineRest === 1 ? "" : "s"} más`
+                    : undefined
+                  : "Sin vínculos aún"
+              }
+              title={pipelineEntries.map(([c, v]) => money(v as number, c)).join(" · ") || undefined}
+            />
+            <Kpi
+              icon={Sparkles}
+              label="Recomendaciones IA"
+              value={kpis ? String(kpis.totals.recommendations) : "—"}
+            />
             <Kpi
               icon={AlertTriangle}
               label="Bajo stock"
-              value={String(kpis?.totals.lowStock ?? 0)}
+              value={kpis ? String(kpis.totals.lowStock) : "—"}
               tone={kpis?.totals.lowStock ? "warn" : "default"}
             />
           </div>
@@ -367,7 +400,7 @@ function CatalogPage() {
                 title="Más pipeline"
                 icon={DollarSign}
                 rows={kpis.topPipeline}
-                format={(p: any) => money(p.pipeline_value)}
+                format={(p: any) => money(p.pipeline_value, p.currency)}
                 onPick={(id) => setDetailId(id)}
               />
               <InsightList
@@ -862,19 +895,26 @@ function Kpi({
   label,
   value,
   tone = "default",
+  hint,
+  title,
 }: {
   icon: any;
   label: string;
   value: string;
   tone?: "default" | "warn";
+  hint?: string;
+  title?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border bg-card p-4", tone === "warn" && "border-amber-400/50")}>
+    <div className={cn("min-w-0 rounded-lg border bg-card p-4", tone === "warn" && "border-amber-400/50")}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className={cn("h-4 w-4", tone === "warn" ? "text-amber-500" : "text-primary")} />
-        {label}
+        <Icon className={cn("h-4 w-4 shrink-0", tone === "warn" ? "text-amber-500" : "text-primary")} />
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-1 text-2xl font-semibold">{value}</div>
+      <div className="mt-1 truncate font-display text-2xl font-semibold tabular-nums" title={title ?? value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
@@ -1109,6 +1149,8 @@ function ProductDetailSheet({
     toast.success("Actualizado");
     qc.invalidateQueries({ queryKey: ["product-details", id] });
     qc.invalidateQueries({ queryKey: ["catalog-adv"] });
+    qc.invalidateQueries({ queryKey: ["catalog-overview"] });
+    qc.invalidateQueries({ queryKey: ["catalog-alerts"] });
   }
 
   return (
@@ -1334,9 +1376,11 @@ function ProductDetailSheet({
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-card p-2">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-sm">{value}</div>
+    <div className="min-w-0 rounded-md border bg-card p-2">
+      <div className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-sm tabular-nums" title={value}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -1906,6 +1950,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
-
-// Keep `listProducts` referenced so it doesn't get tree-shaken from the module map (used elsewhere).
-export const __ensureListProducts = listProducts;
