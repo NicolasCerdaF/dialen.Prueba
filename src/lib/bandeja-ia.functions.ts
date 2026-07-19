@@ -21,6 +21,9 @@ export type BandejaItem = {
   currency: string;
   stage: string | null;
   elapsedLabel: string;
+  lastMessagePreview: string | null;
+  aiSummary: string | null;
+  productMention: string | null;
   suggestedAction:
     | { kind: "open"; label: string }
     | { kind: "quote"; label: string; conversationId: string }
@@ -96,7 +99,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           .limit(500),
         supabase
           .from("messages")
-          .select("conversation_id, direction, created_at")
+          .select("conversation_id, direction, body, created_at")
           .eq("company_id", companyId)
           .gte("created_at", weekAgo)
           .order("created_at", { ascending: false })
@@ -104,14 +107,33 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       ]);
 
     const convoList = convos ?? [];
+    const convIds = convoList.map((c) => c.id);
     const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
     const currency = quotes?.[0]?.currency ?? "USD";
 
-    // Latest message direction per conversation
-    const lastMsg = new Map<string, { direction: string; created_at: string }>();
+    // Latest AI suggestion per conversation (for summary + product mention)
+    const { data: suggestions } = convIds.length
+      ? await supabase
+          .from("ai_suggestions")
+          .select("conversation_id, text, intent, next_step, sources, created_at")
+          .in("conversation_id", convIds)
+          .order("created_at", { ascending: false })
+          .limit(500)
+      : { data: [] as any[] };
+    const suggByConv = new Map<string, any>();
+    for (const s of suggestions ?? []) {
+      if (!suggByConv.has(s.conversation_id)) suggByConv.set(s.conversation_id, s);
+    }
+
+    // Latest message per conversation (direction + body)
+    const lastMsg = new Map<string, { direction: string; created_at: string; body: string | null }>();
     for (const m of msgs ?? []) {
       if (!lastMsg.has(m.conversation_id)) {
-        lastMsg.set(m.conversation_id, { direction: m.direction, created_at: m.created_at });
+        lastMsg.set(m.conversation_id, {
+          direction: m.direction,
+          created_at: m.created_at,
+          body: (m as any).body ?? null,
+        });
       }
     }
 
@@ -123,7 +145,8 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       }
     }
 
-    const items: BandejaItem[] = [];
+    type DraftItem = Omit<BandejaItem, "lastMessagePreview" | "aiSummary" | "productMention">;
+    const items: DraftItem[] = [];
 
     for (const conv of convoList) {
       const cust = customerById.get(conv.customer_id);
@@ -290,12 +313,31 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       }
     }
 
-    items.sort((a, b) => b.score - a.score);
+    // Enrich with preview / AI summary / product mention
+    const enriched: BandejaItem[] = items.map((it) => {
+      const last = it.conversationId ? lastMsg.get(it.conversationId) : null;
+      const sugg = it.conversationId ? suggByConv.get(it.conversationId) : null;
+      let productMention: string | null = null;
+      const src = sugg?.sources;
+      if (Array.isArray(src) && src.length) {
+        const first = src[0];
+        productMention =
+          typeof first === "string" ? first : first?.name ?? first?.title ?? null;
+      }
+      return {
+        ...it,
+        lastMessagePreview: last?.body ? last.body.slice(0, 140) : null,
+        aiSummary: sugg?.text ? String(sugg.text).slice(0, 200) : null,
+        productMention,
+      };
+    });
+
+    enriched.sort((a, b) => b.score - a.score);
 
     const groups = {
-      high: items.filter((i) => i.category === "high").slice(0, 20),
-      follow: items.filter((i) => i.category === "follow").slice(0, 20),
-      opportunity: items.filter((i) => i.category === "opportunity").slice(0, 20),
+      high: enriched.filter((i) => i.category === "high").slice(0, 20),
+      follow: enriched.filter((i) => i.category === "follow").slice(0, 20),
+      opportunity: enriched.filter((i) => i.category === "opportunity").slice(0, 20),
     };
     return {
       groups,
@@ -305,5 +347,192 @@ export const getBandejaIA = createServerFn({ method: "GET" })
         opportunity: groups.opportunity.length,
         total: groups.high.length + groups.follow.length + groups.opportunity.length,
       },
+    };
+  });
+
+// ============================================================
+// 🤖 Acciones IA pendientes  — sugerencias de IA por aprobar
+// ============================================================
+export type PendingAction = {
+  id: string;
+  conversationId: string | null;
+  customerId: string | null;
+  customerName: string;
+  agentType: string | null;
+  intent: string | null;
+  text: string;
+  nextStep: string | null;
+  confidence: number;
+  probability: number;
+  createdAt: string;
+  elapsedLabel: string;
+};
+
+export const getPendingAIActions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PendingAction[]> => {
+    const { supabase, userId } = context;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile?.company_id) return [];
+
+    const { data: rows } = await supabase
+      .from("ai_suggestions")
+      .select(
+        "id, conversation_id, customer_id, agent_type, intent, text, next_step, confidence, probability, created_at",
+      )
+      .eq("company_id", profile.company_id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    const items = rows ?? [];
+    const custIds = Array.from(
+      new Set(items.map((r: any) => r.customer_id).filter(Boolean)),
+    );
+    const { data: custs } = custIds.length
+      ? await supabase
+          .from("customers")
+          .select("id, name, phone")
+          .in("id", custIds)
+      : { data: [] as any[] };
+    const byId = new Map((custs ?? []).map((c: any) => [c.id, c]));
+
+    return items.map((r: any) => {
+      const c = r.customer_id ? byId.get(r.customer_id) : null;
+      return {
+        id: r.id,
+        conversationId: r.conversation_id,
+        customerId: r.customer_id,
+        customerName: c?.name ?? c?.phone ?? "Sin contacto",
+        agentType: r.agent_type,
+        intent: r.intent,
+        text: r.text ?? "",
+        nextStep: r.next_step,
+        confidence: Math.round(Number(r.confidence ?? 0) * 100) / 100,
+        probability: Math.round(Number(r.probability ?? 0)),
+        createdAt: r.created_at,
+        elapsedLabel: elapsed(r.created_at),
+      } satisfies PendingAction;
+    });
+  });
+
+export const resolvePendingAction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { id: string; action: "used" | "edited" | "discarded" }) => d,
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("ai_suggestions")
+      .update({
+        status: data.action,
+        used_at: data.action !== "discarded" ? new Date().toISOString() : null,
+        actor_id: userId,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================
+// 📊 Análisis de conversaciones — agregados IA
+// ============================================================
+export type ConversationAnalysis = {
+  window: "30d";
+  totals: {
+    conversations: number;
+    suggestions: number;
+    avgConfidence: number;
+    avgProbability: number;
+  };
+  topIntents: { key: string; count: number }[];
+  topObjections: { key: string; count: number }[];
+  topProducts: { key: string; count: number }[];
+};
+
+export const getConversationAnalysis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ConversationAnalysis> => {
+    const { supabase, userId } = context;
+    const empty: ConversationAnalysis = {
+      window: "30d",
+      totals: { conversations: 0, suggestions: 0, avgConfidence: 0, avgProbability: 0 },
+      topIntents: [],
+      topObjections: [],
+      topProducts: [],
+    };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile?.company_id) return empty;
+
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+
+    const [{ data: suggs }, { count: convCount }] = await Promise.all([
+      supabase
+        .from("ai_suggestions")
+        .select("intent, objections, sources, confidence, probability")
+        .eq("company_id", profile.company_id)
+        .gte("created_at", since)
+        .limit(2000),
+      supabase
+        .from("conversations")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", profile.company_id)
+        .gte("last_message_at", since),
+    ]);
+
+    const rows = suggs ?? [];
+    const intents = new Map<string, number>();
+    const objections = new Map<string, number>();
+    const products = new Map<string, number>();
+    let sumConf = 0;
+    let sumProb = 0;
+    let n = 0;
+
+    for (const r of rows) {
+      const rr = r as any;
+      if (rr.intent) intents.set(rr.intent, (intents.get(rr.intent) ?? 0) + 1);
+      if (Array.isArray(rr.objections)) {
+        for (const o of rr.objections) {
+          const k = typeof o === "string" ? o : o?.text ?? o?.reason;
+          if (k) objections.set(k, (objections.get(k) ?? 0) + 1);
+        }
+      }
+      if (Array.isArray(rr.sources)) {
+        for (const s of rr.sources) {
+          const k = typeof s === "string" ? s : s?.name ?? s?.title;
+          if (k) products.set(k, (products.get(k) ?? 0) + 1);
+        }
+      }
+      if (rr.confidence != null) sumConf += Number(rr.confidence);
+      if (rr.probability != null) sumProb += Number(rr.probability);
+      n += 1;
+    }
+
+    const top = (m: Map<string, number>) =>
+      Array.from(m.entries())
+        .map(([key, count]) => ({ key, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6);
+
+    return {
+      window: "30d",
+      totals: {
+        conversations: convCount ?? 0,
+        suggestions: n,
+        avgConfidence: n ? Math.round((sumConf / n) * 100) / 100 : 0,
+        avgProbability: n ? Math.round(sumProb / n) : 0,
+      },
+      topIntents: top(intents),
+      topObjections: top(objections),
+      topProducts: top(products),
     };
   });
