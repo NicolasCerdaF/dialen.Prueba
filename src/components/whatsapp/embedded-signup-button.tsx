@@ -188,16 +188,24 @@ export function EmbeddedSignupButton({
   }
 
   if (cfgError) {
+    const msg = (cfgError as Error).message ?? "";
+    const missingAppId = msg.toLowerCase().includes("meta app id");
     return (
-      <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-left text-sm">
-        <p className="font-medium text-destructive">No pudimos cargar la configuración de Meta</p>
-        <p className="mt-1 text-muted-foreground">{(cfgError as Error).message}</p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Verifica que <code>META_APP_ID</code> esté configurado en Secrets.
+      <div className="w-full max-w-md rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-left text-sm">
+        <p className="font-medium text-destructive">
+          {missingAppId
+            ? "Falta configurar Meta"
+            : "No pudimos cargar la configuración de Meta"}
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          {missingAppId
+            ? "Un administrador debe cargar las credenciales de Meta antes de conectar WhatsApp."
+            : msg}
         </p>
       </div>
     );
   }
+
 
   if (sdkError) {
     return (
