@@ -473,6 +473,7 @@ function QuickLink({ to, label }: { to: string; label: string }) {
 
 function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const fetchTeam = useServerFn(listTeamMembers);
   const updateRoleFn = useServerFn(updateMemberRole);
   const removeMemberFn = useServerFn(removeMember);
@@ -509,6 +510,10 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
     }
   }
   async function remove(userId: string) {
+    if (userId === user?.id) {
+      toast.error("No puedes quitarte a ti mismo");
+      return;
+    }
     if (!confirm("¿Quitar acceso a este miembro? Esta acción es reversible.")) return;
     try {
       await removeMemberFn({ data: { userId } });
@@ -520,6 +525,7 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   }
 
   function toggleSel(id: string) {
+    if (id === user?.id) return;
     const n = new Set(selected);
     if (n.has(id)) n.delete(id);
     else n.add(id);
@@ -527,16 +533,15 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   }
   async function bulkRemove() {
     if (!isAdmin) return;
-    const ids = Array.from(selected).filter((id) => {
-      const m = members.find((mm: any) => mm.userId === id);
-      return m && m.userId !== (undefined as any); // filter placeholder; real self-check below
-    });
-    // Exclude the current user from bulk deletion (server rejects self-removal)
-    const currentUserId = (members.find((m: any) => m.role === "admin") as any)?.userId;
-    const cleanIds = ids;
-    if (!confirm(`¿Quitar acceso a ${cleanIds.length} miembros?`)) return;
+    const ids = Array.from(selected).filter((id) => id !== user?.id);
+    if (ids.length === 0) {
+      toast.error("Nada que eliminar");
+      return;
+    }
+    if (!confirm(`¿Quitar acceso a ${ids.length} ${ids.length === 1 ? "miembro" : "miembros"}?`))
+      return;
     let removed = 0;
-    for (const id of cleanIds) {
+    for (const id of ids) {
       try {
         await removeMemberFn({ data: { userId: id } });
         removed += 1;
@@ -546,9 +551,9 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
     }
     setSelected(new Set());
     qc.invalidateQueries({ queryKey: ["team-members"] });
-    if (removed > 0) toast.success(`${removed} miembros eliminados`);
-    void currentUserId;
+    if (removed > 0) toast.success(`${removed} ${removed === 1 ? "miembro eliminado" : "miembros eliminados"}`);
   }
+
 
 
   return (
