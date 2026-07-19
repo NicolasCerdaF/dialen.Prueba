@@ -1432,20 +1432,10 @@ function Section({
         {icon} {title}
       </div>
       <div>{children}</div>
-      <style>{`
-        .input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; }
-        .input:focus { border-color: hsl(var(--primary)); }
-        .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-primary:disabled { opacity: 0.5; }
-        .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
-        .btn-secondary:hover { background: hsl(var(--secondary)); }
-        .btn-danger { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--destructive) / 0.3); background: hsl(var(--destructive) / 0.05); color: hsl(var(--destructive)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
-        .btn-danger:hover { background: hsl(var(--destructive) / 0.1); }
-      `}</style>
     </div>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
