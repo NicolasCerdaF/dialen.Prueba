@@ -592,6 +592,9 @@ function sortLabel(s: SortMode) {
     : s === "errors" ? "Con más errores"
     : "Última ejecución";
 }
+function runStatusLabel(s: "success" | "skipped" | "error") {
+  return s === "success" ? "Exitosas" : s === "skipped" ? "Omitidas" : "Con error";
+}
 
 // ============ Editor Sheet ============
 type EditorTab = "builder" | "history" | "versions";
