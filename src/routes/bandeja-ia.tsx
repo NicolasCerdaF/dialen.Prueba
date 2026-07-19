@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Sparkles,
   Flame,
@@ -31,7 +31,6 @@ import {
   getConversationAnalysis,
   resolvePendingAction,
   type BandejaItem,
-  type BandejaCategory,
   type PendingAction,
 } from "@/lib/bandeja-ia.functions";
 import { cn } from "@/lib/utils";
@@ -234,7 +233,7 @@ function StatCard({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone: "primary" | "danger" | "warn" | "success";
 }) {
   const tones = {
@@ -588,10 +587,10 @@ function AnalysisPanel({
         <StatCard label="Análisis IA" value={data.totals.suggestions} tone="primary" />
         <StatCard
           label="Confianza IA"
-          value={Math.round(data.totals.avgConfidence * 100)}
+          value={`${Math.round(data.totals.avgConfidence * 100)}%`}
           tone="success"
         />
-        <StatCard label="Prob. cierre media" value={data.totals.avgProbability} tone="warn" />
+        <StatCard label="Prob. cierre media" value={`${data.totals.avgProbability}%`} tone="warn" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <TopList title="Intenciones frecuentes" items={data.topIntents} icon={TrendingUp} tone="primary" />

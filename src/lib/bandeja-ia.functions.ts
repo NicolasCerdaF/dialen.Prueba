@@ -109,13 +109,13 @@ export const getBandejaIA = createServerFn({ method: "GET" })
     const convoList = convos ?? [];
     const convIds = convoList.map((c) => c.id);
     const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
-    const currency = quotes?.[0]?.currency ?? "USD";
+    const fallbackCurrency = quotes?.find((q) => q.currency)?.currency ?? null;
 
-    // Latest AI suggestion per conversation (for summary + product mention)
+    // Latest AI suggestion per conversation (real IA signal for intent/probability/summary).
     const { data: suggestions } = convIds.length
       ? await supabase
           .from("ai_suggestions")
-          .select("conversation_id, text, intent, next_step, sources, created_at")
+          .select("conversation_id, text, intent, probability, next_step, sources, created_at")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false })
           .limit(500)
@@ -148,6 +148,16 @@ export const getBandejaIA = createServerFn({ method: "GET" })
     type DraftItem = Omit<BandejaItem, "lastMessagePreview" | "aiSummary" | "productMention">;
     const items: DraftItem[] = [];
 
+    const intentScoreFromLabel = (v: string | null | undefined): number | null => {
+      if (!v) return null;
+      const s = String(v).toLowerCase();
+      if (/(compra|cierre|orden|pago|confirm)/.test(s)) return 90;
+      if (/(cotiz|precio|presupuesto|budget)/.test(s)) return 75;
+      if (/(interes|consulta|info)/.test(s)) return 55;
+      if (/(duda|objec)/.test(s)) return 40;
+      return null;
+    };
+
     for (const conv of convoList) {
       const cust = customerById.get(conv.customer_id);
       if (!cust) continue;
@@ -162,18 +172,27 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       const quoteSent = activeQuote && ["sent", "viewed"].includes(activeQuote.status);
       const quoteHours = quoteSent ? hoursSince(activeQuote?.sent_at ?? activeQuote?.created_at) : 0;
       const value = Number(cust.estimated_value ?? 0);
+      const sugg = suggByConv.get(conv.id);
+      const currency = activeQuote?.currency ?? fallbackCurrency ?? "USD";
 
-      // Intent heuristic
-      let intent = 30;
-      if (stage === "cotizado") intent += 25;
-      if (stage === "negociando") intent += 40;
-      if (stage === "interesado") intent += 15;
-      if (activeQuote) intent += 15;
-      if (waitingHours > 0 && waitingHours < 24) intent += 10;
-      intent = Math.min(100, intent);
+      // Prefer real AI-derived intent/probability from latest ai_suggestion.
+      const aiProbability = sugg?.probability != null ? Math.round(Number(sugg.probability) * 100) : null;
+      const aiIntentScore = intentScoreFromLabel(sugg?.intent);
 
-      const probability =
+      // Stage-based heuristic fallback (only used when no AI signal exists).
+      let heuristicIntent = 30;
+      if (stage === "cotizado") heuristicIntent += 25;
+      if (stage === "negociando") heuristicIntent += 40;
+      if (stage === "interesado") heuristicIntent += 15;
+      if (activeQuote) heuristicIntent += 15;
+      if (waitingHours > 0 && waitingHours < 24) heuristicIntent += 10;
+      heuristicIntent = Math.min(100, heuristicIntent);
+
+      const heuristicProb =
         stage === "negociando" ? 75 : stage === "cotizado" ? 55 : stage === "interesado" ? 35 : 20;
+
+      const intent = aiIntentScore ?? heuristicIntent;
+      const probability = aiProbability ?? heuristicProb;
 
       // ------- HIGH PRIORITY -------
       if (isVip && waitingHours >= 0.25) {
@@ -186,7 +205,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cliente VIP sin respuesta",
-          reasonDetail: `Cliente marcado como prioritario esperando ${elapsed(last?.created_at)}.`,
+          reasonDetail: `Prioridad alta · esperando ${elapsed(last?.created_at)}.`,
           intent,
           urgency: "alta",
           probability,
@@ -209,11 +228,11 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           conversationId: conv.id,
           reason: "Cotización sin seguimiento",
           reasonDetail: `Cotización enviada ${elapsed(activeQuote?.sent_at ?? activeQuote?.created_at)} sin respuesta.`,
-          intent: Math.max(intent, 70),
+          intent,
           urgency: "alta",
-          probability: Math.max(probability, 60),
+          probability,
           potentialValue: Number(activeQuote?.total ?? value),
-          currency: activeQuote?.currency ?? currency,
+          currency,
           stage: cust.stage,
           elapsedLabel: elapsed(activeQuote?.sent_at ?? activeQuote?.created_at),
           suggestedAction: { kind: "reply", label: "Retomar cotización" },
@@ -230,7 +249,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Negociación esperando respuesta",
-          reasonDetail: `Cliente en negociación esperando hace ${elapsed(last?.created_at)}.`,
+          reasonDetail: `En negociación · esperando hace ${elapsed(last?.created_at)}.`,
           intent,
           urgency: "alta",
           probability,
@@ -253,8 +272,8 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           customerName: cust.name ?? cust.phone,
           companyName: cust.company ?? null,
           conversationId: conv.id,
-          reason: "Cliente mostró interés",
-          reasonDetail: "El cliente hizo preguntas sobre productos o precios.",
+          reason: "Interés detectado",
+          reasonDetail: `Etapa: interesado · último mensaje ${elapsed(last?.created_at)}.`,
           intent,
           urgency: "media",
           probability,
@@ -276,12 +295,14 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Cotización sin enviar",
-          reasonDetail: "Existe un borrador de cotización pendiente de envío.",
+          reasonDetail: activeQuote
+            ? `Borrador creado ${elapsed(activeQuote?.created_at)}.`
+            : "Etapa cotizado sin cotización registrada.",
           intent,
           urgency: "media",
           probability,
           potentialValue: Number(activeQuote?.total ?? value),
-          currency: activeQuote?.currency ?? currency,
+          currency,
           stage: cust.stage,
           elapsedLabel: elapsed(activeQuote?.created_at ?? last?.created_at),
           suggestedAction: { kind: "quote", label: "Revisar y enviar", conversationId: conv.id },
@@ -300,7 +321,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           companyName: cust.company ?? null,
           conversationId: conv.id,
           reason: "Lead nuevo activo",
-          reasonDetail: "Lead nuevo con mensajes recientes. Recomendado calificar.",
+          reasonDetail: `Mensaje entrante ${elapsed(last?.created_at)} · sin calificar.`,
           intent,
           urgency: "baja",
           probability,
