@@ -620,7 +620,7 @@ function AgentsTab({ a }: { a: AiAnalytics }) {
           </div>
           <div className="space-y-2 text-xs">
             <MiniBar label="Aceptadas" value={ag.accepted} total={ag.suggestions} tone="emerald" />
-            <MiniBar label="Descartadas" value={ag.dismissed} total={ag.suggestions} tone="rose" />
+            <MiniBar label="Descartadas" value={ag.discarded} total={ag.suggestions} tone="rose" />
             <MiniBar label="Pendientes" value={ag.pending} total={ag.suggestions} tone="amber" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
