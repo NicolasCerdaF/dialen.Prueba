@@ -114,9 +114,9 @@ export const getDashboardData = createServerFn({ method: "GET" })
         openOpportunities: 0,
         openOpportunitiesValue: 0,
         quotesSent7d: 0,
-        quotesSent7dDelta: 0,
+        quotesSent7dDelta: null,
         salesMonth: 0,
-        salesMonthCurrency: "USD",
+        salesMonthCurrency: null,
       },
       attention: [
         { id: "unresponded", label: "Sin responder", count: 0, items: [] },
