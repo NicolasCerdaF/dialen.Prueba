@@ -58,28 +58,7 @@ export function chunkText(text: string): string[] {
 }
 
 async function embedBatch(inputs: string[], scope: string, companyId: string): Promise<number[][]> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
-  const res = await aiFetch(
-    EMBEDDINGS_URL,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: inputs,
-        dimensions: EMBEDDING_DIMS,
-      }),
-    },
-    { scope, companyId },
-  );
-  const json: any = await res.json();
-  const data: any[] = json?.data ?? [];
-  return data.map((d) => d.embedding as number[]);
+  return embedTexts(inputs, { scope, companyId });
 }
 
 // ---------- Listar ----------
