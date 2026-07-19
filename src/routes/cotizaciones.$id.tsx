@@ -446,9 +446,9 @@ function QuoteDetailPage() {
                     <Save className="mr-1.5 h-3.5 w-3.5" />
                     {saving ? "Guardando…" : "Guardar"}
                   </Button>
-                  <Button size="sm" onClick={onSend}>
+                  <Button size="sm" onClick={() => setConfirmSend(true)} disabled={sending}>
                     <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Enviar por WhatsApp
+                    {sending ? "Enviando…" : "Enviar por WhatsApp"}
                   </Button>
                 </>
               )}
