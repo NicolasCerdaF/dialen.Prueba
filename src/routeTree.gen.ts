@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
 import { Route as LoginRouteImport } from './routes/login'
@@ -33,6 +34,11 @@ import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
 
+const WhatsappRoute = WhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OportunidadesRoute = OportunidadesRouteImport.update({
   id: '/oportunidades',
   path: '/oportunidades',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
     | '/cotizaciones/$id'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
     | '/cotizaciones/$id'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
     | '/cotizaciones/$id'
@@ -323,6 +335,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MetricasIaRoute: typeof MetricasIaRoute
   OportunidadesRoute: typeof OportunidadesRoute
+  WhatsappRoute: typeof WhatsappRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
   ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -330,6 +343,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/whatsapp': {
+      id: '/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oportunidades': {
       id: '/oportunidades'
       path: '/oportunidades'
@@ -548,6 +568,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MetricasIaRoute: MetricasIaRoute,
   OportunidadesRoute: OportunidadesRoute,
+  WhatsappRoute: WhatsappRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
   ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
