@@ -148,6 +148,19 @@ function QuoteDetailPage() {
   const [items, setItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [globalTaxPct, setGlobalTaxPct] = useState<number>(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<QuoteStatus | null>(null);
+  const [followupOpen, setFollowupOpen] = useState(false);
+  const [followupHours, setFollowupHours] = useState<number>(48);
+  const [followupNote, setFollowupNote] = useState("");
+
+  useRealtimeInvalidate({
+    channel: `quote-${id}`,
+    tables: ["quotes", "quote_events"],
+    invalidate: [["quote", id], ["quote-events", id]],
+    filter: `id=eq.${id}`,
+    enabled: !!id,
+  });
 
   useEffect(() => {
     if (!quote) return;
