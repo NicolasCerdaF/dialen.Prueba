@@ -1212,7 +1212,8 @@ function RunRow({ r, showAutomation }: { r: AutomationRun | GlobalRun; showAutom
           <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px]">{gr.automation_name}</span>
         )}
         <span className="ml-auto text-muted-foreground">
-          {new Date(r.started_at).toLocaleString()} · {r.duration_ms ?? 0}ms
+          {new Date(r.started_at).toLocaleString()}
+          {typeof r.duration_ms === "number" && r.duration_ms > 0 && ` · ${r.duration_ms}ms`}
         </span>
       </div>
       {r.skip_reason && <div className="mt-1 text-muted-foreground">{r.skip_reason}</div>}
@@ -1240,7 +1241,11 @@ function RunRow({ r, showAutomation }: { r: AutomationRun | GlobalRun; showAutom
           </Link>
         )}
         {r.conversation_id && (
-          <Link to="/conversaciones" search={{ id: r.conversation_id } as any} className="inline-flex items-center gap-0.5 text-primary hover:underline">
+          <Link
+            to="/conversaciones"
+            hash={`conv=${r.conversation_id}`}
+            className="inline-flex items-center gap-0.5 text-primary hover:underline"
+          >
             <MessagesSquare className="h-3 w-3" /> Conversación
           </Link>
         )}
