@@ -138,9 +138,9 @@ export const getDirectorSummary = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const empty: DirectorSummary = {
       totals: {
-        pending: 0, done: 0, snoozed: 0, dismissed: 0,
-        potentialValue: 0, currency: "USD", risks: 0,
+        pending: 0, done: 0, snoozed: 0, dismissed: 0, risks: 0,
       },
+      potentialByCurrency: {},
       byCategory: {
         contactar: 0, productos: 0, detenidas: 0, objeciones: 0,
         campanas: 0, vendedores: 0, hot: 0, riesgo: 0,
@@ -162,17 +162,20 @@ export const getDirectorSummary = createServerFn({ method: "GET" })
         .select("status").eq("company_id", profile.company_id).maybeSingle(),
     ]);
 
-    const s = { ...empty };
+    const s: DirectorSummary = { ...empty, potentialByCurrency: {}, byCategory: { ...empty.byCategory }, totals: { ...empty.totals } };
     s.hasWhatsapp = channel?.status === "connected";
     let lastAt = 0;
     for (const r of rows ?? []) {
       const st = r.status as Status;
-      s.totals[st] = (s.totals[st] ?? 0) + 1;
+      if (st in s.totals) (s.totals as any)[st] = ((s.totals as any)[st] ?? 0) + 1;
       if (st === "pending") {
         s.byCategory[r.category as InsightCategory] =
           (s.byCategory[r.category as InsightCategory] ?? 0) + 1;
-        s.totals.potentialValue += Number(r.potential_value ?? 0);
-        s.totals.currency = r.currency || s.totals.currency;
+        const val = Number(r.potential_value ?? 0);
+        if (val > 0) {
+          const cur = r.currency || "USD";
+          s.potentialByCurrency[cur] = (s.potentialByCurrency[cur] ?? 0) + val;
+        }
         if (r.severity === "high" || r.severity === "critical") s.totals.risks += 1;
       }
       const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
