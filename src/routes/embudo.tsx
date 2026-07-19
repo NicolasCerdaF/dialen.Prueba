@@ -1364,18 +1364,24 @@ function Kpi({
   label,
   value,
   accent,
+  hint,
 }: {
   icon: typeof DollarSign;
   label: string;
   value: string;
   accent?: string;
+  hint?: string;
 }) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-2">
+    <div className="min-w-0 rounded-lg border bg-card px-3 py-2">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" /> {label}
+        <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{label}</span>
       </div>
-      <div className={cn("mt-0.5 font-display text-lg font-semibold", accent)}>{value}</div>
+      <div className={cn("mt-0.5 truncate font-display text-lg font-semibold tabular-nums", accent)} title={value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
