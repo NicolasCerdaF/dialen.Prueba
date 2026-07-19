@@ -419,7 +419,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Abrir conversación",
           to: "/",
-          search: { conversationId: c.id },
+          hash: `conv=${c.id}`,
         },
       });
     }
