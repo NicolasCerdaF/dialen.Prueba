@@ -556,7 +556,7 @@ function TimelineItem({
   teamMap: Record<string, string>;
 }) {
   const date = new Date(entry.created_at);
-  const iconByKind: Record<string, JSX.Element> = {
+  const iconByKind: Record<string, React.ReactNode> = {
     note: <StickyNote className="h-3.5 w-3.5" />,
     event: <History className="h-3.5 w-3.5" />,
     message: <MessageSquare className="h-3.5 w-3.5" />,
