@@ -257,7 +257,8 @@ async function computeTotalsBlock(supabase: any, companyId: string, from: string
     openOpportunities: 0,
   };
 
-  return { totals, quotes: qs, conversations: cvs, customers: cus, messages: msgs, sugs: sg };
+  return { totals, quotes: qsCur, conversations: cvs, customers: cus, messages: msgs, sugs: sg };
+
 }
 
 export const getExecutiveDashboard = createServerFn({ method: "POST" })
