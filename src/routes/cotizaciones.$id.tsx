@@ -304,13 +304,17 @@ function QuoteDetailPage() {
 
   async function onSend() {
     if (!quote) return;
+    setSending(true);
     try {
       const res = await sendFn({ data: { id: quote.id, origin: window.location.origin } });
       toast.success(`Enviada por WhatsApp (${res.status})`);
       refetch();
       refetchEvents();
+      setConfirmSend(false);
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo enviar");
+    } finally {
+      setSending(false);
     }
   }
   async function onDuplicate() {
