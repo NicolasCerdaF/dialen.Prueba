@@ -250,7 +250,14 @@ function PriorityCard({ priority, rank }: { priority: AiPriority; rank: number }
         </span>
       </div>
       <button
-        onClick={() => navigate({ to: priority.action.to as string, search: priority.action.search as never, params: priority.action.search as never })}
+        onClick={() =>
+          navigate({
+            to: priority.action.to as string,
+            params: (priority.action.params ?? {}) as never,
+            search: (priority.action.search ?? {}) as never,
+            hash: priority.action.hash,
+          })
+        }
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-600"
       >
         {priority.action.label}
