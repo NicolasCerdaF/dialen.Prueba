@@ -820,9 +820,9 @@ function Kpi({
         <Icon className={`h-3.5 w-3.5 ${toneCls}`} />
         {label}
       </div>
-      <div className="mt-1 font-display text-2xl font-semibold">{value}</div>
-      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{hint}</span>
+      <div className="mt-1 truncate font-display text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="truncate">{hint}</span>
         {typeof delta === "number" && delta !== 0 && (
           <span
             className={cn(
