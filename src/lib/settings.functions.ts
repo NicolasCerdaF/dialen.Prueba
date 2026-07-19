@@ -183,14 +183,15 @@ export const getAuditTrail = createServerFn({ method: "GET" })
       { table: "conversation_events", entity: "Conversación" },
       { table: "knowledge_document_events", entity: "Conocimiento" },
     ] as const;
+    const limit = data.limit;
     const results = await Promise.all(
       tables.map(async ({ table, entity }) => {
-        const { data } = await supabase
+        const { data: rows } = await (supabase as any)
           .from(table)
           .select("id, event_type, created_at, actor_id, payload")
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
-          .limit(data.limit);
+          .limit(limit);
         return (data ?? []).map((row: any) => ({
           id: `${table}:${row.id}`,
           entity,
