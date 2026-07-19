@@ -702,7 +702,7 @@ function AutomationEditor({ automationId, onClose }: { automationId: string; onC
                     tab === t ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-muted")}>
                   {t === "builder" ? "Constructor"
                     : t === "history" ? `Historial (${runs.length})`
-                    : `Versiones (${automation?.version ?? 1})`}
+                    : `Versiones${automation?.version ? ` (v${automation.version})` : ""}`}
                 </button>
               ))}
               <div className="ml-auto flex items-center gap-1">
