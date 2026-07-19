@@ -900,16 +900,30 @@ function KanbanView({
       {STATUS_ORDER.map((s) => {
         const M = STATUS_META[s];
         const list = byStatus[s];
-        const sum = list.reduce((a, q) => a + Number(q.total ?? 0), 0);
+        // Agrupa por moneda para no sumar MXN + USD como si fueran lo mismo.
+        const sumByCur = new Map<string, number>();
+        for (const q of list) {
+          const cur = q.currency || "USD";
+          sumByCur.set(cur, (sumByCur.get(cur) ?? 0) + Number(q.total ?? 0));
+        }
+        const curEntries = [...sumByCur.entries()].sort((a, b) => b[1] - a[1]);
+        const top = curEntries[0];
+        const rest = curEntries.length - 1;
         return (
           <div key={s} className="flex w-72 flex-none flex-col rounded-lg border border-border/60 bg-card/30">
             <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <M.icon className="h-3.5 w-3.5" />
-                <span className="text-sm font-medium">{M.label}</span>
-                <span className="text-xs text-muted-foreground">({list.length})</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <M.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate text-sm font-medium">{M.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">({list.length})</span>
               </div>
-              <span className="text-xs font-medium">{money(sum)}</span>
+              <span
+                className="shrink-0 text-xs font-medium tabular-nums"
+                title={curEntries.map(([c, v]) => `${money(v, c)}`).join(" · ")}
+              >
+                {top ? money(top[1], top[0]) : "—"}
+                {rest > 0 && <span className="ml-1 text-muted-foreground">+{rest}</span>}
+              </span>
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto p-2">
               {list.length === 0 && (
