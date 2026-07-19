@@ -211,11 +211,15 @@ function EmbudoPage() {
     const decided = won.length + lost.length;
     const conversion = decided ? (won.length / decided) * 100 : 0;
     const avgTicket = won.length ? wonValue / won.length : 0;
-    // Weighted forecast = Σ estimated_value × probability (open only)
-    const weighted = open.reduce((s, c) => {
-      const p = aggMap.get(c.id)?.insight?.probability ?? 0;
-      return s + Number(c.estimated_value ?? 0) * Number(p);
-    }, 0);
+    // Ponderado IA: sólo abiertos CON probabilidad IA real. Sin probabilidad no contribuye.
+    let weighted = 0;
+    let weightedCovered = 0;
+    for (const c of open) {
+      const p = aggMap.get(c.id)?.insight?.probability;
+      if (p == null) continue;
+      weighted += Number(c.estimated_value ?? 0) * Number(p);
+      weightedCovered++;
+    }
     return {
       open: open.length,
       won: won.length,
@@ -225,6 +229,7 @@ function EmbudoPage() {
       conversion,
       avgTicket,
       weighted,
+      weightedCovered,
     };
   }, [filtered, aggMap]);
 
@@ -243,10 +248,11 @@ function EmbudoPage() {
       const ins = aggMap.get(c.id)?.insight;
       if (ins?.probability != null && Number(ins.probability) >= 0.7) hot++;
       if (ins?.churn_risk != null && Number(ins.churn_risk) >= 0.6) risk++;
-      const na = (c as any).next_activity_at as string | null | undefined;
+      const na = c.next_activity_at;
       if (na) {
         const d = new Date(na).getTime();
-        if (d - now < 86_400_000 && d >= now - 86_400_000) followupToday++;
+        // Cuenta seguimientos vencidos o dentro de las próximas 24 h.
+        if (d <= now + 86_400_000) followupToday++;
       }
     }
     return { stagnant, unassigned, hot, risk, followupToday };
@@ -351,7 +357,7 @@ function EmbudoPage() {
         a?.insight?.probability ?? "",
         a?.insight?.intent ?? "",
         a?.quotes.active_number ?? "",
-        (c as any).next_activity_at ?? "",
+        c.next_activity_at ?? "",
       ];
     });
     const csv = [header, ...rows]
@@ -398,12 +404,32 @@ function EmbudoPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-7">
             <Kpi icon={DollarSign} label="Pipeline" value={fmtMoney(kpis.pipelineValue)} accent="text-emerald-400" />
-            <Kpi icon={Sparkles} label="Ponderado IA" value={fmtMoney(kpis.weighted)} accent="text-primary" />
+            <Kpi
+              icon={Sparkles}
+              label="Ponderado IA"
+              value={fmtMoney(kpis.weighted)}
+              accent="text-primary"
+              hint={
+                kpis.weightedCovered === 0
+                  ? "Sin señal IA aún"
+                  : `${kpis.weightedCovered} con probabilidad IA`
+              }
+            />
             <Kpi icon={Target} label="Oportunidades" value={String(kpis.open)} />
             <Kpi icon={Trophy} label="Ganadas" value={String(kpis.won)} accent="text-emerald-400" />
             <Kpi icon={XCircle} label="Perdidas" value={String(kpis.lost)} accent="text-rose-400" />
-            <Kpi icon={Percent} label="Conversión" value={`${kpis.conversion.toFixed(1)}%`} />
-            <Kpi icon={TrendingUp} label="Ticket prom." value={fmtMoney(kpis.avgTicket)} />
+            <Kpi
+              icon={Percent}
+              label="Conversión"
+              value={kpis.won + kpis.lost === 0 ? "—" : `${kpis.conversion.toFixed(1)}%`}
+              hint={kpis.won + kpis.lost === 0 ? "Sin decisiones aún" : `${kpis.won + kpis.lost} decididas`}
+            />
+            <Kpi
+              icon={TrendingUp}
+              label="Ticket prom."
+              value={kpis.won === 0 ? "—" : fmtMoney(kpis.avgTicket)}
+              hint={kpis.won === 0 ? "Sin ganadas aún" : undefined}
+            />
           </div>
 
           {/* Alerts strip */}
@@ -976,7 +1002,7 @@ function CustomerCard({
           {unread > 0 && conversationId && (
             <Link
               to="/conversaciones"
-              search={{ conversation: conversationId } as any}
+              hash={`conv=${conversationId}`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-1.5 py-0.5 text-primary"
             >
@@ -1151,7 +1177,7 @@ function ForecastView({
       const k = normalizeStage(c.stage);
       const kind = getStage(k)?.kind;
       if (kind !== "open") continue;
-      const dateStr = (c as any).next_activity_at ?? c.updated_at;
+      const dateStr = c.next_activity_at ?? c.updated_at;
       const d = dateStr ? new Date(dateStr) : new Date();
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -1339,18 +1365,24 @@ function Kpi({
   label,
   value,
   accent,
+  hint,
 }: {
   icon: typeof DollarSign;
   label: string;
   value: string;
   accent?: string;
+  hint?: string;
 }) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-2">
+    <div className="min-w-0 rounded-lg border bg-card px-3 py-2">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" /> {label}
+        <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{label}</span>
       </div>
-      <div className={cn("mt-0.5 font-display text-lg font-semibold", accent)}>{value}</div>
+      <div className={cn("mt-0.5 truncate font-display text-lg font-semibold tabular-nums", accent)} title={value}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }

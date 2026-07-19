@@ -116,8 +116,8 @@ export function CustomerQuickPanel({
       estimated_value: customer.estimated_value?.toString() ?? "",
       tags: (customer.tags ?? []).join(", "),
       notes: customer.notes ?? "",
-      next_activity_at: (customer as any).next_activity_at
-        ? new Date((customer as any).next_activity_at).toISOString().slice(0, 16)
+      next_activity_at: customer.next_activity_at
+        ? new Date(customer.next_activity_at).toISOString().slice(0, 16)
         : "",
     });
   }, [customer]);
