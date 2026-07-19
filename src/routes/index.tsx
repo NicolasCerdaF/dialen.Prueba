@@ -1509,10 +1509,11 @@ function RecommendedProducts({
                     <div className="truncate text-[12px] font-semibold">
                       {r.product?.name ?? "Producto"}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {r.product?.currency ?? "USD"}{" "}
-                      {Number(r.product?.price ?? 0).toLocaleString()}
-                    </div>
+                    {r.product?.price != null && r.product?.currency ? (
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.product.currency} {Number(r.product.price).toLocaleString()}
+                      </div>
+                    ) : null}
                   </div>
                   {r.score != null && (
                     <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium">
@@ -1536,13 +1537,6 @@ function RecommendedProducts({
                     className="flex-1 rounded-md bg-primary py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
                   >
                     Ofrecer
-                  </button>
-                  <button
-                    disabled
-                    title="Próximamente"
-                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground opacity-60"
-                  >
-                    Cotizar
                   </button>
                   <button
                     onClick={() => ignore(r.id)}
