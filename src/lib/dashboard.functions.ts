@@ -150,6 +150,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
       { data: customers },
       { data: quotes },
       { data: recentMessages },
+      { data: quoteIntents },
     ] = await Promise.all([
       supabase
         .from("whatsapp_channels")
@@ -181,6 +182,14 @@ export const getDashboardData = createServerFn({ method: "GET" })
         .gte("created_at", weekAgo)
         .order("created_at", { ascending: false })
         .limit(3000),
+      supabase
+        .from("ai_suggestions")
+        .select("conversation_id, probability, created_at")
+        .eq("company_id", companyId)
+        .is("used_at", null)
+        .gte("probability", 0.5)
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
 
     const convoList = convos ?? [];
