@@ -277,9 +277,9 @@ function PulseGrid({
     openOpportunities: number;
     openOpportunitiesValue: number;
     quotesSent7d: number;
-    quotesSent7dDelta: number;
+    quotesSent7dDelta: number | null;
     salesMonth: number;
-    salesMonthCurrency: string;
+    salesMonthCurrency: string | null;
   };
 }) {
   return (
@@ -309,7 +309,11 @@ function PulseGrid({
       />
       <KpiTile
         label="Ventas del mes"
-        value={`${pulse.salesMonth.toLocaleString()} ${pulse.salesMonthCurrency}`}
+        value={
+          pulse.salesMonth > 0 && pulse.salesMonthCurrency
+            ? `${pulse.salesMonth.toLocaleString()} ${pulse.salesMonthCurrency}`
+            : "—"
+        }
         icon={DollarSign}
         tone="success"
         to="/dashboard-ejecutivo"
