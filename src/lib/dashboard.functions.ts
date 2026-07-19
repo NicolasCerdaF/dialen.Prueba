@@ -444,7 +444,7 @@ export const getDashboardData = createServerFn({ method: "GET" })
         action: {
           label: "Ver cliente",
           to: "/clientes/$id",
-          search: { id: c.id },
+          params: { id: c.id },
         },
       });
     }
