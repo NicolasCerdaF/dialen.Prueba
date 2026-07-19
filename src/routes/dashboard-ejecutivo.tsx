@@ -276,66 +276,91 @@ function OverviewTab({
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Kpi
           label="Ingresos"
-          value={fmtMoney(t.revenue, cur)}
-          hint={`${t.quotesAccepted} cotizaciones ganadas`}
-          delta={d.revenue}
+          value={t.revenue > 0 ? fmtMoney(t.revenue, cur) : "—"}
+          hint={
+            t.quotesAccepted > 0
+              ? `${t.quotesAccepted} cotizaciones ganadas`
+              : "Sin ventas cerradas aún"
+          }
+          delta={t.revenue > 0 ? d.revenue : undefined}
           icon={DollarSign}
           tone="emerald"
         />
         <Kpi
           label="Conversión"
-          value={`${t.conversionRate}%`}
-          hint={`${t.wonCustomers}/${t.newCustomers} nuevos clientes`}
-          delta={d.conversionRate}
+          value={t.newCustomers > 0 ? `${t.conversionRate}%` : "—"}
+          hint={
+            t.newCustomers > 0
+              ? `${t.wonCustomers}/${t.newCustomers} nuevos clientes`
+              : "Sin nuevos clientes en el periodo"
+          }
+          delta={t.newCustomers > 0 ? d.conversionRate : undefined}
           deltaSuffix=" pts"
           icon={Target}
         />
         <Kpi
           label="Aceptación"
-          value={`${t.acceptRate}%`}
-          hint={`${t.quotesAccepted} de ${t.quotesSent} enviadas`}
-          delta={d.acceptRate}
+          value={t.quotesSent > 0 ? `${t.acceptRate}%` : "—"}
+          hint={
+            t.quotesSent > 0
+              ? `${t.quotesAccepted} de ${t.quotesSent} enviadas`
+              : "Sin cotizaciones enviadas"
+          }
+          delta={t.quotesSent > 0 ? d.acceptRate : undefined}
           deltaSuffix=" pts"
           icon={Percent}
-          tone={t.acceptRate >= 30 ? "emerald" : "amber"}
+          tone={t.quotesSent > 0 && t.acceptRate >= 30 ? "emerald" : "amber"}
         />
         <Kpi
           label="Ticket promedio"
-          value={fmtMoney(t.avgTicket, cur)}
-          hint="Valor medio de venta"
-          delta={d.avgTicket}
+          value={t.quotesAccepted > 0 ? fmtMoney(t.avgTicket, cur) : "—"}
+          hint={t.quotesAccepted > 0 ? "Valor medio de venta" : "Sin ventas cerradas"}
+          delta={t.quotesAccepted > 0 ? d.avgTicket : undefined}
           icon={Wallet}
         />
         <Kpi
           label="Tiempo de respuesta"
           value={fmtDuration(t.avgResponseSeconds)}
-          hint={`${t.responseUnderSlaPct}% bajo 15 min`}
-          delta={-d.avgResponseSeconds}
+          hint={
+            t.avgResponseSeconds > 0
+              ? `${t.responseUnderSlaPct}% bajo 15 min`
+              : "Sin conversaciones respondidas"
+          }
+          delta={t.avgResponseSeconds > 0 ? -d.avgResponseSeconds : undefined}
           icon={Timer}
-          tone={t.avgResponseSeconds < 900 ? "emerald" : "amber"}
+          tone={t.avgResponseSeconds > 0 && t.avgResponseSeconds < 900 ? "emerald" : "amber"}
         />
         <Kpi
           label="Clientes nuevos"
-          value={t.newCustomers.toLocaleString()}
-          hint="Ingresos al CRM"
-          delta={d.newCustomers}
+          value={t.newCustomers > 0 ? t.newCustomers.toLocaleString() : "—"}
+          hint={t.newCustomers > 0 ? "Ingresos al CRM" : "Sin nuevos leads"}
+          delta={t.newCustomers > 0 ? d.newCustomers : undefined}
           icon={Users}
         />
         <Kpi
           label="Pipeline abierto"
-          value={fmtMoney(t.openPipeline, cur)}
-          hint={`${t.openOpportunities} oportunidades activas`}
+          value={t.openOpportunities > 0 ? fmtMoney(t.openPipeline, cur) : "—"}
+          hint={
+            t.openOpportunities > 0
+              ? `${t.openOpportunities} oportunidades activas`
+              : "Sin oportunidades abiertas"
+          }
           icon={TrendingUp}
           tone="violet"
         />
         <Kpi
           label="Forecast ponderado"
-          value={fmtMoney(t.weightedPipeline, cur)}
-          hint="Ajustado por probabilidad de etapa"
+          value={t.openOpportunities > 0 ? fmtMoney(t.weightedPipeline, cur) : "—"}
+          hint={
+            t.openOpportunities > 0
+              ? "Ajustado por probabilidad de etapa"
+              : "Sin oportunidades para proyectar"
+          }
           icon={Sparkles}
           tone="violet"
         />
       </div>
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
