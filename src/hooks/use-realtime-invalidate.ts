@@ -17,7 +17,8 @@ export type RealtimeTable =
   | "product_recommendations"
   | "products"
   | "product_customers"
-  | "product_events";
+  | "product_events"
+  | "director_insights";
 
 
 type Options = {
