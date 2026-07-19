@@ -50,27 +50,13 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardPage() {
   const fetcher = useServerFn(getDashboardData);
-  const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(dashboardQueryOptions(fetcher));
 
-  // Realtime: invalidate on message/quote/conversation changes
-  useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "quotes" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
+  useRealtimeInvalidate({
+    channel: "dashboard-live",
+    tables: ["messages", "quotes", "conversations", "customers", "ai_suggestions"],
+    invalidate: [["dashboard", "overview"]],
+  });
 
   return (
     <AppShell>
