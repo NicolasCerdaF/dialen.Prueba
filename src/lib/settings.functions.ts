@@ -80,7 +80,7 @@ export const updateMyProfile = createServerFn({ method: "POST" })
     if (data.fullName !== undefined) update.full_name = data.fullName;
     if (data.avatarUrl !== undefined) update.avatar_url = data.avatarUrl;
     if (Object.keys(update).length === 0) return { ok: true };
-    const { error } = await supabase.from("profiles").update(update).eq("id", userId);
+    const { error } = await supabase.from("profiles").update(update as any).eq("id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
