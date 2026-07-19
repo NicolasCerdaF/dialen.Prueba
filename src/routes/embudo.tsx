@@ -555,13 +555,14 @@ function AlertsStrip({
   onStagnant: () => void;
   onUnassigned: () => void;
 }) {
-  const items: { key: string; label: string; count: number; tone: "amber" | "rose" | "emerald" | "primary"; onClick?: () => void; icon: typeof AlertTriangle }[] = [
+  type Item = { key: string; label: string; count: number; tone: "amber" | "rose" | "emerald" | "primary"; onClick?: () => void; icon: typeof AlertTriangle };
+  const items: Item[] = ([
     { key: "hot", label: "Alta probabilidad", count: alerts.hot, tone: "emerald", icon: Sparkles },
     { key: "followup", label: "Seguimientos hoy", count: alerts.followupToday, tone: "primary", icon: Clock },
     { key: "stagnant", label: "Estancados", count: alerts.stagnant, tone: "amber", icon: AlertTriangle, onClick: onStagnant },
     { key: "unassigned", label: "Sin responsable", count: alerts.unassigned, tone: "amber", icon: UserPlus, onClick: onUnassigned },
     { key: "risk", label: "Riesgo de pérdida", count: alerts.risk, tone: "rose", icon: AlertTriangle },
-  ].filter((i) => i.count > 0);
+  ] as Item[]).filter((i) => i.count > 0);
   if (!items.length) return null;
   const toneClasses = {
     amber: "border-amber-500/40 bg-amber-500/10 text-amber-500 hover:bg-amber-500/15",
