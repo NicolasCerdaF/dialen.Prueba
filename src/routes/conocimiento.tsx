@@ -927,7 +927,7 @@ function DocumentSheet({
   const [busy, setBusy] = useState<"save" | "summarize" | "reembed" | null>(null);
 
   // Sync state when doc loads
-  useMemo(() => {
+  useEffect(() => {
     if (doc) {
       setTitle(doc.title ?? "");
       setDescription(doc.description ?? "");
@@ -935,7 +935,7 @@ function DocumentSheet({
       setTagsStr((doc.tags ?? []).join(", "));
       setFolder(doc.folder ?? "");
     }
-    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc?.id]);
 
   async function save() {
