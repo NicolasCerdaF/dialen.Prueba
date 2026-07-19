@@ -79,7 +79,20 @@ type Conversation = {
   customers: { name: string | null; phone: string; tags: string[] | null; stage: string | null } | null;
 };
 
-type FilterKey = "all" | "mine" | "unassigned" | "unread" | "resolved";
+type FilterKey =
+  | "all"
+  | "mine"
+  | "unassigned"
+  | "unread"
+  | "resolved"
+  | "stage:nuevo_lead"
+  | "stage:interesado"
+  | "stage:cotizado"
+  | "stage:negociando"
+  | "stage:ganado"
+  | "stage:perdido";
+
+import { normalizeStage, getStage, STAGES, STAGE_STYLES } from "@/lib/pipeline";
 
 function InboxPage() {
   const qc = useQueryClient();
@@ -182,8 +195,14 @@ function InboxPage() {
   }, [qc, orchestrateFn]);
 
   const counts = useMemo(() => {
-    const c = { all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0 };
+    const c = {
+      all: 0, mine: 0, unassigned: 0, unread: 0, resolved: 0,
+      nuevo_lead: 0, interesado: 0, cotizado: 0, negociando: 0, ganado: 0, perdido: 0,
+    };
     for (const x of convos) {
+      const stage = normalizeStage(x.customers?.stage);
+      if (stage === "ganado") c.ganado++;
+      if (stage === "perdido") c.perdido++;
       if (x.status === "resolved" || x.status === "closed") {
         c.resolved++;
         continue;
@@ -192,6 +211,10 @@ function InboxPage() {
       if (x.assignee_id === user?.id) c.mine++;
       if (!x.assignee_id) c.unassigned++;
       if (x.unread_count > 0) c.unread++;
+      if (stage === "nuevo_lead") c.nuevo_lead++;
+      if (stage === "interesado") c.interesado++;
+      if (stage === "cotizado") c.cotizado++;
+      if (stage === "negociando") c.negociando++;
     }
     return c;
   }, [convos, user?.id]);
@@ -199,10 +222,18 @@ function InboxPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return convos.filter((c) => {
-      if (filter === "resolved") {
+      const stage = normalizeStage(c.customers?.stage);
+      if (filter.startsWith("stage:")) {
+        const target = filter.slice(6);
+        if (stage !== target) return false;
+        if (target !== "ganado" && target !== "perdido") {
+          if (c.status === "resolved" || c.status === "closed") return false;
+        }
+      } else if (filter === "resolved") {
         if (c.status !== "resolved" && c.status !== "closed") return false;
       } else {
         if (c.status === "resolved" || c.status === "closed") return false;
+        if (stage === "ganado" || stage === "perdido") return false;
         if (filter === "mine" && c.assignee_id !== user?.id) return false;
         if (filter === "unassigned" && c.assignee_id) return false;
         if (filter === "unread" && c.unread_count <= 0) return false;
@@ -298,31 +329,61 @@ function InboxPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1 px-3 pb-2">
-            {(
-              [
-                ["all", "Todas", counts.all],
-                ["mine", "Míos", counts.mine],
-                ["unassigned", "Sin asignar", counts.unassigned],
-                ["unread", "Sin leer", counts.unread],
-                ["resolved", "Resueltos", counts.resolved],
-              ] as const
-            ).map(([k, label, n]) => (
-              <button
-                key={k}
-                onClick={() => setFilter(k as FilterKey)}
-                className={cn(
-                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
-                  filter === k
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {label}
-                <span className="opacity-70">{n}</span>
-              </button>
-            ))}
+          <div className="space-y-1.5 px-3 pb-2">
+            <div className="flex flex-wrap gap-1">
+              {(
+                [
+                  ["all", "Todas", counts.all],
+                  ["mine", "Míos", counts.mine],
+                  ["unassigned", "Sin asignar", counts.unassigned],
+                  ["unread", "Sin leer", counts.unread],
+                  ["resolved", "Resueltos", counts.resolved],
+                ] as const
+              ).map(([k, label, n]) => (
+                <button
+                  key={k}
+                  onClick={() => setFilter(k as FilterKey)}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
+                    filter === k
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                  <span className="opacity-70">{n}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1 border-t border-border/60 pt-1.5">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70 self-center pr-1">
+                Estado
+              </span>
+              {STAGES.map((s) => {
+                const key = `stage:${s.key}` as FilterKey;
+                const n = counts[s.key as keyof typeof counts] as number;
+                const active = filter === key;
+                const style = STAGE_STYLES[s.color];
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setFilter(key)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition",
+                      active
+                        ? cn(style.bar, "border-transparent text-white")
+                        : "border-border bg-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-white/80" : style.bar)} />
+                    {s.label}
+                    <span className="opacity-70">{n}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
 
           <ul className="flex-1 overflow-y-auto">
             {filtered.map((c) => {
@@ -362,6 +423,20 @@ function InboxPage() {
                       <span className="truncate text-xs text-muted-foreground">
                         {c.customers?.phone}
                       </span>
+                      {(() => {
+                        const st = getStage(normalizeStage(c.customers?.stage));
+                        if (!st) return null;
+                        const style = STAGE_STYLES[st.color];
+                        return (
+                          <span className={cn(
+                            "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                            style.badge,
+                          )}>
+                            <span className={cn("h-1 w-1 rounded-full", style.bar)} />
+                            {st.label}
+                          </span>
+                        );
+                      })()}
                       {c.is_demo && (
                         <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
                           Demo

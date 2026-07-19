@@ -30,6 +30,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 type ExistingRoute =
   | "/"
+  | "/conversaciones"
   | "/dashboard"
   | "/dashboard-ejecutivo"
   | "/bandeja-ia"
@@ -67,7 +68,7 @@ const navGroups: NavGroup[] = [
     icon: Home,
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
-      { label: "Conversaciones", icon: MessageSquare, to: "/" },
+      { label: "Conversaciones", icon: MessageSquare, to: "/conversaciones" },
       { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
     ],
   },
