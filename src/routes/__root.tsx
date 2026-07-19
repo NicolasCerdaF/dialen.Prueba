@@ -13,6 +13,9 @@ import {
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { ThemeProvider } from "@/lib/theme";
+
+const themeInitScript = `try{var t=localStorage.getItem('dialen-theme');if(t!=='light'){document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}`;
 
 function NotFoundComponent() {
   return (
