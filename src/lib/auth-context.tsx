@@ -38,10 +38,11 @@ async function ensureWorkspaceForUser(user: User, profile: Profile | null): Prom
       .maybeSingle();
 
     if (company?.owner_id === user.id) {
-      await supabase.from("user_roles").upsert(
-        { user_id: user.id, company_id: profile.company_id, role: "admin" },
-        { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
-      );
+      await supabase.from("user_roles").insert({
+        user_id: user.id,
+        company_id: profile.company_id,
+        role: "admin",
+      });
     }
 
     return profile;
@@ -84,10 +85,11 @@ async function ensureWorkspaceForUser(user: User, profile: Profile | null): Prom
     if (error) throw error;
   }
 
-  await supabase.from("user_roles").upsert(
-    { user_id: user.id, company_id: companyId, role: "admin" },
-    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
-  );
+  await supabase.from("user_roles").insert({
+    user_id: user.id,
+    company_id: companyId,
+    role: "admin",
+  });
 
   return nextProfile;
 }
