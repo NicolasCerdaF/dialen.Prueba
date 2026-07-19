@@ -752,6 +752,82 @@ function QuoteDetailPage() {
           </aside>
         </div>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar cotización</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán los ítems y el historial.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmStatus} onOpenChange={(o) => !o && setConfirmStatus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Cambiar estado a {confirmStatus ? STATUS_META[confirmStatus].label.toLowerCase() : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              El cambio se registrará en el historial y disparará automatizaciones asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmStatus && onStatus(confirmStatus)}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agendar recordatorio</DialogTitle>
+            <DialogDescription>
+              Se creará una tarea sobre el cliente para retomar el contacto.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">En cuántas horas</label>
+              <Input
+                type="number"
+                min={1}
+                value={followupHours}
+                onChange={(e) => setFollowupHours(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Nota (opcional)</label>
+              <Textarea
+                value={followupNote}
+                onChange={(e) => setFollowupNote(e.target.value)}
+                rows={3}
+                placeholder="Confirmar decisión, resolver dudas…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFollowupOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={onScheduleFollowup}>Agendar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
