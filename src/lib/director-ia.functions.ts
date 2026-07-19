@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizeStage } from "@/lib/pipeline";
 import { log } from "@/lib/logger";
-import { log } from "@/lib/logger";
 
 /**
  * Director Comercial IA — real backend.
