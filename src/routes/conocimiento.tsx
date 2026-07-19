@@ -1360,6 +1360,7 @@ function AnalyticsPanel({
     );
   }
   const maxBucket = Math.max(1, ...agg.buckets.map((b: any) => b.count));
+  const hasUsage = (agg.usage_7d ?? 0) > 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -1367,25 +1368,32 @@ function AnalyticsPanel({
         <div className="mb-3 flex items-center gap-2 text-sm font-medium">
           <TrendingUp className="h-4 w-4 text-violet-500" /> Citas por día (7d)
         </div>
-        <div className="flex h-32 items-end gap-2">
-          {agg.buckets.map((b: any) => (
-            <div key={b.day} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className="w-full rounded-t bg-violet-500/70"
-                style={{ height: `${(b.count / maxBucket) * 100}%` }}
-                title={`${b.count} citas`}
-              />
-              <div className="text-[10px] text-muted-foreground">
-                {new Date(b.day).toLocaleDateString(undefined, { weekday: "short" })}
+        {hasUsage ? (
+          <div className="flex h-32 items-end gap-2">
+            {agg.buckets.map((b: any) => (
+              <div key={b.day} className="flex flex-1 flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t bg-violet-500/70"
+                  style={{ height: `${Math.max(2, (b.count / maxBucket) * 100)}%` }}
+                  title={`${b.count} citas`}
+                />
+                <div className="text-[10px] text-muted-foreground">
+                  {new Date(b.day).toLocaleDateString(undefined, { weekday: "short" })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex justify-between text-xs text-muted-foreground">
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+            La IA aún no ha citado documentos en los últimos 7 días
+          </div>
+        )}
+        <div className="mt-3 flex justify-between text-xs text-muted-foreground tabular-nums">
           <span>Total 7d: {agg.usage_7d}</span>
           <span>Total 30d: {agg.usage_30d}</span>
         </div>
       </Card>
+
 
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium">
