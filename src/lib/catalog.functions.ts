@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { callChat } from "@/lib/ai-router.server";
 
 // ---------- Types ----------
 export type Product = {
