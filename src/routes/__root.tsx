@@ -93,6 +93,7 @@ function RootShell({ children }: { children: import("react").ReactNode }) {
   return (
     <html lang="es">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <HeadContent />
       </head>
       <body>
@@ -103,7 +104,19 @@ function RootShell({ children }: { children: import("react").ReactNode }) {
   );
 }
 
-function AuthGate() {
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthGate />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
   const { session, loading } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
