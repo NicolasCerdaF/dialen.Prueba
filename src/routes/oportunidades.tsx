@@ -233,8 +233,9 @@ function OppCard({ o }: { o: Opportunity }) {
   const meta = STAGE_META[o.stage];
 
   const openConversation = () => {
-    if (o.conversation_id) navigate({ to: "/", hash: o.conversation_id });
+    if (o.conversation_id) navigate({ to: "/conversaciones", hash: `conv=${o.conversation_id}` });
   };
+  const hasProb = o.probability !== null;
 
   return (
     <article
@@ -256,16 +257,20 @@ function OppCard({ o }: { o: Opportunity }) {
             <div className="truncate text-[11px] text-muted-foreground">{o.customer_company}</div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <span className={cn("text-sm font-bold tabular-nums", meta.color)}>{o.probability}%</span>
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">prob.</span>
-        </div>
+        {hasProb && (
+          <div className="flex flex-col items-end gap-0.5">
+            <span className={cn("text-sm font-bold tabular-nums", meta.color)}>{o.probability}%</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground">prob. IA</span>
+          </div>
+        )}
       </div>
 
-      {/* Prob bar */}
-      <div className="h-1 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full", meta.dot)} style={{ width: `${o.probability}%` }} />
-      </div>
+      {/* Prob bar — sólo si hay señal IA real */}
+      {hasProb && (
+        <div className="h-1 overflow-hidden rounded-full bg-muted">
+          <div className={cn("h-full", meta.dot)} style={{ width: `${o.probability}%` }} />
+        </div>
+      )}
 
       {/* Intent / next step */}
       {(o.intent || o.next_step) && (
