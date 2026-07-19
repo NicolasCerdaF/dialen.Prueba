@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -15,16 +15,54 @@ import {
   Sparkles,
   FileText,
   User as UserIcon,
+  Copy,
+  Printer,
+  MessageCircle,
+  BellRing,
+  RefreshCcw,
+  Link as LinkIcon,
+  MoreHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import {
   getQuote,
   updateQuote,
   setQuoteStatus,
+  deleteQuote,
+  duplicateQuote,
+  reviseQuote,
+  sendQuoteById,
+  scheduleQuoteFollowup,
   listQuoteEvents,
   type Quote,
   type QuoteItem,
