@@ -211,11 +211,15 @@ function EmbudoPage() {
     const decided = won.length + lost.length;
     const conversion = decided ? (won.length / decided) * 100 : 0;
     const avgTicket = won.length ? wonValue / won.length : 0;
-    // Weighted forecast = Σ estimated_value × probability (open only)
-    const weighted = open.reduce((s, c) => {
-      const p = aggMap.get(c.id)?.insight?.probability ?? 0;
-      return s + Number(c.estimated_value ?? 0) * Number(p);
-    }, 0);
+    // Ponderado IA: sólo abiertos CON probabilidad IA real. Sin probabilidad no contribuye.
+    let weighted = 0;
+    let weightedCovered = 0;
+    for (const c of open) {
+      const p = aggMap.get(c.id)?.insight?.probability;
+      if (p == null) continue;
+      weighted += Number(c.estimated_value ?? 0) * Number(p);
+      weightedCovered++;
+    }
     return {
       open: open.length,
       won: won.length,
@@ -225,6 +229,7 @@ function EmbudoPage() {
       conversion,
       avgTicket,
       weighted,
+      weightedCovered,
     };
   }, [filtered, aggMap]);
 
