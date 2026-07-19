@@ -24,9 +24,9 @@ export type Opportunity = {
   detected_at: string;
   last_interaction_at: string | null;
   days_since_interaction: number | null;
-  intent: string | null;            // frase IA
-  next_step: string | null;
-  probability: number;              // 0..100
+  intent: string | null;            // frase IA (solo si existe)
+  next_step: string | null;         // solo si existe
+  probability: number | null;       // 0..100 — null cuando no hay señal IA
   estimated_value: number | null;
   currency: string;
   products: string[];
