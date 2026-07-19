@@ -237,6 +237,7 @@ function CatalogPage() {
       toast.success(`"${p.name}" eliminado`);
       qc.invalidateQueries({ queryKey: ["catalog-adv"] });
       qc.invalidateQueries({ queryKey: ["catalog-overview"] });
+      qc.invalidateQueries({ queryKey: ["catalog-alerts"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al eliminar");
     } finally {
@@ -249,6 +250,7 @@ function CatalogPage() {
       const row = await dup({ data: { id: p.id } });
       toast.success(`Duplicado: ${row.name}`);
       qc.invalidateQueries({ queryKey: ["catalog-adv"] });
+      qc.invalidateQueries({ queryKey: ["catalog-overview"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al duplicar");
     }
