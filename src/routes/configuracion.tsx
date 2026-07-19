@@ -63,11 +63,11 @@ type TabKey =
   | "equipo"
   | "ia"
   | "whatsapp"
-  | "conocimiento"
   | "seguimiento"
   | "datos"
   | "auditoria"
   | "seguridad";
+
 
 const TABS: { key: TabKey; label: string; icon: any; adminOnly?: boolean }[] = [
   { key: "general", label: "General", icon: Building2 },
