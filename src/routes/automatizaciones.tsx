@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import {
-  listAutomations, listAutomationsAdvanced, getAutomation, createAutomation, saveAutomation,
+  listAutomationsAdvanced, getAutomation, createAutomation, saveAutomation,
   setAutomationStatus, duplicateAutomation, deleteAutomation,
   importAutomation, listAutomationRuns, runAutomationForCustomer,
   bulkAutomationAction, exportAutomationsBundle,
@@ -307,13 +307,15 @@ function AutomationsPage() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-1">
                       <PackageSearch className="h-3.5 w-3.5" />
-                      Categoría: {category}
+                      {category === "all" ? "Categoría" : `Categoría: ${category}`}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuLabel>Categoría del disparador</DropdownMenuLabel>
                     {TRIGGER_CATEGORIES.map((c) => (
-                      <DropdownMenuItem key={c} onSelect={() => setCategory(c)}>{c}</DropdownMenuItem>
+                      <DropdownMenuItem key={c} onSelect={() => setCategory(c)}>
+                        {c === "all" ? "Todas" : c}
+                      </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -590,6 +592,9 @@ function sortLabel(s: SortMode) {
     : s === "errors" ? "Con más errores"
     : "Última ejecución";
 }
+function runStatusLabel(s: "success" | "skipped" | "error") {
+  return s === "success" ? "Exitosas" : s === "skipped" ? "Omitidas" : "Con error";
+}
 
 // ============ Editor Sheet ============
 type EditorTab = "builder" | "history" | "versions";
@@ -697,7 +702,7 @@ function AutomationEditor({ automationId, onClose }: { automationId: string; onC
                     tab === t ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-muted")}>
                   {t === "builder" ? "Constructor"
                     : t === "history" ? `Historial (${runs.length})`
-                    : `Versiones (${automation?.version ?? 1})`}
+                    : `Versiones${automation?.version ? ` (v${automation.version})` : ""}`}
                 </button>
               ))}
               <div className="ml-auto flex items-center gap-1">
@@ -1207,7 +1212,8 @@ function RunRow({ r, showAutomation }: { r: AutomationRun | GlobalRun; showAutom
           <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px]">{gr.automation_name}</span>
         )}
         <span className="ml-auto text-muted-foreground">
-          {new Date(r.started_at).toLocaleString()} · {r.duration_ms ?? 0}ms
+          {new Date(r.started_at).toLocaleString()}
+          {typeof r.duration_ms === "number" && r.duration_ms > 0 && ` · ${r.duration_ms}ms`}
         </span>
       </div>
       {r.skip_reason && <div className="mt-1 text-muted-foreground">{r.skip_reason}</div>}
@@ -1235,7 +1241,11 @@ function RunRow({ r, showAutomation }: { r: AutomationRun | GlobalRun; showAutom
           </Link>
         )}
         {r.conversation_id && (
-          <Link to="/conversaciones" search={{ id: r.conversation_id } as any} className="inline-flex items-center gap-0.5 text-primary hover:underline">
+          <Link
+            to="/conversaciones"
+            hash={`conv=${r.conversation_id}`}
+            className="inline-flex items-center gap-0.5 text-primary hover:underline"
+          >
             <MessagesSquare className="h-3 w-3" /> Conversación
           </Link>
         )}
@@ -1266,12 +1276,15 @@ function RunsGlobalTab({ onOpenAutomation }: { onOpenAutomation: (id: string) =>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1">
-              <Filter className="h-3.5 w-3.5" /> {statusF === "all" ? "Estado" : statusF}
+              <Filter className="h-3.5 w-3.5" /> {statusF === "all" ? "Estado" : runStatusLabel(statusF)}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
+            <DropdownMenuLabel>Estado</DropdownMenuLabel>
             {(["all", "success", "skipped", "error"] as const).map((s) => (
-              <DropdownMenuItem key={s} onSelect={() => setStatusF(s)}>{s}</DropdownMenuItem>
+              <DropdownMenuItem key={s} onSelect={() => setStatusF(s)}>
+                {s === "all" ? "Todos" : runStatusLabel(s)}
+              </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
