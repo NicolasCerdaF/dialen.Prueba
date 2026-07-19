@@ -2,38 +2,19 @@
 // en el auto-reply del webhook. Fail-safe: nunca lanza.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { aiFetch } from "@/lib/ai-fetch";
+import { embedTexts } from "@/lib/ai-router.server";
 import { log } from "@/lib/logger";
-
-const EMBEDDINGS_URL = "https://ai.gateway.lovable.dev/v1/embeddings";
-const EMBEDDING_MODEL = "openai/text-embedding-3-small";
-const EMBEDDING_DIMS = 1536;
 
 type AdminClient = ReturnType<typeof createClient<Database>>;
 
 async function embedQuery(query: string, companyId: string): Promise<number[] | null> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) return null;
   try {
-    const res = await aiFetch(
-      EMBEDDINGS_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": apiKey,
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: EMBEDDING_MODEL,
-          input: [query],
-          dimensions: EMBEDDING_DIMS,
-        }),
-      },
-      { scope: "knowledge-rag", companyId, timeoutMs: 10_000 },
-    );
-    const json: any = await res.json();
-    return (json?.data?.[0]?.embedding as number[]) ?? null;
+    const [vec] = await embedTexts([query], {
+      scope: "knowledge-rag",
+      companyId,
+      timeoutMs: 10_000,
+    });
+    return vec ?? null;
   } catch (e) {
     log.warn("knowledge-rag", "embed_failed", { company_id: companyId, err: e });
     return null;
