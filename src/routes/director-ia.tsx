@@ -745,7 +745,10 @@ function InsightRow({
       >
         <Icon className="h-4 w-4" />
       </div>
-      <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
+      <div
+        className={cn("min-w-0 flex-1", row.action_to && "cursor-pointer")}
+        onClick={() => row.action_to && onOpen()}
+      >
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{row.title}</span>
           <SeverityBadge severity={row.severity} />
@@ -761,9 +764,12 @@ function InsightRow({
           </p>
         )}
       </div>
-      <div className="hidden w-24 text-right sm:block">
+      <div className="hidden w-28 shrink-0 text-right sm:block">
         {row.potential_value > 0 ? (
-          <span className="font-mono text-sm">
+          <span
+            className="block truncate font-mono text-sm tabular-nums"
+            title={`${Number(row.potential_value).toLocaleString("es-ES")} ${row.currency}`}
+          >
             {Number(row.potential_value).toLocaleString("es-ES")}{" "}
             <span className="text-xs text-muted-foreground">{row.currency}</span>
           </span>
