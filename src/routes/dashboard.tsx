@@ -437,12 +437,19 @@ function AttentionInbox({ buckets }: { buckets: AttentionBucket[] }) {
   );
 }
 
-function AttentionRow({ item }: { item: { id: string; customerName: string; detail: string; elapsedLabel: string; to: string; search?: Record<string, string> } }) {
+function AttentionRow({ item }: { item: AttentionItem }) {
   const navigate = useNavigate();
   return (
     <li>
       <button
-        onClick={() => navigate({ to: item.to as string, search: item.search as never, params: item.search as never })}
+        onClick={() =>
+          navigate({
+            to: item.to as string,
+            params: (item.params ?? {}) as never,
+            search: (item.search ?? {}) as never,
+            hash: item.hash,
+          })
+        }
         className="group flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-secondary/60"
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">
