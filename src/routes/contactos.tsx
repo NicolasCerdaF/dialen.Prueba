@@ -199,7 +199,7 @@ function ContactosPage() {
                   <ContactTableRow
                     key={c.id}
                     c={c}
-                    onOpen={() => navigate({ to: "/clientes/$id", params: { id: c.id } })}
+                    onOpen={() => navigate({ to: "/contactos/$id", params: { id: c.id } })}
                     onMessage={() => {
                       if (c.conversation_id) {
                         navigate({ to: "/conversaciones", hash: `conv=${c.conversation_id}` });
@@ -221,7 +221,7 @@ function ContactosPage() {
           onCreated={(id) => {
             setShowNew(false);
             qc.invalidateQueries({ queryKey: ["contacts"] });
-            navigate({ to: "/clientes/$id", params: { id } });
+            navigate({ to: "/contactos/$id", params: { id } });
           }}
         />
       )}
