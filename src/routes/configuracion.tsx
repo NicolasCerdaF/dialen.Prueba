@@ -63,11 +63,11 @@ type TabKey =
   | "equipo"
   | "ia"
   | "whatsapp"
-  | "conocimiento"
   | "seguimiento"
   | "datos"
   | "auditoria"
   | "seguridad";
+
 
 const TABS: { key: TabKey; label: string; icon: any; adminOnly?: boolean }[] = [
   { key: "general", label: "General", icon: Building2 },
@@ -100,6 +100,20 @@ function ConfigPage() {
 
   return (
     <AppShell>
+      <style>{`
+        .cfg-input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; transition: border-color .15s ease; }
+        .cfg-input:focus { border-color: hsl(var(--primary)); }
+        .cfg-input:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; transition: opacity .15s ease; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
+        .btn-secondary:hover { background: hsl(var(--secondary)); }
+        .btn-danger { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--destructive) / 0.3); background: hsl(var(--destructive) / 0.05); color: hsl(var(--destructive)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
+        .btn-danger:hover { background: hsl(var(--destructive) / 0.1); }
+        .input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; }
+        .input:focus { border-color: hsl(var(--primary)); }
+      `}</style>
       <div className="h-full overflow-y-auto">
         <div className="border-b border-border bg-card/40 backdrop-blur">
           <div className="mx-auto max-w-6xl px-6 py-6">
@@ -116,7 +130,7 @@ function ConfigPage() {
                 </p>
               </div>
             </div>
-            <SummaryStrip />
+            <SummaryStrip onSelectTab={setTab} />
             <div className="mt-4 flex flex-wrap gap-1 overflow-x-auto">
               {visibleTabs.map((t) => {
                 const Icon = t.icon;
@@ -155,44 +169,81 @@ function ConfigPage() {
   );
 }
 
+
 /* ----------------------------- Summary strip ---------------------------- */
 
-function SummaryStrip() {
+function SummaryStrip({ onSelectTab }: { onSelectTab: (t: TabKey) => void }) {
   const fetchSummary = useServerFn(getSettingsSummary);
-  const { data } = useQuery({ queryKey: ["settings-summary"], queryFn: () => fetchSummary() });
-  const items = [
-    { label: "Equipo", value: data?.members ?? "—", to: "?tab=equipo" },
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings-summary"],
+    queryFn: () => fetchSummary(),
+  });
+  const waConnected = data?.whatsapp?.status === "connected";
+  const items: Array<{
+    label: string;
+    value: string | number;
+    tone?: "ok" | "warn";
+    tab?: TabKey;
+    to?: string;
+  }> = [
+    { label: "Equipo", value: data?.members ?? 0, tab: "equipo" },
     {
       label: "WhatsApp",
-      value:
-        data?.whatsapp?.status === "connected"
-          ? data.whatsapp.display_phone ?? "Conectado"
-          : "Desconectado",
-      tone: data?.whatsapp?.status === "connected" ? "ok" : "warn",
-      to: "?tab=whatsapp",
+      value: waConnected
+        ? (data?.whatsapp as any)?.display_phone ?? "Conectado"
+        : "Desconectado",
+      tone: waConnected ? "ok" : "warn",
+      tab: "whatsapp",
     },
-    { label: "Clientes", value: data?.customers ?? "—", to: "/clientes" },
-    { label: "Productos", value: data?.products ?? "—", to: "/catalogo" },
-    { label: "Cotizaciones", value: data?.quotes ?? "—", to: "/cotizaciones" },
-    { label: "Automatizaciones", value: data?.automations ?? "—", to: "/automatizaciones" },
+    { label: "Clientes", value: data?.customers ?? 0, to: "/clientes" },
+    { label: "Productos", value: data?.products ?? 0, to: "/catalogo" },
+    { label: "Cotizaciones", value: data?.quotes ?? 0, to: "/cotizaciones" },
+    { label: "Automatizaciones", value: data?.automations ?? 0, to: "/automatizaciones" },
   ];
   return (
     <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {items.map((i) => (
-        <div key={i.label} className="rounded-lg border border-border bg-background p-3">
-          <div className="text-xs text-muted-foreground">{i.label}</div>
-          <div
-            className={`mt-0.5 truncate font-display text-lg font-semibold ${
-              i.tone === "warn" ? "text-amber-500" : ""
-            }`}
+      {items.map((i) => {
+        const content = (
+          <>
+            <div className="text-xs text-muted-foreground">{i.label}</div>
+            <div
+              className={`mt-0.5 truncate font-display text-lg font-semibold tabular-nums ${
+                i.tone === "warn"
+                  ? "text-amber-500"
+                  : i.tone === "ok"
+                  ? "text-emerald-600"
+                  : ""
+              }`}
+              title={String(i.value)}
+            >
+              {isLoading ? "…" : String(i.value)}
+            </div>
+          </>
+        );
+        const base =
+          "rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/40";
+        if (i.to) {
+          return (
+            <Link key={i.label} to={i.to as any} className={base}>
+              {content}
+            </Link>
+          );
+        }
+        return (
+          <button
+            key={i.label}
+            type="button"
+            onClick={() => i.tab && onSelectTab(i.tab)}
+            className={base}
           >
-            {String(i.value)}
-          </div>
-        </div>
-      ))}
+            {content}
+          </button>
+        );
+      })}
     </div>
   );
 }
+
 
 /* -------------------------------- General ------------------------------- */
 
@@ -422,6 +473,7 @@ function QuickLink({ to, label }: { to: string; label: string }) {
 
 function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const fetchTeam = useServerFn(listTeamMembers);
   const updateRoleFn = useServerFn(updateMemberRole);
   const removeMemberFn = useServerFn(removeMember);
@@ -458,6 +510,10 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
     }
   }
   async function remove(userId: string) {
+    if (userId === user?.id) {
+      toast.error("No puedes quitarte a ti mismo");
+      return;
+    }
     if (!confirm("¿Quitar acceso a este miembro? Esta acción es reversible.")) return;
     try {
       await removeMemberFn({ data: { userId } });
@@ -469,6 +525,7 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   }
 
   function toggleSel(id: string) {
+    if (id === user?.id) return;
     const n = new Set(selected);
     if (n.has(id)) n.delete(id);
     else n.add(id);
@@ -476,18 +533,28 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
   }
   async function bulkRemove() {
     if (!isAdmin) return;
-    if (!confirm(`¿Quitar acceso a ${selected.size} miembros?`)) return;
-    for (const id of selected) {
+    const ids = Array.from(selected).filter((id) => id !== user?.id);
+    if (ids.length === 0) {
+      toast.error("Nada que eliminar");
+      return;
+    }
+    if (!confirm(`¿Quitar acceso a ${ids.length} ${ids.length === 1 ? "miembro" : "miembros"}?`))
+      return;
+    let removed = 0;
+    for (const id of ids) {
       try {
         await removeMemberFn({ data: { userId: id } });
+        removed += 1;
       } catch (e: any) {
         toast.error(e?.message ?? "Error");
       }
     }
     setSelected(new Set());
     qc.invalidateQueries({ queryKey: ["team-members"] });
-    toast.success("Miembros eliminados");
+    if (removed > 0) toast.success(`${removed} ${removed === 1 ? "miembro eliminado" : "miembros eliminados"}`);
   }
+
+
 
   return (
     <Section icon={<Users className="h-4 w-4" />} title={`Equipo (${members.length})`}>
@@ -541,14 +608,18 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((m: any) => (
+              {filtered.map((m: any) => {
+                const isSelf = m.userId === user?.id;
+                return (
                 <tr key={m.userId} className="border-t border-border">
                   {isAdmin && (
                     <td className="p-2">
                       <input
                         type="checkbox"
                         checked={selected.has(m.userId)}
+                        disabled={isSelf}
                         onChange={() => toggleSel(m.userId)}
+                        title={isSelf ? "No puedes eliminarte a ti mismo" : undefined}
                       />
                     </td>
                   )}
@@ -557,7 +628,14 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                         {(m.fullName ?? m.email ?? "?").slice(0, 1).toUpperCase()}
                       </div>
-                      <span className="font-medium">{m.fullName ?? "—"}</span>
+                      <span className="font-medium">
+                        {m.fullName ?? "—"}
+                        {isSelf && (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            (tú)
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </td>
                   <td className="p-2 text-muted-foreground">{m.email ?? "—"}</td>
@@ -576,11 +654,11 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                       <RoleBadge role={m.role} />
                     )}
                   </td>
-                  <td className="p-2 text-muted-foreground">
+                  <td className="p-2 text-muted-foreground tabular-nums">
                     {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : "—"}
                   </td>
                   <td className="p-2 text-right">
-                    {isAdmin && (
+                    {isAdmin && !isSelf && (
                       <button
                         onClick={() => remove(m.userId)}
                         className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -591,11 +669,13 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={isAdmin ? 6 : 5} className="p-6 text-center text-sm text-muted-foreground">
                     Sin miembros que coincidan.
+
                   </td>
                 </tr>
               )}
@@ -1352,20 +1432,10 @@ function Section({
         {icon} {title}
       </div>
       <div>{children}</div>
-      <style>{`
-        .input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; }
-        .input:focus { border-color: hsl(var(--primary)); }
-        .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-primary:disabled { opacity: 0.5; }
-        .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
-        .btn-secondary:hover { background: hsl(var(--secondary)); }
-        .btn-danger { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--destructive) / 0.3); background: hsl(var(--destructive) / 0.05); color: hsl(var(--destructive)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
-        .btn-danger:hover { background: hsl(var(--destructive) / 0.1); }
-      `}</style>
     </div>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
