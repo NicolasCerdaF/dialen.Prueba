@@ -22,6 +22,61 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
+async function ensureWorkspaceForUser(user: User, profile: Profile | null): Promise<Profile> {
+  if (profile?.company_id) return profile;
+
+  const email = profile?.email ?? user.email ?? null;
+  const fullName =
+    profile?.full_name ??
+    (user.user_metadata as any)?.full_name ??
+    (user.user_metadata as any)?.name ??
+    (email ? email.split("@")[0] : "Mi empresa");
+
+  const { data: existingCompany } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  let companyId = existingCompany?.id as string | undefined;
+  if (!companyId) {
+    const { data: company, error } = await supabase
+      .from("companies")
+      .insert({ name: `${fullName} Workspace`, owner_id: user.id })
+      .select("id")
+      .single();
+    if (error || !company?.id) throw error ?? new Error("No se pudo crear la empresa");
+    companyId = company.id;
+  }
+
+  const nextProfile: Profile = {
+    id: user.id,
+    full_name: fullName,
+    email,
+    company_id: companyId,
+  };
+
+  if (profile) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ company_id: companyId, full_name: profile.full_name ?? fullName, email })
+      .eq("id", user.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("profiles").insert(nextProfile);
+    if (error) throw error;
+  }
+
+  await supabase.from("user_roles").upsert(
+    { user_id: user.id, company_id: companyId, role: "admin" },
+    { onConflict: "user_id,company_id,role", ignoreDuplicates: true }
+  );
+
+  return nextProfile;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -53,15 +108,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("id, full_name, email, company_id")
         .eq("id", session.user.id)
         .maybeSingle();
-      setProfile(p ?? null);
-      if (p?.company_id) {
+      const resolvedProfile = await ensureWorkspaceForUser(session.user, p ?? null);
+      setProfile(resolvedProfile);
+      if (resolvedProfile.company_id) {
         const [{ data: c }, { data: r }] = await Promise.all([
-          supabase.from("companies").select("name").eq("id", p.company_id).maybeSingle(),
+          supabase.from("companies").select("name").eq("id", resolvedProfile.company_id).maybeSingle(),
           supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", session.user.id)
-            .eq("company_id", p.company_id)
+            .eq("company_id", resolvedProfile.company_id)
             .maybeSingle(),
         ]);
         setCompanyName(c?.name ?? null);
