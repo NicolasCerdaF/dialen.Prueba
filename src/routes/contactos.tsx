@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -21,7 +21,6 @@ import {
   X,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,11 +32,15 @@ import {
   type ContactSignal,
 } from "@/lib/contacts.functions";
 import { toast } from "sonner";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/contactos")({
   head: () => ({ meta: [{ title: "Contactos — Dialen" }] }),
   component: ContactosPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
+
 
 type SortKey = "last_interaction" | "created" | "name" | "value";
 
@@ -68,24 +71,18 @@ function ContactosPage() {
     return p;
   }, [search, segment, origin, sort]);
 
-  const { data: contacts = [], isLoading, refetch } = useQuery({
+  const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts", params],
     queryFn: () => list({ data: params as any }),
+    staleTime: 30_000,
   });
 
-  useEffect(() => {
-    const ch = supabase
-      .channel("contacts-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "customers" },
-        () => refetch(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [refetch]);
+  useRealtimeInvalidate({
+    channel: "contacts-live",
+    tables: ["customers", "messages"],
+    invalidate: [["contacts"]],
+  });
+
 
   const origins = useMemo(() => {
     const set = new Set<string>();

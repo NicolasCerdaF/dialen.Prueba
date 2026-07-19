@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Target,
@@ -25,6 +25,8 @@ import {
   type Opportunity,
   type OpportunityStage,
 } from "@/lib/opportunities.functions";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/oportunidades")({
   head: () => ({
@@ -34,7 +36,17 @@ export const Route = createFileRoute("/oportunidades")({
     ],
   }),
   component: OpportunitiesPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
+
+const OPPORTUNITIES_KEY = ["opportunities"] as const;
+
+const oppsQueryOptions = (fetcher: () => Promise<Opportunity[]>) =>
+  queryOptions({
+    queryKey: OPPORTUNITIES_KEY,
+    queryFn: fetcher,
+    staleTime: 20_000,
+  });
 
 const STAGE_META: Record<OpportunityStage, { label: string; hint: string; color: string; ring: string; dot: string }> = {
   detected: {
@@ -62,11 +74,15 @@ const STAGE_META: Record<OpportunityStage, { label: string; hint: string; color:
 
 function OpportunitiesPage() {
   const list = useServerFn(listOpportunities);
-  const { data: opps = [], isLoading } = useQuery({
-    queryKey: ["opportunities"],
-    queryFn: () => list(),
-    refetchOnWindowFocus: false,
+  const { data: opps } = useSuspenseQuery(oppsQueryOptions(() => list()));
+
+  // Realtime: refresh when suggestions, quotes or customers change.
+  useRealtimeInvalidate({
+    channel: "opportunities-live",
+    tables: ["ai_suggestions", "quotes", "customers"],
+    invalidate: [OPPORTUNITIES_KEY],
   });
+
 
   const [search, setSearch] = useState("");
   const [onlyStalled, setOnlyStalled] = useState(false);
@@ -141,13 +157,7 @@ function OpportunitiesPage() {
           <Kpi label="Detenidas" value={stalledCount} icon={AlertTriangle} tone="amber" />
         </section>
 
-        {isLoading ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-52 animate-pulse rounded-xl border border-border bg-card/50" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState hasAny={opps.length > 0} />
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
@@ -156,6 +166,7 @@ function OpportunitiesPage() {
             ))}
           </div>
         )}
+
       </div>
     </AppShell>
   );
@@ -316,10 +327,11 @@ function OppCard({ o }: { o: Opportunity }) {
           </Button>
         )}
         <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-          <Link to="/clientes/$id" params={{ id: o.customer_id }}>
+          <Link to="/contactos/$id" params={{ id: o.customer_id }}>
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
+
       </div>
     </article>
   );

@@ -23,7 +23,9 @@ import {
   Send,
   Trash2,
   Package,
+  Sparkles,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,9 +46,13 @@ import { Button } from "@/components/ui/button";
 import { listQuotes as listQuotesForTab, generateQuoteDraft as generateQuoteDraftFn } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
+
 export const Route = createFileRoute("/clientes/$id")({
   head: () => ({ meta: [{ title: "Ficha de cliente — Dialen" }] }),
   component: CustomerDetailPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
 function CustomerDetailPage() {
@@ -60,30 +66,35 @@ function CustomerDetailPage() {
   const { data: customer, refetch } = useQuery({
     queryKey: ["crm-customer", id],
     queryFn: () => get({ data: { id } }),
+    staleTime: 20_000,
   });
 
   const { data: timeline = [], refetch: refetchTimeline } = useQuery({
     queryKey: ["crm-timeline", id],
     queryFn: () => timelineFn({ data: { customer_id: id } }),
+    staleTime: 20_000,
   });
 
   const { data: team = [] } = useQuery({
     queryKey: ["crm-team"],
     queryFn: () => teamFn(),
+    staleTime: 5 * 60_000,
   });
 
-  // Realtime: refresh customer + timeline on relevant changes
-  useEffect(() => {
-    const ch = supabase
-      .channel(`crm-detail-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers", filter: `id=eq.${id}` }, () => refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customer_events", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customer_notes", filter: `customer_id=eq.${id}` }, () => refetchTimeline())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [id, refetch, refetchTimeline]);
+  // Realtime: shared helper — customer row + related timeline events/notes.
+  useRealtimeInvalidate({
+    channel: `crm-detail-${id}`,
+    tables: ["customers"],
+    filter: `id=eq.${id}`,
+    invalidate: [["crm-customer", id]],
+  });
+  useRealtimeInvalidate({
+    channel: `crm-detail-tl-${id}`,
+    tables: ["customer_events", "customer_notes"],
+    filter: `customer_id=eq.${id}`,
+    invalidate: [["crm-timeline", id]],
+  });
+
 
   if (!customer) {
     return (
@@ -97,16 +108,28 @@ function CustomerDetailPage() {
     <AppShell>
       <div className="flex h-full flex-col overflow-hidden">
         <header className="border-b bg-background/80 px-6 py-4 backdrop-blur">
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <button
-              onClick={() => navigate({ to: "/clientes" })}
-              className="inline-flex items-center gap-1 hover:text-foreground"
+          <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate({ to: "/clientes" })}
+                className="inline-flex items-center gap-1 hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> CRM · Clientes
+              </button>
+              <span>/</span>
+              <span className="text-foreground">{customer.name ?? customer.phone}</span>
+            </div>
+            <Link
+              to="/contactos/$id"
+              params={{ id }}
+              className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-[11px] font-medium text-violet-600 hover:bg-secondary dark:text-violet-400"
+              title="Volver a la memoria comercial IA"
             >
-              <ArrowLeft className="h-3 w-3" /> CRM · Clientes
-            </button>
-            <span>/</span>
-            <span className="text-foreground">{customer.name ?? customer.phone}</span>
+              <Sparkles className="h-3 w-3" />
+              Memoria comercial IA
+            </Link>
           </div>
+
           <CustomerHeader
             customer={customer}
             team={team}
@@ -941,7 +964,7 @@ import {
   REASON_CODES,
   type ReasonCode,
 } from "@/lib/recommender.functions";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
   const listCustomerP = useServerFn(listCustomerProducts);

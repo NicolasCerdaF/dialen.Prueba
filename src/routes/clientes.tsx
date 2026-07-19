@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Users,
@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listClients, type ClientRow, type ClientSegment } from "@/lib/clients.functions";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
@@ -32,7 +34,9 @@ export const Route = createFileRoute("/clientes")({
     ],
   }),
   component: ClientsPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
+
 
 const SEGMENT_META: Record<
   ClientSegment,
@@ -84,12 +88,25 @@ const SEGMENT_META: Record<
 
 type Filter = "all" | ClientSegment;
 
+const CLIENTS_KEY = ["clients"] as const;
+
+const clientsQueryOptions = (fetcher: () => Promise<ClientRow[]>) =>
+  queryOptions({
+    queryKey: CLIENTS_KEY,
+    queryFn: fetcher,
+    staleTime: 30_000,
+  });
+
 function ClientsPage() {
   const list = useServerFn(listClients);
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: () => list(),
+  const { data: clients } = useSuspenseQuery(clientsQueryOptions(() => list()));
+
+  useRealtimeInvalidate({
+    channel: "clients-live",
+    tables: ["quotes", "customers"],
+    invalidate: [CLIENTS_KEY],
   });
+
 
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
@@ -187,13 +204,7 @@ function ClientsPage() {
         </div>
 
         {/* List */}
-        {isLoading ? (
-          <div className="grid gap-3 md:grid-cols-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-40 animate-pulse rounded-xl border border-border bg-card/50" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState hasClients={clients.length > 0} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
@@ -202,6 +213,7 @@ function ClientsPage() {
             ))}
           </div>
         )}
+
       </div>
     </AppShell>
   );
@@ -221,10 +233,11 @@ function ClientCard({ c }: { c: ClientRow }) {
     >
       <div className="flex items-start justify-between gap-3">
         <Link
-          to="/clientes/$id"
+          to="/contactos/$id"
           params={{ id: c.customer_id }}
           className="min-w-0 flex-1"
         >
+
           <div className="flex items-center gap-2">
             <div className={cn("flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold", meta.tint, meta.text)}>
               {(c.name ?? "?").charAt(0).toUpperCase()}
@@ -307,11 +320,12 @@ function ClientCard({ c }: { c: ClientRow }) {
           </a>
         </Button>
         <Button asChild size="sm" variant="ghost" className="h-8">
-          <Link to="/clientes/$id" params={{ id: c.customer_id }}>
+          <Link to="/contactos/$id" params={{ id: c.customer_id }}>
             Ver ficha
             <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
           </Link>
         </Button>
+
       </div>
     </article>
   );

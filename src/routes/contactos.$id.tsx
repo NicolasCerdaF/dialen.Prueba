@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -16,17 +16,20 @@ import {
   TrendingUp,
   Tag as TagIcon,
   Star,
+  Sliders,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { getCustomer, getCustomerTimeline } from "@/lib/crm.functions";
 import { getContactAiContext } from "@/lib/contacts.functions";
 import { cn } from "@/lib/utils";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/contactos/$id")({
   head: () => ({ meta: [{ title: "Contacto — Dialen" }] }),
   component: ContactDetailPage,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
 function ContactDetailPage() {
@@ -36,45 +39,36 @@ function ContactDetailPage() {
   const getCtx = useServerFn(getContactAiContext);
   const getTimeline = useServerFn(getCustomerTimeline);
 
-  const { data: customer, refetch: refetchC } = useQuery({
+  const { data: customer } = useQuery({
     queryKey: ["contact-customer", id],
     queryFn: () => getC({ data: { id } }),
+    staleTime: 20_000,
   });
-  const { data: ctx, refetch: refetchCtx } = useQuery({
+  const { data: ctx } = useQuery({
     queryKey: ["contact-ai-ctx", id],
     queryFn: () => getCtx({ data: { id } }),
+    staleTime: 20_000,
   });
-  const { data: timeline = [], refetch: refetchTL } = useQuery({
+  const { data: timeline = [] } = useQuery({
     queryKey: ["contact-timeline", id],
     queryFn: () => getTimeline({ data: { customer_id: id, limit: 40 } }),
+    staleTime: 20_000,
   });
 
-  useEffect(() => {
-    const ch = supabase
-      .channel(`contact-detail-${id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "customers", filter: `id=eq.${id}` },
-        () => refetchC(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "ai_suggestions" },
-        () => refetchCtx(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        () => {
-          refetchCtx();
-          refetchTL();
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [id, refetchC, refetchCtx, refetchTL]);
+  // Realtime: react to this customer, their suggestions and their messages.
+  useRealtimeInvalidate({
+    channel: `contact-detail-${id}`,
+    tables: ["customers"],
+    filter: `id=eq.${id}`,
+    invalidate: [["contact-customer", id]],
+  });
+  useRealtimeInvalidate({
+    channel: `contact-detail-msgs-${id}`,
+    tables: ["messages", "ai_suggestions", "quotes"],
+    invalidate: [["contact-ai-ctx", id], ["contact-timeline", id]],
+  });
+
+
 
   const isClient = useMemo(
     () => (ctx?.quotes ?? []).some((q) => q.status === "accepted" || q.status === "aceptada" || q.status === "won"),
@@ -160,10 +154,12 @@ function ContactDetailPage() {
                 to="/clientes/$id"
                 params={{ id }}
                 className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+                title="Editar ficha CRM completa"
               >
-                <ArrowUpRight className="h-3.5 w-3.5" />
-                Ficha completa
+                <Sliders className="h-3.5 w-3.5" />
+                Editar ficha CRM
               </Link>
+
             </div>
           </div>
         </header>
