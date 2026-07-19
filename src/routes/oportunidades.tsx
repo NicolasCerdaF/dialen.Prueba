@@ -361,12 +361,13 @@ function OppCard({ o }: { o: Opportunity }) {
 }
 
 function Kpi({
-  label, value, icon: Icon, tone,
+  label, value, icon: Icon, tone, hint,
 }: {
   label: string;
   value: string | number;
   icon: typeof Target;
   tone: "default" | "emerald" | "violet" | "amber";
+  hint?: string;
 }) {
   const t = {
     default: "text-muted-foreground",
@@ -380,7 +381,8 @@ function Kpi({
         <Icon className={cn("h-3.5 w-3.5", t)} />
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 truncate text-xl font-semibold tabular-nums">{value}</div>
+      {hint && <div className="mt-0.5 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
