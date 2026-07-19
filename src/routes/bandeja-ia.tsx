@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
@@ -15,48 +15,89 @@ import {
   Loader2,
   Inbox,
   RefreshCw,
+  Bot,
+  BarChart3,
+  Check,
+  Pencil,
+  X,
+  Package,
+  TrendingUp,
+  ShieldAlert,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { getBandejaIA, type BandejaItem, type BandejaCategory } from "@/lib/bandeja-ia.functions";
+import {
+  getBandejaIA,
+  getPendingAIActions,
+  getConversationAnalysis,
+  resolvePendingAction,
+  type BandejaItem,
+  type BandejaCategory,
+  type PendingAction,
+} from "@/lib/bandeja-ia.functions";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/bandeja-ia")({
   head: () => ({
     meta: [
       { title: "Bandeja IA — Dialen" },
-      { name: "description", content: "Recomendaciones IA sobre tus conversaciones activas" },
+      { name: "description", content: "Capa de inteligencia sobre tus conversaciones de WhatsApp" },
     ],
   }),
   component: BandejaIAPage,
 });
 
-type Tab = "all" | BandejaCategory;
+type Tab = "high" | "follow" | "actions" | "analysis";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "all", label: "Todas" },
-  { id: "high", label: "Prioridad alta" },
-  { id: "follow", label: "Seguimiento" },
-  { id: "opportunity", label: "Oportunidades" },
+const TABS: { id: Tab; label: string; icon: typeof Flame }[] = [
+  { id: "high", label: "Atención inmediata", icon: Flame },
+  { id: "follow", label: "Seguimiento", icon: Clock3 },
+  { id: "actions", label: "Acciones IA", icon: Bot },
+  { id: "analysis", label: "Análisis", icon: BarChart3 },
 ];
 
 function BandejaIAPage() {
-  const fetchFn = useServerFn(getBandejaIA);
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const [tab, setTab] = useState<Tab>("high");
+  const fetchBandeja = useServerFn(getBandejaIA);
+  const fetchActions = useServerFn(getPendingAIActions);
+  const fetchAnalysis = useServerFn(getConversationAnalysis);
+
+  const bandejaQ = useQuery({
     queryKey: ["bandeja-ia"],
-    queryFn: () => fetchFn({}),
+    queryFn: () => fetchBandeja({}),
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
-  const [tab, setTab] = useState<Tab>("all");
+  const actionsQ = useQuery({
+    queryKey: ["bandeja-ia", "actions"],
+    queryFn: () => fetchActions({}),
+    staleTime: 30_000,
+    enabled: tab === "actions",
+  });
+  const analysisQ = useQuery({
+    queryKey: ["bandeja-ia", "analysis"],
+    queryFn: () => fetchAnalysis({}),
+    staleTime: 60_000,
+    enabled: tab === "analysis",
+  });
 
-  const items = useMemo(() => {
-    if (!data) return [];
-    if (tab === "all")
-      return [...data.groups.high, ...data.groups.follow, ...data.groups.opportunity];
-    return data.groups[tab];
-  }, [data, tab]);
+  const counts = bandejaQ.data?.counts ?? { high: 0, follow: 0, opportunity: 0, total: 0 };
+  const opportunityItems = bandejaQ.data?.groups.opportunity ?? [];
+  const highItems = [...(bandejaQ.data?.groups.high ?? []), ...opportunityItems];
+  const followItems = bandejaQ.data?.groups.follow ?? [];
 
-  const counts = data?.counts ?? { high: 0, follow: 0, opportunity: 0, total: 0 };
+  const tabCounts: Record<Tab, number> = {
+    high: highItems.length,
+    follow: followItems.length,
+    actions: actionsQ.data?.length ?? 0,
+    analysis: analysisQ.data?.totals.suggestions ?? 0,
+  };
+
+  const refreshAll = () => {
+    bandejaQ.refetch();
+    if (tab === "actions") actionsQ.refetch();
+    if (tab === "analysis") analysisQ.refetch();
+  };
 
   return (
     <AppShell>
@@ -72,37 +113,32 @@ function BandejaIAPage() {
                   Bandeja IA
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Menos mensajes, más decisiones. La IA prioriza tus conversaciones.
+                  Qué conversaciones importan hoy y qué hacer con ellas.
                 </p>
               </div>
             </div>
             <button
-              onClick={() => refetch()}
-              disabled={isFetching}
+              onClick={refreshAll}
+              disabled={bandejaQ.isFetching}
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", bandejaQ.isFetching && "animate-spin")}
+              />
               Actualizar
             </button>
           </header>
 
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Total recomendaciones" value={counts.total} tone="primary" />
-            <StatCard label="Prioridad alta" value={counts.high} tone="danger" />
+            <StatCard label="Atención inmediata" value={counts.high} tone="danger" />
             <StatCard label="Seguimiento" value={counts.follow} tone="warn" />
+            <StatCard label="Acciones IA" value={tabCounts.actions} tone="primary" />
             <StatCard label="Oportunidades" value={counts.opportunity} tone="success" />
           </div>
 
           <div className="mb-4 flex flex-wrap items-center gap-1 rounded-lg border border-border bg-card p-1">
             {TABS.map((t) => {
-              const c =
-                t.id === "all"
-                  ? counts.total
-                  : t.id === "high"
-                    ? counts.high
-                    : t.id === "follow"
-                      ? counts.follow
-                      : counts.opportunity;
+              const Icon = t.icon;
               return (
                 <button
                   key={t.id}
@@ -114,6 +150,7 @@ function BandejaIAPage() {
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <Icon className="h-3.5 w-3.5" />
                   {t.label}
                   <span
                     className={cn(
@@ -123,29 +160,52 @@ function BandejaIAPage() {
                         : "bg-secondary text-muted-foreground",
                     )}
                   >
-                    {c}
+                    {tabCounts[t.id]}
                   </span>
                 </button>
               );
             })}
           </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : items.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="grid gap-3">
-              {items.map((item) => (
-                <RecommendationCard key={item.id} item={item} />
-              ))}
-            </div>
+          {tab === "high" && (
+            <ItemsList items={highItems} isLoading={bandejaQ.isLoading} />
+          )}
+          {tab === "follow" && (
+            <ItemsList items={followItems} isLoading={bandejaQ.isLoading} />
+          )}
+          {tab === "actions" && (
+            <ActionsList
+              items={actionsQ.data ?? []}
+              isLoading={actionsQ.isLoading}
+            />
+          )}
+          {tab === "analysis" && (
+            <AnalysisPanel
+              data={analysisQ.data}
+              isLoading={analysisQ.isLoading}
+            />
           )}
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function ItemsList({ items, isLoading }: { items: BandejaItem[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (items.length === 0) return <EmptyState />;
+  return (
+    <div className="grid gap-3">
+      {items.map((item) => (
+        <RecommendationCard key={item.id} item={item} />
+      ))}
+    </div>
   );
 }
 
@@ -180,7 +240,7 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
       badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
       border: "border-l-rose-500",
       icon: Flame,
-      label: "Prioridad alta",
+      label: "Atención inmediata",
     },
     follow: {
       badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
@@ -205,7 +265,7 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
     if (!item.conversationId) return;
     navigate({ to: "/conversaciones", hash: `conv=${item.conversationId}` });
   };
-  const openOpportunity = () => {
+  const openCustomer = () => {
     navigate({ to: "/clientes/$id", params: { id: item.customerId } });
   };
 
@@ -213,7 +273,7 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
     item.suggestedAction.kind === "quote"
       ? { label: item.suggestedAction.label, icon: FileText, onClick: openQuote }
       : item.suggestedAction.kind === "opportunity"
-        ? { label: item.suggestedAction.label, icon: UserPlus, onClick: openOpportunity }
+        ? { label: item.suggestedAction.label, icon: UserPlus, onClick: openCustomer }
         : { label: item.suggestedAction.label, icon: MessageSquare, onClick: openConversation };
 
   const PrimaryIcon = primaryAction.icon;
@@ -239,6 +299,12 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
                 {catStyle.label}
               </span>
               <span className="text-[11px] text-muted-foreground">{item.elapsedLabel}</span>
+              {item.productMention && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">
+                  <Package className="h-3 w-3" />
+                  {item.productMention}
+                </span>
+              )}
             </div>
             <h3 className="truncate text-sm font-semibold">{item.customerName}</h3>
             {item.companyName && (
@@ -247,13 +313,22 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
                 <span className="truncate">{item.companyName}</span>
               </div>
             )}
+
             <div className="mt-2 flex items-start gap-1.5 text-xs">
               <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-violet-500" />
               <div>
                 <div className="font-medium text-foreground">{item.reason}</div>
-                <div className="text-muted-foreground">{item.reasonDetail}</div>
+                <div className="text-muted-foreground">
+                  {item.aiSummary ?? item.reasonDetail}
+                </div>
               </div>
             </div>
+
+            {item.lastMessagePreview && (
+              <div className="mt-2 rounded-md bg-secondary/40 px-2.5 py-1.5 text-[11px] italic text-muted-foreground">
+                "{item.lastMessagePreview}"
+              </div>
+            )}
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
@@ -273,7 +348,11 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-secondary/40 p-2">
-          <Metric label="Intención" value={`${item.intent}`} tone={item.intent >= 70 ? "high" : item.intent >= 40 ? "mid" : "low"} />
+          <Metric
+            label="Intención"
+            value={`${item.intent}`}
+            tone={item.intent >= 70 ? "high" : item.intent >= 40 ? "mid" : "low"}
+          />
           <Metric
             label="Urgencia"
             value={item.urgency}
@@ -300,14 +379,14 @@ function RecommendationCard({ item }: { item: BandejaItem }) {
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary"
             >
               <MessageSquare className="h-3.5 w-3.5" />
-              Abrir conversación
+              Responder con IA
             </button>
           )}
           <button
-            onClick={openOpportunity}
+            onClick={openCustomer}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            Ver cliente <ArrowRight className="h-3 w-3" />
+            Ver contacto <ArrowRight className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -333,6 +412,215 @@ function Metric({
     <div className="text-center">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={cn("mt-0.5 text-sm font-semibold capitalize", tones[tone])}>{value}</div>
+    </div>
+  );
+}
+
+function ActionsList({
+  items,
+  isLoading,
+}: {
+  items: PendingAction[];
+  isLoading: boolean;
+}) {
+  const qc = useQueryClient();
+  const resolve = useServerFn(resolvePendingAction);
+
+  const doResolve = async (id: string, action: "used" | "edited" | "discarded") => {
+    try {
+      await resolve({ data: { id, action } });
+      qc.invalidateQueries({ queryKey: ["bandeja-ia", "actions"] });
+      toast.success(
+        action === "used"
+          ? "Acción aprobada"
+          : action === "edited"
+            ? "Marcada para editar"
+            : "Descartada",
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo actualizar");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10">
+          <Bot className="h-6 w-6 text-violet-500" />
+        </div>
+        <h3 className="text-sm font-semibold">Nada pendiente de aprobación</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Cuando la IA genere respuestas, cotizaciones o seguimientos, aparecerán aquí.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-3">
+      {items.map((a) => (
+        <div
+          key={a.id}
+          className="overflow-hidden rounded-xl border border-l-4 border-border border-l-violet-500 bg-card p-4"
+        >
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">
+              <Bot className="h-3 w-3" />
+              {a.agentType ?? "IA"}
+            </span>
+            {a.intent && (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium capitalize text-muted-foreground">
+                {a.intent}
+              </span>
+            )}
+            <span className="text-[11px] text-muted-foreground">{a.elapsedLabel}</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              Confianza {Math.round(a.confidence * 100)}% · Prob. {a.probability}%
+            </span>
+          </div>
+          <div className="text-sm font-semibold">{a.customerName}</div>
+          <div className="mt-2 rounded-md bg-secondary/40 p-2.5 text-xs">
+            {a.text || <span className="italic text-muted-foreground">Sin texto</span>}
+          </div>
+          {a.nextStep && (
+            <div className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+              <ArrowRight className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{a.nextStep}</span>
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => doResolve(a.id, "used")}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Aprobar
+            </button>
+            <button
+              onClick={() => doResolve(a.id, "edited")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Revisión humana
+            </button>
+            <button
+              onClick={() => doResolve(a.id, "discarded")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary"
+            >
+              <X className="h-3.5 w-3.5" />
+              Descartar
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AnalysisPanel({
+  data,
+  isLoading,
+}: {
+  data:
+    | {
+        totals: {
+          conversations: number;
+          suggestions: number;
+          avgConfidence: number;
+          avgProbability: number;
+        };
+        topIntents: { key: string; count: number }[];
+        topObjections: { key: string; count: number }[];
+        topProducts: { key: string; count: number }[];
+      }
+    | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (!data || data.totals.suggestions === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+          <BarChart3 className="h-6 w-6 text-primary" />
+        </div>
+        <h3 className="text-sm font-semibold">Aún no hay datos suficientes</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Cuando la IA analice más conversaciones, aparecerán aquí los patrones detectados.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Conversaciones (30d)" value={data.totals.conversations} tone="primary" />
+        <StatCard label="Análisis IA" value={data.totals.suggestions} tone="primary" />
+        <StatCard
+          label="Confianza IA"
+          value={Math.round(data.totals.avgConfidence * 100)}
+          tone="success"
+        />
+        <StatCard label="Prob. cierre media" value={data.totals.avgProbability} tone="warn" />
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <TopList title="Intenciones frecuentes" items={data.topIntents} icon={TrendingUp} tone="primary" />
+        <TopList title="Productos más consultados" items={data.topProducts} icon={Package} tone="success" />
+        <TopList title="Objeciones detectadas" items={data.topObjections} icon={ShieldAlert} tone="warn" />
+      </div>
+    </div>
+  );
+}
+
+function TopList({
+  title,
+  items,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  items: { key: string; count: number }[];
+  icon: typeof TrendingUp;
+  tone: "primary" | "success" | "warn";
+}) {
+  const toneMap = {
+    primary: "text-primary bg-primary/10",
+    success: "text-emerald-500 bg-emerald-500/10",
+    warn: "text-amber-500 bg-amber-500/10",
+  } as const;
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", toneMap[tone])}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sin datos aún</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((it) => (
+            <li key={it.key} className="flex items-center justify-between gap-2 text-xs">
+              <span className="truncate">{it.key}</span>
+              <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+                {it.count}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
