@@ -233,7 +233,7 @@ function StatCard({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone: "primary" | "danger" | "warn" | "success";
 }) {
   const tones = {
