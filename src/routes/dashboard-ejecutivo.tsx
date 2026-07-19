@@ -728,28 +728,37 @@ function OperationsTab({ dash }: { dash: ExecutiveDashboard }) {
   return (
     <>
       <div className="grid gap-3 md:grid-cols-4">
-        <Kpi label="Chats abiertos" value={t.activeConversations.toLocaleString()} icon={MessageSquare} />
+        <Kpi
+          label="Chats abiertos"
+          value={t.activeConversations > 0 ? t.activeConversations.toLocaleString() : "—"}
+          icon={MessageSquare}
+        />
         <Kpi
           label="% de respuestas IA"
-          value={`${t.aiShare}%`}
-          hint={`${t.outboundAi} de ${t.outbound}`}
+          value={t.outbound > 0 ? `${t.aiShare}%` : "—"}
+          hint={t.outbound > 0 ? `${t.outboundAi} de ${t.outbound}` : "Sin salientes"}
           icon={Bot}
           tone="violet"
         />
         <Kpi
           label="Automatizaciones"
-          value={t.automationRuns.toLocaleString()}
-          hint={`${t.automationErrors} con error`}
+          value={t.automationRuns > 0 ? t.automationRuns.toLocaleString() : "—"}
+          hint={t.automationRuns > 0 ? `${t.automationErrors} con error` : "Sin ejecuciones"}
           icon={Sparkles}
           tone={t.automationErrors ? "amber" : "emerald"}
         />
         <Kpi
           label="Tiempo de respuesta"
           value={fmtDuration(t.avgResponseSeconds)}
-          hint={`${t.responseUnderSlaPct}% ≤ 15 min`}
+          hint={
+            t.avgResponseSeconds > 0
+              ? `${t.responseUnderSlaPct}% ≤ 15 min`
+              : "Sin datos de respuesta"
+          }
           icon={Timer}
         />
       </div>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
