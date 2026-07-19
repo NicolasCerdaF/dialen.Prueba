@@ -608,14 +608,18 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((m: any) => (
+              {filtered.map((m: any) => {
+                const isSelf = m.userId === user?.id;
+                return (
                 <tr key={m.userId} className="border-t border-border">
                   {isAdmin && (
                     <td className="p-2">
                       <input
                         type="checkbox"
                         checked={selected.has(m.userId)}
+                        disabled={isSelf}
                         onChange={() => toggleSel(m.userId)}
+                        title={isSelf ? "No puedes eliminarte a ti mismo" : undefined}
                       />
                     </td>
                   )}
@@ -624,7 +628,14 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                         {(m.fullName ?? m.email ?? "?").slice(0, 1).toUpperCase()}
                       </div>
-                      <span className="font-medium">{m.fullName ?? "—"}</span>
+                      <span className="font-medium">
+                        {m.fullName ?? "—"}
+                        {isSelf && (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            (tú)
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </td>
                   <td className="p-2 text-muted-foreground">{m.email ?? "—"}</td>
@@ -643,11 +654,11 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                       <RoleBadge role={m.role} />
                     )}
                   </td>
-                  <td className="p-2 text-muted-foreground">
+                  <td className="p-2 text-muted-foreground tabular-nums">
                     {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : "—"}
                   </td>
                   <td className="p-2 text-right">
-                    {isAdmin && (
+                    {isAdmin && !isSelf && (
                       <button
                         onClick={() => remove(m.userId)}
                         className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -658,11 +669,13 @@ function TeamTab({ isAdmin }: { isAdmin: boolean }) {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={isAdmin ? 6 : 5} className="p-6 text-center text-sm text-muted-foreground">
                     Sin miembros que coincidan.
+
                   </td>
                 </tr>
               )}
