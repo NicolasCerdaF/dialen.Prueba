@@ -100,6 +100,20 @@ function ConfigPage() {
 
   return (
     <AppShell>
+      <style>{`
+        .cfg-input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; transition: border-color .15s ease; }
+        .cfg-input:focus { border-color: hsl(var(--primary)); }
+        .cfg-input:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; transition: opacity .15s ease; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
+        .btn-secondary:hover { background: hsl(var(--secondary)); }
+        .btn-danger { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--destructive) / 0.3); background: hsl(var(--destructive) / 0.05); color: hsl(var(--destructive)); padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; }
+        .btn-danger:hover { background: hsl(var(--destructive) / 0.1); }
+        .input { width: 100%; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; }
+        .input:focus { border-color: hsl(var(--primary)); }
+      `}</style>
       <div className="h-full overflow-y-auto">
         <div className="border-b border-border bg-card/40 backdrop-blur">
           <div className="mx-auto max-w-6xl px-6 py-6">
@@ -116,7 +130,7 @@ function ConfigPage() {
                 </p>
               </div>
             </div>
-            <SummaryStrip />
+            <SummaryStrip onSelectTab={setTab} />
             <div className="mt-4 flex flex-wrap gap-1 overflow-x-auto">
               {visibleTabs.map((t) => {
                 const Icon = t.icon;
@@ -154,6 +168,7 @@ function ConfigPage() {
     </AppShell>
   );
 }
+
 
 /* ----------------------------- Summary strip ---------------------------- */
 
