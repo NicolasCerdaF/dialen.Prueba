@@ -279,10 +279,17 @@ function EmbudoPage() {
   const bulkUpdate = useServerFn(bulkUpdateCustomers);
   const bulkDelete = useServerFn(deleteCustomers);
 
-  async function applyBulk(patch: Parameters<typeof bulkUpdateCustomers>[0]["data"] extends infer T ? Omit<T & object, "ids"> : never) {
+  async function applyBulk(patch: {
+    stage?: string;
+    priority?: string;
+    status?: string;
+    assignee_id?: string | null;
+    tags_add?: string[];
+    tags_remove?: string[];
+  }) {
     if (selection.size === 0) return;
     try {
-      const res = await bulkUpdate({ data: { ids: Array.from(selection), ...(patch as any) } });
+      const res = await bulkUpdate({ data: { ids: Array.from(selection), ...patch } });
       toast.success(`${res.updated} cliente${res.updated === 1 ? "" : "s"} actualizado${res.updated === 1 ? "" : "s"}`);
       setSelection(new Set());
       qc.invalidateQueries({ queryKey: ["pipeline-customers"] });
