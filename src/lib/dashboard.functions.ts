@@ -67,9 +67,9 @@ export type DashboardData = {
     openOpportunities: number;
     openOpportunitiesValue: number;
     quotesSent7d: number;
-    quotesSent7dDelta: number;
+    quotesSent7dDelta: number | null;
     salesMonth: number;
-    salesMonthCurrency: string;
+    salesMonthCurrency: string | null;
   };
   attention: AttentionBucket[];
   funnel: FunnelStageMini[];
