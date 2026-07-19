@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
@@ -24,6 +25,11 @@ import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
 
+const MetricasIaRoute = MetricasIaRouteImport.update({
+  id: '/metricas-ia',
+  path: '/metricas-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/metricas-ia': typeof MetricasIaRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/metricas-ia': typeof MetricasIaRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/cotizaciones': typeof CotizacionesRouteWithChildren
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/metricas-ia': typeof MetricasIaRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/cotizaciones'
     | '/embudo'
     | '/login'
+    | '/metricas-ia'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/cotizaciones'
     | '/embudo'
     | '/login'
+    | '/metricas-ia'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/cotizaciones'
     | '/embudo'
     | '/login'
+    | '/metricas-ia'
     | '/clientes/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
@@ -207,6 +219,7 @@ export interface RootRouteChildren {
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
+  MetricasIaRoute: typeof MetricasIaRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
   ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -214,6 +227,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/metricas-ia': {
+      id: '/metricas-ia'
+      path: '/metricas-ia'
+      fullPath: '/metricas-ia'
+      preLoaderRoute: typeof MetricasIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -349,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   CotizacionesRoute: CotizacionesRouteWithChildren,
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,
+  MetricasIaRoute: MetricasIaRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
   ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,

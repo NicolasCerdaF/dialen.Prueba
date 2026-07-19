@@ -22,6 +22,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 type NavItem = {
   to:
     | "/"
+    | "/metricas-ia"
     | "/embudo"
     | "/clientes"
     | "/catalogo"
@@ -35,6 +36,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: "/", label: "Chats", icon: MessageSquare },
+  { to: "/metricas-ia", label: "Métricas IA", icon: Sparkles },
   { to: "/embudo", label: "Embudo", icon: TrendingUp },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/catalogo", label: "Catálogo", icon: Package },
