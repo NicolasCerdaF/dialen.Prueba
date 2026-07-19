@@ -422,29 +422,40 @@ function QuoteDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {quote.conversation_id && (
+                <Link
+                  to="/conversaciones"
+                  search={{ conversation_id: quote.conversation_id } as any}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  title="Abrir conversación"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Conversación
+                </Link>
+              )}
               {quote.status === "draft" && (
                 <>
                   <Button variant="outline" size="sm" onClick={onSave} disabled={saving}>
                     <Save className="mr-1.5 h-3.5 w-3.5" />
                     {saving ? "Guardando…" : "Guardar"}
                   </Button>
-                  <Button size="sm" onClick={() => onStatus("sent")}>
+                  <Button size="sm" onClick={onSend}>
                     <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Enviar
+                    Enviar por WhatsApp
                   </Button>
                 </>
               )}
               {quote.status === "sent" && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("viewed")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("viewed")}>
                     <Eye className="mr-1.5 h-3.5 w-3.5" />
                     Marcar vista
                   </Button>
-                  <Button size="sm" onClick={() => onStatus("accepted")}>
+                  <Button size="sm" onClick={() => setConfirmStatus("accepted")}>
                     <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                     Aceptar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("rejected")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("rejected")}>
                     <XCircle className="mr-1.5 h-3.5 w-3.5" />
                     Rechazar
                   </Button>
@@ -452,16 +463,64 @@ function QuoteDetailPage() {
               )}
               {quote.status === "viewed" && (
                 <>
-                  <Button size="sm" onClick={() => onStatus("accepted")}>
+                  <Button size="sm" onClick={() => setConfirmStatus("accepted")}>
                     <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                     Aceptar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onStatus("rejected")}>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus("rejected")}>
                     <XCircle className="mr-1.5 h-3.5 w-3.5" />
                     Rechazar
                   </Button>
                 </>
               )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={() => setFollowupOpen(true)}>
+                      <BellRing className="mr-2 h-3.5 w-3.5" /> Recordatorio de seguimiento
+                    </DropdownMenuItem>
+                  )}
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={onSend}>
+                      <Send className="mr-2 h-3.5 w-3.5" /> Reenviar por WhatsApp
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={onDuplicate}>
+                    <Copy className="mr-2 h-3.5 w-3.5" /> Duplicar
+                  </DropdownMenuItem>
+                  {["accepted", "rejected", "expired"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={onRevise}>
+                      <RefreshCcw className="mr-2 h-3.5 w-3.5" /> Nueva versión
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={onPrint}>
+                    <Printer className="mr-2 h-3.5 w-3.5" /> Imprimir / PDF
+                  </DropdownMenuItem>
+                  {quote.share_token && (
+                    <DropdownMenuItem onSelect={onCopyShare}>
+                      <LinkIcon className="mr-2 h-3.5 w-3.5" /> Copiar enlace público
+                    </DropdownMenuItem>
+                  )}
+                  {["sent", "viewed"].includes(quote.status) && (
+                    <DropdownMenuItem onSelect={() => setConfirmStatus("expired")}>
+                      <Clock className="mr-2 h-3.5 w-3.5" /> Marcar expirada
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
