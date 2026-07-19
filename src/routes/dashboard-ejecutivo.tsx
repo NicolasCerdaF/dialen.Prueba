@@ -606,17 +606,22 @@ function TeamTab({ dash }: { dash: ExecutiveDashboard }) {
                     <td className="px-4 py-3 text-right tabular-nums">{s.quotesSent}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{s.quotesWon}</td>
                     <td className="px-4 py-3 text-right">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "rounded",
-                          s.acceptRate >= 30 && "border-emerald-500/30 text-emerald-500",
-                          s.acceptRate < 15 && s.quotesSent > 0 && "border-amber-500/30 text-amber-600",
-                        )}
-                      >
-                        {s.acceptRate}%
-                      </Badge>
+                      {s.quotesSent > 0 ? (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "rounded",
+                            s.acceptRate >= 30 && "border-emerald-500/30 text-emerald-500",
+                            s.acceptRate < 15 && "border-amber-500/30 text-amber-600",
+                          )}
+                        >
+                          {s.acceptRate}%
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
+
                     <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtMoney(s.revenue, cur)}</td>
                   </tr>
                 ))}
