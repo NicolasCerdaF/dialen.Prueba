@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Route as InboxRoute } from "./index";
 
-const InboxComponent = InboxRoute.options.component ?? (() => null);
+function ConversacionesPage() {
+  const Comp = InboxRoute.options.component;
+  if (!Comp) return null;
+  return <Comp />;
+}
 
 export const Route = createFileRoute("/conversaciones")({
   head: () => ({
@@ -10,5 +14,5 @@ export const Route = createFileRoute("/conversaciones")({
       { name: "description", content: "Centro comercial de conversaciones con IA" },
     ],
   }),
-  component: InboxComponent,
+  component: ConversacionesPage,
 });
