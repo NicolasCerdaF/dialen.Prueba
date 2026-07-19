@@ -192,11 +192,11 @@ export const getAuditTrail = createServerFn({ method: "GET" })
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(limit);
-        return (data ?? []).map((row: any) => ({
+        return (rows ?? []).map((row: any) => ({
           id: `${table}:${row.id}`,
           entity,
           eventType: row.event_type,
-          createdAt: row.created_at,
+          createdAt: row.created_at as string,
           actorId: row.actor_id ?? null,
           payload: row.payload ?? null,
         }));
@@ -204,8 +204,8 @@ export const getAuditTrail = createServerFn({ method: "GET" })
     );
     const merged = results
       .flat()
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-      .slice(0, data.limit);
+      .sort((a: any, b: any) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, limit);
     const actorIds = Array.from(new Set(merged.map((e) => e.actorId).filter(Boolean))) as string[];
     let names = new Map<string, string>();
     if (actorIds.length) {
