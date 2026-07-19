@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -216,8 +216,7 @@ function DirectorIA() {
 
   const rows = listQ.data?.rows ?? [];
   const summary = summaryQ.data;
-
-  const filteredRows = useMemo(() => rows, [rows]);
+  const filteredRows = rows;
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -349,21 +348,39 @@ function DirectorIA() {
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
             <ExecStat
               label="Recomendaciones activas"
-              value={String(summary?.totals.pending ?? 0)}
+              value={summary ? String(summary.totals.pending) : "—"}
               tone="primary"
             />
-            <ExecStat
-              label="Ingresos potenciales"
-              value={
-                summary
-                  ? `${Number(summary.totals.potentialValue).toLocaleString("es-ES")} ${summary.totals.currency}`
-                  : "—"
+            {(() => {
+              const entries = Object.entries(summary?.potentialByCurrency ?? {})
+                .filter(([, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+              if (!summary || entries.length === 0) {
+                return (
+                  <ExecStat
+                    label="Ingresos potenciales"
+                    value="—"
+                    tone="success"
+                    hint={summary ? "Sin valor estimado en pendientes" : undefined}
+                  />
+                );
               }
-              tone="success"
-            />
+              const [cur, val] = entries[0];
+              const rest = entries.length - 1;
+              const full = entries.map(([c, v]) => `${Number(v).toLocaleString("es-ES")} ${c}`).join(" · ");
+              return (
+                <ExecStat
+                  label="Ingresos potenciales"
+                  value={`${Number(val).toLocaleString("es-ES")} ${cur}`}
+                  tone="success"
+                  hint={rest > 0 ? `+${rest} moneda${rest === 1 ? "" : "s"} más` : undefined}
+                  title={full}
+                />
+              );
+            })()}
             <ExecStat
               label="Riesgos detectados"
-              value={String(summary?.totals.risks ?? 0)}
+              value={summary ? String(summary.totals.risks) : "—"}
               tone="danger"
             />
           </div>
@@ -443,9 +460,7 @@ function DirectorIA() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     Categoría:{" "}
-                    {categoryFilter === "all"
-                      ? "todas"
-                      : CAT_META[categoryFilter].title.split(" ")[0].toLowerCase()}
+                    {categoryFilter === "all" ? "todas" : CAT_META[categoryFilter].title}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -495,7 +510,7 @@ function DirectorIA() {
                 onCheckedChange={(v) => (v ? selectAllVisible() : setSelected(new Set()))}
               />
               <span className="flex-1">Recomendación</span>
-              <span className="hidden w-24 text-right sm:block">Valor</span>
+              <span className="hidden w-28 text-right sm:block">Valor</span>
               <span className="hidden w-20 text-right sm:block">Estado</span>
               <span className="w-8" />
             </div>
@@ -730,7 +745,10 @@ function InsightRow({
       >
         <Icon className="h-4 w-4" />
       </div>
-      <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
+      <div
+        className={cn("min-w-0 flex-1", row.action_to && "cursor-pointer")}
+        onClick={() => row.action_to && onOpen()}
+      >
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{row.title}</span>
           <SeverityBadge severity={row.severity} />
@@ -746,9 +764,12 @@ function InsightRow({
           </p>
         )}
       </div>
-      <div className="hidden w-24 text-right sm:block">
+      <div className="hidden w-28 shrink-0 text-right sm:block">
         {row.potential_value > 0 ? (
-          <span className="font-mono text-sm">
+          <span
+            className="block truncate font-mono text-sm tabular-nums"
+            title={`${Number(row.potential_value).toLocaleString("es-ES")} ${row.currency}`}
+          >
             {Number(row.potential_value).toLocaleString("es-ES")}{" "}
             <span className="text-xs text-muted-foreground">{row.currency}</span>
           </span>
@@ -769,10 +790,14 @@ function InsightRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onSelect={onOpen}>
-              <ExternalLink className="mr-2 h-3.5 w-3.5" /> Ir a la acción
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {row.action_to && (
+              <>
+                <DropdownMenuItem onSelect={onOpen}>
+                  <ExternalLink className="mr-2 h-3.5 w-3.5" /> Ir a la acción
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {isActive ? (
               <>
                 <DropdownMenuItem onSelect={onDone}>
@@ -850,10 +875,14 @@ function ExecStat({
   label,
   value,
   tone,
+  hint,
+  title,
 }: {
   label: string;
   value: string;
   tone: "primary" | "success" | "danger";
+  hint?: string;
+  title?: string;
 }) {
   const toneMap = {
     primary: "text-primary",
@@ -861,9 +890,15 @@ function ExecStat({
     danger: "text-rose-500",
   } as const;
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 font-display text-2xl font-semibold", toneMap[tone])}>{value}</div>
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4">
+      <div className="truncate text-xs text-muted-foreground">{label}</div>
+      <div
+        className={cn("mt-1 truncate font-display text-2xl font-semibold tabular-nums", toneMap[tone])}
+        title={title ?? value}
+      >
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
