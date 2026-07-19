@@ -13,8 +13,7 @@ import { log } from "@/lib/logger";
  * (done / snoozed / dismissed) survives page reloads and sessions.
  */
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const AI_MODEL = "google/gemini-3-flash-preview";
+import { callChat } from "@/lib/ai-router.server";
 
 export type InsightCategory =
   | "contactar"
