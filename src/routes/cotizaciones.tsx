@@ -103,7 +103,6 @@ function QuotesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const list = useServerFn(listQuotesAdvanced);
-  const overview = useServerFn(getQuotesOverview);
   const kpisAdv = useServerFn(getQuotesAdvancedKpis);
   const alerts = useServerFn(getQuoteAlerts);
   const changeStatus = useServerFn(setQuoteStatus);
