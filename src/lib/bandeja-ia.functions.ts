@@ -99,7 +99,7 @@ export const getBandejaIA = createServerFn({ method: "GET" })
           .limit(500),
         supabase
           .from("messages")
-          .select("conversation_id, direction, created_at")
+          .select("conversation_id, direction, body, created_at")
           .eq("company_id", companyId)
           .gte("created_at", weekAgo)
           .order("created_at", { ascending: false })
@@ -107,14 +107,33 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       ]);
 
     const convoList = convos ?? [];
+    const convIds = convoList.map((c) => c.id);
     const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
     const currency = quotes?.[0]?.currency ?? "USD";
 
-    // Latest message direction per conversation
-    const lastMsg = new Map<string, { direction: string; created_at: string }>();
+    // Latest AI suggestion per conversation (for summary + product mention)
+    const { data: suggestions } = convIds.length
+      ? await supabase
+          .from("ai_suggestions")
+          .select("conversation_id, text, intent, next_step, sources, created_at")
+          .in("conversation_id", convIds)
+          .order("created_at", { ascending: false })
+          .limit(500)
+      : { data: [] as any[] };
+    const suggByConv = new Map<string, any>();
+    for (const s of suggestions ?? []) {
+      if (!suggByConv.has(s.conversation_id)) suggByConv.set(s.conversation_id, s);
+    }
+
+    // Latest message per conversation (direction + body)
+    const lastMsg = new Map<string, { direction: string; created_at: string; body: string | null }>();
     for (const m of msgs ?? []) {
       if (!lastMsg.has(m.conversation_id)) {
-        lastMsg.set(m.conversation_id, { direction: m.direction, created_at: m.created_at });
+        lastMsg.set(m.conversation_id, {
+          direction: m.direction,
+          created_at: m.created_at,
+          body: (m as any).body ?? null,
+        });
       }
     }
 
@@ -126,7 +145,8 @@ export const getBandejaIA = createServerFn({ method: "GET" })
       }
     }
 
-    const items: BandejaItem[] = [];
+    type DraftItem = Omit<BandejaItem, "lastMessagePreview" | "aiSummary" | "productMention">;
+    const items: DraftItem[] = [];
 
     for (const conv of convoList) {
       const cust = customerById.get(conv.customer_id);
