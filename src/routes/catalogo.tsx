@@ -1376,9 +1376,11 @@ function ProductDetailSheet({
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-card p-2">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-sm">{value}</div>
+    <div className="min-w-0 rounded-md border bg-card p-2">
+      <div className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-sm tabular-nums" title={value}>
+        {value}
+      </div>
     </div>
   );
 }
