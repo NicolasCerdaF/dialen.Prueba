@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Pause,
   Play,
-  
   Search,
   UserPlus,
   UserCheck,
@@ -21,16 +20,13 @@ import {
   StickyNote,
   Tag,
   Phone,
-  Building2,
-  Calendar,
-  ShoppingBag,
   FileText,
   ClipboardList,
   Users as UsersIcon,
-  Lock,
   X,
   Plus,
   History,
+  ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -945,7 +941,7 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
     );
   }
 
-  const stages = ["nuevo", "contactado", "calificado", "propuesta", "ganado", "perdido"];
+  const currentStage = normalizeStage(customer.stage);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -965,12 +961,13 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         </div>
         {isNewLead && (
           <div className="mt-3 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
-            🌱 Nuevo Lead
+            Nuevo Lead
           </div>
         )}
         <div className="mt-3">
           <Link
-            to="/clientes"
+            to="/clientes/$id"
+            params={{ id: customer.id }}
             className="flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium hover:bg-secondary"
           >
             <UsersIcon className="h-3 w-3" /> Ver ficha completa en CRM
@@ -992,20 +989,25 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       {/* Stage */}
       <Section icon={<ClipboardList className="h-3.5 w-3.5" />} title="Etapa del embudo">
         <div className="flex flex-wrap gap-1">
-          {stages.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStage(customer.stage === s ? null : s)}
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize transition",
-                customer.stage === s
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
-          ))}
+          {STAGES.map((s) => {
+            const active = currentStage === s.key;
+            const style = STAGE_STYLES[s.color];
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStage(active ? null : s.key)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition",
+                  active
+                    ? cn(style.bar, "text-white")
+                    : "bg-secondary text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-white/80" : style.bar)} />
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       </Section>
 
@@ -1098,29 +1100,6 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
         </div>
       </Section>
 
-      {/* Coming soon integrations */}
-      <Section icon={<Sparkles className="h-3.5 w-3.5" />} title="Acciones comerciales">
-        <div className="grid grid-cols-2 gap-1.5">
-          <ComingSoon icon={<ShoppingBag className="h-3 w-3" />} label="Nuevo pedido" />
-          <ComingSoon icon={<FileText className="h-3 w-3" />} label="Factura" />
-          <ComingSoon icon={<Calendar className="h-3 w-3" />} label="Agendar" />
-          <ComingSoon icon={<Building2 className="h-3 w-3" />} label="Oportunidad" />
-        </div>
-      </Section>
-
-      <Section icon={<ShoppingBag className="h-3.5 w-3.5" />} title="Historial de compras">
-        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
-          <Lock className="mx-auto mb-1 h-3 w-3" />
-          Próximamente — al conectar el módulo de Pedidos.
-        </div>
-      </Section>
-
-      <Section icon={<Calendar className="h-3.5 w-3.5" />} title="Agenda y campañas">
-        <div className="rounded-md border border-dashed border-border px-2 py-3 text-center text-[10px] text-muted-foreground">
-          <Lock className="mx-auto mb-1 h-3 w-3" />
-          Próximamente — módulos de Agenda, Campañas y Automatizaciones.
-        </div>
-      </Section>
     </div>
   );
 }
@@ -1142,20 +1121,6 @@ function Section({
       </div>
       {children}
     </div>
-  );
-}
-
-function ComingSoon({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      disabled
-      className="flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1.5 text-[10px] text-muted-foreground opacity-70"
-      title="Próximamente"
-    >
-      {icon}
-      <span className="flex-1 truncate text-left">{label}</span>
-      <Lock className="h-2.5 w-2.5" />
-    </button>
   );
 }
 
@@ -1544,10 +1509,11 @@ function RecommendedProducts({
                     <div className="truncate text-[12px] font-semibold">
                       {r.product?.name ?? "Producto"}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {r.product?.currency ?? "USD"}{" "}
-                      {Number(r.product?.price ?? 0).toLocaleString()}
-                    </div>
+                    {r.product?.price != null && r.product?.currency ? (
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.product.currency} {Number(r.product.price).toLocaleString()}
+                      </div>
+                    ) : null}
                   </div>
                   {r.score != null && (
                     <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium">
@@ -1571,13 +1537,6 @@ function RecommendedProducts({
                     className="flex-1 rounded-md bg-primary py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
                   >
                     Ofrecer
-                  </button>
-                  <button
-                    disabled
-                    title="Próximamente"
-                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground opacity-60"
-                  >
-                    Cotizar
                   </button>
                   <button
                     onClick={() => ignore(r.id)}
