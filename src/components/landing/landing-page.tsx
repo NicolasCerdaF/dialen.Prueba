@@ -458,13 +458,12 @@ export function LandingPage() {
                   "Director Comercial IA (priorización 24/7)",
                   "Análisis IA avanzado + forecast de ingresos",
                   "Dashboard ejecutivo en tiempo real",
-                  "Automatizaciones ilimitadas con recetas",
+                  "Automatizaciones con recetas",
                   "Cotizaciones IA + versionado",
                   "Bandeja IA con scoring heurístico",
                   "Conocimiento empresarial con RAG semántico",
-                  "Múltiples números de WhatsApp",
-                  "Usuarios y conversaciones ilimitados",
                   "Soporte prioritario + onboarding dedicado",
+
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-white">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00E676]" />
