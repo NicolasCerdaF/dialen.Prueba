@@ -81,6 +81,13 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
+        <Link
+          to="/"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver al inicio
+        </Link>
         <div className="mb-8 flex flex-col items-center justify-center gap-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary">
             <Sparkles className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
