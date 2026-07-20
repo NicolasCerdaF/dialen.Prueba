@@ -120,7 +120,9 @@ function AuthGate() {
       </div>
     );
   }
-  if (!session && pathname !== "/login") {
+  const publicRoutes = ["/politicas-de-privacidad"];
+  const isPublic = publicRoutes.includes(pathname);
+  if (!session && pathname !== "/login" && !isPublic) {
     return <Navigate to="/login" replace />;
   }
   if (session && pathname === "/login") {
