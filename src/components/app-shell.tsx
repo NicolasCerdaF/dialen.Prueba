@@ -316,14 +316,17 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                             <span className="flex-1 truncate">{item.label}</span>
                             {item.premium && (
                               isPremium ? (
-                                 <span className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                   Business
-                                 </span>
-                               ) : (
-                                 <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                                   <Lock className="h-2.5 w-2.5" strokeWidth={2.5} />
-                                   Business
-                                 </span>
+                                <span
+                                  aria-label="Incluido en Business"
+                                  title="Incluido en Business"
+                                  className="h-1.5 w-1.5 rounded-full bg-amber-500/70 dark:bg-amber-400/70"
+                                />
+                              ) : (
+                                <Lock
+                                  aria-label="Función Business"
+                                  className="h-3 w-3 text-amber-600/60 dark:text-amber-400/60"
+                                  strokeWidth={2}
+                                />
                               )
                             )}
                           </Link>
