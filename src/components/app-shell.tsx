@@ -47,6 +47,8 @@ type ExistingRoute =
   | "/conocimiento"
   | "/configuracion"
   | "/onboarding/whatsapp"
+  | "/mi-plan"
+  | "/creditos"
   | "/whatsapp";
 
 type NavItem = {
