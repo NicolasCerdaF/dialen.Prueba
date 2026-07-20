@@ -61,7 +61,7 @@ async function logCall(fields: {
       ok: fields.ok,
       status_code: fields.status_code,
       message: fields.message ?? null,
-      payload: (fields.payload as object) ?? null,
+      payload: (fields.payload ?? null) as never,
     });
   } catch (err) {
     log.error("provision", "log_failed", { err });
