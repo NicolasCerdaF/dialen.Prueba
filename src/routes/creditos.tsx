@@ -23,8 +23,8 @@ type Pack = {
 };
 
 // Precios alineados al costo del software:
-// Plan Start incluye 500 créditos/mes → Starter equivale a una recarga mensual.
-// Plan Business incluye 3.000 créditos/mes → Scale ≈ una recarga Business.
+// Plan Start incluye 1.400 créditos/mes → Starter equivale a una recarga mensual.
+// Plan Business incluye 4.600 créditos/mes → Scale ≈ una recarga Business.
 const PACKS: Pack[] = [
   { id: "starter", credits: 500, label: "Starter", price: 9990, tagline: "Ideal para el Plan Start" },
   { id: "growth", credits: 2000, bonusCredits: 200, label: "Growth", bonus: "+10% extra", popular: true, price: 29990, tagline: "Refuerzo mensual para equipos activos" },
