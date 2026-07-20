@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export const Route = createFileRoute("/conocimiento")({
       },
     ],
   }),
-  component: KnowledgePage,
+  component: () => (<PremiumGate feature="conocimiento" title="Conocimiento Empresarial"><KnowledgePage /></PremiumGate>),
 });
 
 // ---------- helpers ----------

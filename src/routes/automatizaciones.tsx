@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,7 +54,7 @@ export const Route = createFileRoute("/automatizaciones")({
       { name: "description", content: "Motor de flujos que orquesta CRM, Bandeja, Embudo, Cotizaciones e IA." },
     ],
   }),
-  component: AutomationsPage,
+  component: () => (<PremiumGate feature="automatizaciones" title="Automatizaciones"><AutomationsPage /></PremiumGate>),
 });
 
 type MainTab = "list" | "recipes" | "runs" | "insights";

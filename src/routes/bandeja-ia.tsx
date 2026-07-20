@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/bandeja-ia")({
       { name: "description", content: "Capa de inteligencia sobre tus conversaciones de WhatsApp" },
     ],
   }),
-  component: BandejaIAPage,
+  component: () => (<PremiumGate feature="bandeja-ia" title="Bandeja IA"><BandejaIAPage /></PremiumGate>),
   errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 

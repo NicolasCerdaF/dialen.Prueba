@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -70,7 +71,7 @@ export const Route = createFileRoute("/metricas-ia")({
       },
     ],
   }),
-  component: AnalisisIA,
+  component: () => (<PremiumGate feature="metricas-ia" title="Análisis IA"><AnalisisIA /></PremiumGate>),
 });
 
 const RANGES: { value: AnalyticsRange; label: string }[] = [

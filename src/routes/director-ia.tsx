@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -80,7 +81,7 @@ export const Route = createFileRoute("/director-ia")({
       },
     ],
   }),
-  component: DirectorIA,
+  component: () => (<PremiumGate feature="director-ia" title="Director Comercial IA"><DirectorIA /></PremiumGate>),
 });
 
 // -------------------- Catálogo de categorías --------------------
