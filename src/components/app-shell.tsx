@@ -223,19 +223,19 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                     setOpen((p) => ({ ...p, [group.id]: !p[group.id] }))
                   }
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] transition-smooth",
+                    "flex w-full items-center gap-2 rounded-md px-2 py-2 text-[12px] font-bold uppercase tracking-[0.14em] transition-smooth border-l-2",
                     isAiGroup
-                      ? "text-[color:var(--ai)] hover:text-[color:var(--ai-glow)]"
-                      : "text-foreground/70 hover:text-foreground",
+                      ? "text-[color:var(--ai)] hover:text-[color:var(--ai-glow)] border-[color:var(--ai)]/60"
+                      : "text-primary hover:text-primary border-primary/50",
                   )}
                   aria-expanded={isOpen}
                 >
-                  <GroupIcon className="h-3.5 w-3.5" />
+                  <GroupIcon className={cn("h-4 w-4", isAiGroup ? "text-[color:var(--ai)]" : "text-primary")} />
                   <span className="flex-1 text-left">{group.label}</span>
                   {isAiGroup && <span className="ai-dot h-1.5 w-1.5 rounded-full" />}
                   <ChevronDown
                     className={cn(
-                      "h-3.5 w-3.5 transition-transform duration-200",
+                      "h-3.5 w-3.5 transition-transform duration-200 opacity-70",
                       isOpen ? "rotate-0" : "-rotate-90",
                     )}
                   />
