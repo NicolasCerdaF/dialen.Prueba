@@ -60,6 +60,7 @@ type NavItem = {
   icon: typeof MessageSquare;
   to?: ExistingRoute;
   soon?: boolean;
+  premium?: PremiumFeature;
 };
 
 type NavGroup = {
