@@ -369,23 +369,7 @@ export function LandingPage() {
             title="Equipos que ya venden con Dialen"
             subtitle="Empresas chilenas que reemplazaron el caos de WhatsApp por un sistema comercial serio."
           />
-          <div className="mt-14 grid gap-5 md:grid-cols-3">
-            <TestimonialCard
-              quote="Antes se nos escapaba 1 de cada 3 leads. Con Dialen respondemos al instante y cerramos el doble de cotizaciones."
-              author="Carolina M."
-              role="Gerente Comercial · Retail"
-            />
-            <TestimonialCard
-              quote="La IA cotiza sola desde el chat. Nuestros vendedores ahora solo cierran. Es otro nivel de productividad."
-              author="Andrés P."
-              role="CEO · Distribuidora industrial"
-            />
-            <TestimonialCard
-              quote="Por fin sé en qué etapa está cada cliente sin preguntarle al equipo. El embudo se actualiza solo."
-              author="Valentina R."
-              role="Dueña · E-commerce"
-            />
-          </div>
+          <TestimonialsCarousel />
         </section>
 
         {/* SEGURIDAD / CONFIANZA */}
