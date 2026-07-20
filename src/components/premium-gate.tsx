@@ -35,14 +35,14 @@ export function PremiumGate({ feature, title, description, children, withShell =
           </div>
         </div>
         <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-          <Sparkles className="h-3 w-3" /> Función Premium
+          <Sparkles className="h-3 w-3" /> Función Business
         </div>
         <h1 className="mt-3 font-display text-3xl font-semibold">{title}</h1>
         {description ? (
           <p className="mt-2 max-w-lg text-sm text-muted-foreground">{description}</p>
         ) : (
           <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-            Esta función está disponible solo en el <strong>Plan Premium</strong>. Actualiza tu plan para
+            Esta función está disponible solo en el <strong>Plan Business</strong>. Actualiza tu plan para
             desbloquearla junto con el resto de las herramientas de IA avanzada.
           </p>
         )}
@@ -51,7 +51,7 @@ export function PremiumGate({ feature, title, description, children, withShell =
             to="/mi-plan"
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:shadow-lg"
           >
-            <Crown className="h-4 w-4" /> Actualizar a Premium
+            <Crown className="h-4 w-4" /> Actualizar a Business
           </Link>
           <Link
             to="/dashboard"

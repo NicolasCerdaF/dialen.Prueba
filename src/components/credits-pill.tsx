@@ -41,7 +41,7 @@ export function CreditsPill() {
       </Link>
       <Link
         to="/mi-plan"
-        title={isPremium ? "Plan Premium" : "Plan Básico"}
+        title={isPremium ? "Plan Business" : "Plan Start"}
         className={cn(
           "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition",
           isPremium
@@ -50,7 +50,7 @@ export function CreditsPill() {
         )}
       >
         {isPremium ? <Crown className="h-3 w-3" /> : null}
-        {plan === "premium" ? "Premium" : "Básico"}
+        {plan === "premium" ? "Business" : "Start"}
       </Link>
     </div>
   );

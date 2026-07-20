@@ -36,7 +36,7 @@ export const PLAN_CATALOG: Record<PlanId, {
     tagline: "IA que además dirige tu operación: prioriza, automatiza y proyecta ingresos.",
     monthlyCredits: 3000,
     features: [
-      "Todo lo del Plan Básico",
+      "Todo lo del Plan Start",
       "Director Comercial IA (priorización 24/7 de tu día)",
       "Motor de Automatizaciones con recetas y flujos",
       "Análisis IA avanzado (rendimiento del motor IA)",
@@ -68,7 +68,7 @@ export const getMyPlan = createServerFn({ method: "GET" })
   });
 
 // Feature keys gated by plan. Premium-only routes/features live here.
-// Básico incluye la IA operativa (Bandeja IA + Conocimiento). Premium desbloquea
+// Start incluye la IA operativa (Bandeja IA + Conocimiento). Business desbloquea
 // la IA de gestión/dirección (Director IA, Automatizaciones, Métricas, Ejecutivo).
 export const PREMIUM_FEATURES = [
   "director-ia",
