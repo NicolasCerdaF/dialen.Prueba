@@ -10,7 +10,6 @@ import {
   Users,
   BarChart3,
   ShieldCheck,
-  Clock,
   Target,
   FileText,
   Workflow,
