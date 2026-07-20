@@ -109,6 +109,15 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    id: "cuenta",
+    label: "Cuenta",
+    icon: Sparkles,
+    items: [
+      { label: "Mi Plan", icon: Sparkles, to: "/mi-plan" },
+      { label: "Comprar créditos", icon: Zap, to: "/creditos" },
+    ],
+  },
+  {
     id: "admin",
     label: "Administración",
     icon: Cog,
