@@ -820,8 +820,8 @@ function TestimonialsCarousel() {
     <div className="mt-14">
       <style>{`
         @keyframes testimonials-scroll-right {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
         .testimonials-track {
           animation: testimonials-scroll-right ${duration}s linear infinite;
