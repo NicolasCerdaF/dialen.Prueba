@@ -812,74 +812,43 @@ const TESTIMONIALS: Array<{
 ];
 
 function TestimonialsCarousel() {
-  const [index, setIndex] = useState(0);
-  const [perView, setPerView] = useState(3);
-
-  useEffect(() => {
-    const update = () => {
-      const w = window.innerWidth;
-      setPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  const pages = Math.max(1, TESTIMONIALS.length - perView + 1);
-  const safeIndex = Math.min(index, pages - 1);
-
-  const prev = () => setIndex((i) => (i - 1 + pages) % pages);
-  const next = () => setIndex((i) => (i + 1) % pages);
+  const loop = [...TESTIMONIALS, ...TESTIMONIALS];
+  // ~14s per testimonial for a slow, readable pace
+  const duration = TESTIMONIALS.length * 14;
 
   return (
     <div className="mt-14">
+      <style>{`
+        @keyframes testimonials-scroll-right {
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
+        }
+        .testimonials-track {
+          animation: testimonials-scroll-right ${duration}s linear infinite;
+        }
+        .testimonials-track:hover { animation-play-state: paused; }
+      `}</style>
 
-      <div className="overflow-hidden">
-        <div
-          className="flex transition-transform duration-500 ease-out"
-          style={{
-            transform: `translateX(-${(safeIndex * 100) / perView}%)`,
-          }}
-        >
-          {TESTIMONIALS.map((t, i) => (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          maskImage:
+            "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+        }}
+      >
+        <div className="testimonials-track flex w-max">
+          {loop.map((t, i) => (
             <div
               key={i}
               className="shrink-0 px-2.5"
-              style={{ width: `${100 / perView}%` }}
+              style={{ width: "clamp(280px, 32vw, 380px)" }}
             >
               <TestimonialCard {...t} />
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="mt-8 flex items-center justify-center gap-4">
-        <button
-          onClick={prev}
-          aria-label="Testimonio anterior"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#00C853]/40 hover:text-white"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <div className="flex gap-1.5">
-          {Array.from({ length: pages }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIndex(i)}
-              aria-label={`Ir al testimonio ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${
-                i === safeIndex ? "w-6 bg-[#00E676]" : "w-1.5 bg-white/20 hover:bg-white/40"
-              }`}
-            />
-          ))}
-        </div>
-        <button
-          onClick={next}
-          aria-label="Siguiente testimonio"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#00C853]/40 hover:text-white"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );
