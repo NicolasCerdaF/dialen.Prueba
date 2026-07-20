@@ -28,6 +28,10 @@ import { useAuth } from "@/lib/auth-context";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarSystemStatus } from "@/components/sidebar-system-status";
+import { CreditsPill } from "@/components/credits-pill";
+import { useMyPlan } from "@/lib/use-plan";
+import { Lock } from "lucide-react";
+import type { PremiumFeature } from "@/lib/plans.functions";
 
 type ExistingRoute =
   | "/"
