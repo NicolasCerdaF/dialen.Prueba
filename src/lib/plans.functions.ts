@@ -15,7 +15,7 @@ export const PLAN_CATALOG: Record<PlanId, {
     id: "basico",
     name: "Plan Start",
     tagline: "IA operativa que te ayuda a vender en cada conversación de WhatsApp.",
-    monthlyCredits: 500,
+    monthlyCredits: 1400,
     features: [
       "Bandeja unificada de WhatsApp",
       "CRM de contactos y clientes",
@@ -34,7 +34,7 @@ export const PLAN_CATALOG: Record<PlanId, {
     id: "premium",
     name: "Plan Business",
     tagline: "IA que además dirige tu operación: prioriza, automatiza y proyecta ingresos.",
-    monthlyCredits: 3000,
+    monthlyCredits: 4600,
     features: [
       "Todo lo del Plan Start",
       "Director Comercial IA (priorización 24/7 de tu día)",
