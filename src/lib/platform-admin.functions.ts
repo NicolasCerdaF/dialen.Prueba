@@ -80,8 +80,9 @@ export const listPlatformCompanies = createServerFn({ method: "GET" })
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id, company_id, email, full_name");
-    const byCompany = new Map<string, { count: number; owner?: { email?: string; name?: string } }>();
+    const byCompany = new Map<string, { count: number }>();
     for (const p of profiles ?? []) {
+      if (!p.company_id) continue;
       const rec = byCompany.get(p.company_id) ?? { count: 0 };
       rec.count += 1;
       byCompany.set(p.company_id, rec);
