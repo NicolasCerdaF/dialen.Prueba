@@ -114,7 +114,7 @@ export const Route = createFileRoute("/conocimiento")({
       },
     ],
   }),
-  component: () => (<PremiumGate feature="conocimiento" title="Conocimiento Empresarial"><KnowledgePage /></PremiumGate>),
+  component: KnowledgePage,
 });
 
 // ---------- helpers ----------
