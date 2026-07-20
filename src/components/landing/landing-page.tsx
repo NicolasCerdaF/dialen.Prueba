@@ -815,27 +815,15 @@ function TestimonialsCarousel() {
   const [index, setIndex] = useState(0);
   const [perView, setPerView] = useState(3);
 
-  const updatePerView = () => {
-    if (typeof window === "undefined") return;
-    const w = window.innerWidth;
-    setPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
-  };
-
-  const initRef = (node: HTMLDivElement | null) => {
-    if (node && perView === 3 && typeof window !== "undefined" && window.innerWidth < 1024) {
-      updatePerView();
-    }
-  };
-
-  if (typeof window !== "undefined") {
-    // attach once
-    (window as unknown as { __dialenTestimonialResize?: boolean }).__dialenTestimonialResize ??
-      ((): boolean => {
-        window.addEventListener("resize", updatePerView);
-        updatePerView();
-        return true;
-      })();
-  }
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const pages = Math.max(1, TESTIMONIALS.length - perView + 1);
   const safeIndex = Math.min(index, pages - 1);
@@ -844,7 +832,8 @@ function TestimonialsCarousel() {
   const next = () => setIndex((i) => (i + 1) % pages);
 
   return (
-    <div className="mt-14" ref={initRef}>
+    <div className="mt-14">
+
       <div className="overflow-hidden">
         <div
           className="flex transition-transform duration-500 ease-out"
