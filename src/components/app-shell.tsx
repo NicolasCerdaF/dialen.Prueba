@@ -78,7 +78,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Conversaciones", icon: MessageSquare, to: "/conversaciones" },
-      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
+      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia", premium: "bandeja-ia" },
     ],
   },
   {
@@ -99,10 +99,10 @@ const navGroups: NavGroup[] = [
     label: "IA Comercial",
     icon: Bot,
     items: [
-      { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia" },
-      { label: "Automatizaciones", icon: Zap, to: "/automatizaciones" },
-      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento" },
-      { label: "Análisis IA", icon: Brain, to: "/metricas-ia" },
+      { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia", premium: "director-ia" },
+      { label: "Automatizaciones", icon: Zap, to: "/automatizaciones", premium: "automatizaciones" },
+      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento", premium: "conocimiento" },
+      { label: "Análisis IA", icon: Brain, to: "/metricas-ia", premium: "metricas-ia" },
     ],
   },
   {
@@ -110,7 +110,7 @@ const navGroups: NavGroup[] = [
     label: "Reportes",
     icon: BarChart3,
     items: [
-      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo" },
+      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo", premium: "dashboard-ejecutivo" },
     ],
   },
   {
