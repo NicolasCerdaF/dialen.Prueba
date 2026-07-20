@@ -130,7 +130,9 @@ type ProvisionBody = {
   user_name?: string;
   plan?: string;
   external_ref?: string;
+  phone?: string;
   metadata?: Record<string, unknown>;
+  requested_by?: { email?: string; role?: string };
 };
 
 async function findUserByEmail(email: string) {
