@@ -193,6 +193,7 @@ function MiPlanPage() {
             </div>
           </>
         )}
+        </div>
       </div>
     </AppShell>
   );
