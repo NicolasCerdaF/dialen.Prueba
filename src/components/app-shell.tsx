@@ -270,9 +270,9 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                               "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-smooth",
                               active
                                 ? isAiGroup
-                                  ? "bg-[color-mix(in_oklab,var(--ai)_10%,transparent)] text-foreground"
-                                  : "bg-secondary text-foreground"
-                                : "text-sidebar-foreground/75 hover:bg-secondary/70 hover:text-foreground",
+                                  ? "bg-[color-mix(in_oklab,var(--ai)_10%,transparent)] text-foreground font-medium"
+                                  : "bg-secondary text-foreground font-medium"
+                                : "text-foreground/85 hover:bg-secondary/70 hover:text-foreground",
                             )}
                           >
                             {active && (
@@ -290,7 +290,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                                   ? isAiGroup
                                     ? "text-[color:var(--ai)]"
                                     : "text-primary"
-                                  : "text-muted-foreground/80 group-hover:text-foreground",
+                                  : "text-foreground/70 group-hover:text-foreground",
                               )}
                               strokeWidth={1.75}
                             />
