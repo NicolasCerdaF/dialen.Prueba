@@ -23,13 +23,13 @@ type Pack = {
 };
 
 // Precios alineados al costo del software:
-// Plan Básico incluye 500 créditos/mes → Starter equivale a una recarga mensual.
-// Plan Premium incluye 3.000 créditos/mes → Scale ≈ una recarga Premium.
+// Plan Start incluye 500 créditos/mes → Starter equivale a una recarga mensual.
+// Plan Business incluye 3.000 créditos/mes → Scale ≈ una recarga Business.
 const PACKS: Pack[] = [
-  { id: "starter", credits: 500, label: "Starter", price: 9990, tagline: "Ideal para el Plan Básico" },
+  { id: "starter", credits: 500, label: "Starter", price: 9990, tagline: "Ideal para el Plan Start" },
   { id: "growth", credits: 2000, bonusCredits: 200, label: "Growth", bonus: "+10% extra", popular: true, price: 29990, tagline: "Refuerzo mensual para equipos activos" },
-  { id: "scale", credits: 5000, bonusCredits: 1000, label: "Scale", bonus: "+20% extra", price: 59990, tagline: "Equivalente a un mes Premium" },
-  { id: "enterprise", credits: 15000, bonusCredits: 4500, label: "Enterprise", bonus: "+30% extra", price: 149990, tagline: "Para operaciones Premium a gran escala" },
+  { id: "scale", credits: 5000, bonusCredits: 1000, label: "Scale", bonus: "+20% extra", price: 59990, tagline: "Equivalente a un mes Business" },
+  { id: "enterprise", credits: 15000, bonusCredits: 4500, label: "Enterprise", bonus: "+30% extra", price: 149990, tagline: "Para operaciones Business a gran escala" },
 ];
 
 const fmtCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
