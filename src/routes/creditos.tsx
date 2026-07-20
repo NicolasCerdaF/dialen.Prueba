@@ -11,14 +11,28 @@ export const Route = createFileRoute("/creditos")({
   component: CreditosPage,
 });
 
-type Pack = { id: string; credits: number; label: string; bonus?: string; popular?: boolean };
+type Pack = {
+  id: string;
+  credits: number;
+  bonusCredits?: number;
+  label: string;
+  bonus?: string;
+  popular?: boolean;
+  price: number; // CLP
+  tagline: string;
+};
 
+// Precios alineados al costo del software:
+// Plan Básico incluye 500 créditos/mes → Starter equivale a una recarga mensual.
+// Plan Premium incluye 3.000 créditos/mes → Scale ≈ una recarga Premium.
 const PACKS: Pack[] = [
-  { id: "starter", credits: 500, label: "Starter" },
-  { id: "growth", credits: 2000, label: "Growth", bonus: "+10% extra", popular: true },
-  { id: "scale", credits: 5000, label: "Scale", bonus: "+20% extra" },
-  { id: "enterprise", credits: 15000, label: "Enterprise", bonus: "+30% extra" },
+  { id: "starter", credits: 500, label: "Starter", price: 9990, tagline: "Ideal para el Plan Básico" },
+  { id: "growth", credits: 2000, bonusCredits: 200, label: "Growth", bonus: "+10% extra", popular: true, price: 29990, tagline: "Refuerzo mensual para equipos activos" },
+  { id: "scale", credits: 5000, bonusCredits: 1000, label: "Scale", bonus: "+20% extra", price: 59990, tagline: "Equivalente a un mes Premium" },
+  { id: "enterprise", credits: 15000, bonusCredits: 4500, label: "Enterprise", bonus: "+30% extra", price: 149990, tagline: "Para operaciones Premium a gran escala" },
 ];
+
+const fmtCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
 
 function CreditosPage() {
   const [selected, setSelected] = useState<string>("growth");
@@ -107,13 +121,18 @@ function CreditosPage() {
                 <div className="mt-3 font-display text-2xl font-semibold">
                   {p.credits.toLocaleString("es-CL")}
                 </div>
-                <div className="text-xs text-muted-foreground">créditos IA</div>
+                <div className="text-xs text-muted-foreground">
+                  créditos IA{p.bonusCredits ? ` + ${p.bonusCredits.toLocaleString("es-CL")} bonus` : ""}
+                </div>
                 {p.bonus && (
                   <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                     <Check className="h-3 w-3" /> {p.bonus}
                   </div>
                 )}
-                <div className="mt-3 text-xs text-muted-foreground">Precio próximamente</div>
+                <div className="mt-3 font-display text-lg font-semibold">{fmtCLP(p.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span></div>
+                <div className="text-[11px] text-muted-foreground">
+                  {p.tagline} · ${Math.round(p.price / (p.credits + (p.bonusCredits ?? 0))).toLocaleString("es-CL")} por crédito
+                </div>
               </button>
             );
           })}
@@ -162,23 +181,40 @@ function CreditosPage() {
           <div className="rounded-2xl border border-border bg-card p-6">
             <h2 className="font-display text-lg font-semibold">Resumen</h2>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Paquete</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.label}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Créditos</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.credits.toLocaleString("es-CL")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Bonus</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.bonus ?? "—"}</span>
-              </div>
-              <div className="my-3 h-px bg-border" />
-              <div className="flex items-baseline justify-between">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-display text-lg font-semibold">Próximamente</span>
-              </div>
+              {(() => {
+                const sel = PACKS.find((p) => p.id === selected)!;
+                const totalCredits = sel.credits + (sel.bonusCredits ?? 0);
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Paquete</span>
+                      <span className="font-medium">{sel.label}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Créditos base</span>
+                      <span className="font-medium tabular-nums">{sel.credits.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bonus</span>
+                      <span className="font-medium tabular-nums">
+                        {sel.bonusCredits ? `+${sel.bonusCredits.toLocaleString("es-CL")} (${sel.bonus})` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total créditos</span>
+                      <span className="font-semibold tabular-nums">{totalCredits.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="my-3 h-px bg-border" />
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-muted-foreground">Total a pagar</span>
+                      <span className="font-display text-lg font-semibold">
+                        {fmtCLP(sel.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">IVA incluido · pago único, créditos sin vencimiento</div>
+                  </>
+                );
+              })()}
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 flex-none text-emerald-500" />
