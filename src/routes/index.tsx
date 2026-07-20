@@ -57,6 +57,8 @@ import {
   draftQuoteFromMessage,
 } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
+import { LandingPage } from "@/components/landing/landing-page";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dialen — WhatsApp + IA que vende por ti" }] }),
