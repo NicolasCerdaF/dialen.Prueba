@@ -66,6 +66,7 @@ export function LandingPage() {
             <a href="#producto" className="transition hover:text-white">Producto</a>
             <a href="#como-funciona" className="transition hover:text-white">Cómo funciona</a>
             <a href="#beneficios" className="transition hover:text-white">Beneficios</a>
+            <a href="#planes" className="transition hover:text-white">Planes</a>
             <a href="#faq" className="transition hover:text-white">Preguntas</a>
           </div>
           <div className="flex items-center gap-2">
