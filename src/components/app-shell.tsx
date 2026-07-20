@@ -380,7 +380,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <span className="font-display text-base font-semibold text-gradient-primary">Dialen</span>
           </div>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
+            <CreditsPill />
             <ThemeToggle />
           </div>
         </div>
