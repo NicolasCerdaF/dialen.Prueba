@@ -121,13 +121,18 @@ function CreditosPage() {
                 <div className="mt-3 font-display text-2xl font-semibold">
                   {p.credits.toLocaleString("es-CL")}
                 </div>
-                <div className="text-xs text-muted-foreground">créditos IA</div>
+                <div className="text-xs text-muted-foreground">
+                  créditos IA{p.bonusCredits ? ` + ${p.bonusCredits.toLocaleString("es-CL")} bonus` : ""}
+                </div>
                 {p.bonus && (
                   <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                     <Check className="h-3 w-3" /> {p.bonus}
                   </div>
                 )}
-                <div className="mt-3 text-xs text-muted-foreground">Precio próximamente</div>
+                <div className="mt-3 font-display text-lg font-semibold">{fmtCLP(p.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span></div>
+                <div className="text-[11px] text-muted-foreground">
+                  {p.tagline} · ${Math.round(p.price / (p.credits + (p.bonusCredits ?? 0))).toLocaleString("es-CL")} por crédito
+                </div>
               </button>
             );
           })}
