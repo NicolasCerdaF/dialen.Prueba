@@ -57,11 +57,21 @@ import {
   draftQuoteFromMessage,
 } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
+import { LandingPage } from "@/components/landing/landing-page";
+
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Bandeja Unificada — Dialen" }] }),
-  component: InboxPage,
+  head: () => ({ meta: [{ title: "Dialen — WhatsApp + IA que vende por ti" }] }),
+  component: RootIndex,
 });
+
+function RootIndex() {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  if (!session) return <LandingPage />;
+  return <InboxPage />;
+}
+
 
 type Conversation = {
   id: string;
