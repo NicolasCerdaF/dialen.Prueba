@@ -28,6 +28,10 @@ import { useAuth } from "@/lib/auth-context";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarSystemStatus } from "@/components/sidebar-system-status";
+import { CreditsPill } from "@/components/credits-pill";
+import { useMyPlan } from "@/lib/use-plan";
+import { Lock } from "lucide-react";
+import type { PremiumFeature } from "@/lib/plans.functions";
 
 type ExistingRoute =
   | "/"
@@ -56,6 +60,7 @@ type NavItem = {
   icon: typeof MessageSquare;
   to?: ExistingRoute;
   soon?: boolean;
+  premium?: PremiumFeature;
 };
 
 type NavGroup = {
@@ -73,7 +78,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Conversaciones", icon: MessageSquare, to: "/conversaciones" },
-      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
+      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia", premium: "bandeja-ia" },
     ],
   },
   {
@@ -94,10 +99,10 @@ const navGroups: NavGroup[] = [
     label: "IA Comercial",
     icon: Bot,
     items: [
-      { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia" },
-      { label: "Automatizaciones", icon: Zap, to: "/automatizaciones" },
-      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento" },
-      { label: "Análisis IA", icon: Brain, to: "/metricas-ia" },
+      { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia", premium: "director-ia" },
+      { label: "Automatizaciones", icon: Zap, to: "/automatizaciones", premium: "automatizaciones" },
+      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento", premium: "conocimiento" },
+      { label: "Análisis IA", icon: Brain, to: "/metricas-ia", premium: "metricas-ia" },
     ],
   },
   {
@@ -105,7 +110,7 @@ const navGroups: NavGroup[] = [
     label: "Reportes",
     icon: BarChart3,
     items: [
-      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo" },
+      { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo", premium: "dashboard-ejecutivo" },
     ],
   },
   {
@@ -138,6 +143,7 @@ function isItemActive(pathname: string, to?: ExistingRoute) {
 function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile, companyName, role, signOut } = useAuth();
+  const { isPremium } = useMyPlan();
   const initials = (profile?.full_name ?? profile?.email ?? "U")
     .split(" ")
     .map((s) => s[0])
@@ -289,6 +295,9 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                               strokeWidth={1.75}
                             />
                             <span className="flex-1 truncate">{item.label}</span>
+                            {item.premium && !isPremium && (
+                              <Lock className="h-3 w-3 flex-none text-amber-500/80" strokeWidth={2} />
+                            )}
                           </Link>
                         </li>
                       );
@@ -371,7 +380,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <span className="font-display text-base font-semibold text-gradient-primary">Dialen</span>
           </div>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
+            <CreditsPill />
             <ThemeToggle />
           </div>
         </div>

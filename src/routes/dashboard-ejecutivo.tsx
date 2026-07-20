@@ -1,3 +1,4 @@
+import { PremiumGate } from "@/components/premium-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/dashboard-ejecutivo")({
       },
     ],
   }),
-  component: DashboardEjecutivo,
+  component: () => (<PremiumGate feature="dashboard-ejecutivo" title="Dashboard Ejecutivo"><DashboardEjecutivo /></PremiumGate>),
 });
 
 const RANGE_LABEL: Record<ExecRange, string> = {

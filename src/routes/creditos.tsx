@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Coins, Sparkles, Check, CreditCard, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { useMyUsage } from "@/lib/use-plan";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/creditos")({
@@ -22,6 +23,11 @@ const PACKS: Pack[] = [
 function CreditosPage() {
   const [selected, setSelected] = useState<string>("growth");
   const [processing, setProcessing] = useState(false);
+  const { data: usage } = useMyUsage();
+  const included = usage?.included ?? 0;
+  const used = usage?.used ?? 0;
+  const remaining = usage?.remaining ?? 0;
+  const pct = usage?.pct ?? 0;
 
   const buy = () => {
     setProcessing(true);
@@ -35,6 +41,7 @@ function CreditosPage() {
 
   return (
     <AppShell>
+      <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl px-6 py-8">
         <header className="mb-8">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
@@ -47,20 +54,35 @@ function CreditosPage() {
           </p>
         </header>
 
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
-              <Coins className="h-6 w-6 text-primary" />
+        <div className="mb-8 rounded-2xl border border-border bg-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
+                <Coins className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Saldo disponible este mes</div>
+                <div className="font-display text-2xl font-semibold tabular-nums">
+                  {remaining.toLocaleString("es-CL")} <span className="text-sm font-normal text-muted-foreground">/ {included.toLocaleString("es-CL")} créditos</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Saldo actual</div>
-              <div className="font-display text-2xl font-semibold">— créditos</div>
+            <div className="text-right text-xs text-muted-foreground">
+              <div>Usados: <span className="font-semibold text-foreground tabular-nums">{used.toLocaleString("es-CL")}</span> ({pct}%)</div>
+              <div className="mt-0.5">Se recargan según tu plan cada mes.</div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Se recargan según tu plan cada mes.
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-primary",
+              )}
+              style={{ width: `${pct}%` }}
+            />
           </div>
         </div>
+
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PACKS.map((p) => {
@@ -164,6 +186,7 @@ function CreditosPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </AppShell>
   );
