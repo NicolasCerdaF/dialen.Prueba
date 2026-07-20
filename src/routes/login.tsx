@@ -73,7 +73,7 @@ function LoginPage() {
     const r = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
-    if (r.error) toast.error(r.error.message ?? "Error con Google");
+    if (r.error) toast.error(translateAuthError(r.error.message ?? "Error con Google"));
     setBusy(false);
   };
 
