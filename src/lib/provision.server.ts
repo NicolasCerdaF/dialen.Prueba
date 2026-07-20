@@ -8,6 +8,62 @@ import { log } from "@/lib/logger";
 
 const VALID_PLANS = new Set(["basico", "premium"]);
 const LOGIN_REDIRECT = "https://dialen.novacorp.app";
+const LOGIN_URL = "https://dialen.novacorp.app/login";
+
+// activate_client accepts external plan names and maps to internal IDs.
+const EXTERNAL_PLAN_MAP: Record<string, "basico" | "premium"> = {
+  start: "basico",
+  business: "premium",
+};
+const ALLOWED_ACTIVATOR_ROLES = new Set([
+  "ceo",
+  "admin",
+  "operaciones",
+  "ops_implementacion_onboarding",
+]);
+
+// Simple in-memory rate limiter (per worker instance): 10 req / 60s per key.
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 10;
+const rateBuckets = new Map<string, number[]>();
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const bucket = (rateBuckets.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (bucket.length >= RATE_MAX) {
+    rateBuckets.set(key, bucket);
+    return true;
+  }
+  bucket.push(now);
+  rateBuckets.set(key, bucket);
+  return false;
+}
+
+function generateTempPassword(): string {
+  // 14 chars, guarantees upper + lower + digit + symbol.
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*?";
+  const all = upper + lower + digits + symbols;
+  const bytes = new Uint8Array(14);
+  crypto.getRandomValues(bytes);
+  const pick = (set: string, i: number) => set[bytes[i] % set.length];
+  const chars = [
+    pick(upper, 0),
+    pick(lower, 1),
+    pick(digits, 2),
+    pick(symbols, 3),
+    ...Array.from({ length: 10 }, (_, i) => pick(all, i + 4)),
+  ];
+  // Fisher-Yates shuffle with fresh entropy
+  const shuf = new Uint8Array(chars.length);
+  crypto.getRandomValues(shuf);
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = shuf[i] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
