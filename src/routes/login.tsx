@@ -32,11 +32,8 @@ function translateAuthError(message: string): string {
 function LoginPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [company, setCompany] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -47,21 +44,8 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { full_name: name, company_name: company },
-          },
-        });
-        if (error) throw error;
-        toast.success("Cuenta creada. Revisa tu email para verificar.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err) {
       toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
     } finally {
@@ -69,14 +53,6 @@ function LoginPage() {
     }
   };
 
-  const google = async () => {
-    setBusy(true);
-    const r = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (r.error) toast.error(translateAuthError(r.error.message ?? "Error con Google"));
-    setBusy(false);
-  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -101,39 +77,9 @@ function LoginPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-7">
-          <div className="mb-6 flex gap-1 rounded-lg bg-secondary/50 p-1">
-            {(["login", "signup"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                  mode === m ? "bg-background text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {m === "login" ? "Iniciar sesión" : "Crear cuenta"}
-              </button>
-            ))}
-          </div>
+          <h1 className="mb-6 text-center font-display text-lg font-semibold">Iniciar sesión</h1>
 
           <form onSubmit={submit} className="space-y-3">
-            {mode === "signup" && (
-              <>
-                <input
-                  required
-                  placeholder="Tu nombre"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <input
-                  required
-                  placeholder="Nombre de tu empresa"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </>
-            )}
             <input
               required
               type="email"
@@ -146,7 +92,7 @@ function LoginPage() {
               required
               type="password"
               minLength={6}
-              placeholder="Contraseña (mín. 6)"
+              placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
@@ -155,23 +101,16 @@ function LoginPage() {
               disabled={busy}
               className="w-full rounded-lg bg-gradient-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "..." : mode === "login" ? "Entrar" : "Crear cuenta"}
+              {busy ? "..." : "Entrar"}
             </button>
           </form>
 
-          <div className="my-4 flex items-center gap-3 text-[11px] uppercase tracking-wider text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />o<div className="h-px flex-1 bg-border" />
-          </div>
-
-          <button
-            onClick={google}
-            disabled={busy}
-            className="w-full rounded-lg border border-input bg-background py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-          >
-            Continuar con Google
-          </button>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            ¿Necesitas una cuenta? Contacta a tu ejecutivo de NovaCorp.
+          </p>
         </div>
       </div>
     </div>
   );
 }
+
