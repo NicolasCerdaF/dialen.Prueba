@@ -84,7 +84,10 @@ function DashboardPage() {
             <div className="lg:col-span-2">
               <AttentionInbox buckets={data.attention} />
             </div>
-            <LiveFunnel funnel={data.funnel} />
+            <div className="space-y-6">
+              <CreditsUsageCard />
+              <LiveFunnel funnel={data.funnel} />
+            </div>
           </div>
 
           <div className="mt-6 grid gap-6 md:grid-cols-3">
