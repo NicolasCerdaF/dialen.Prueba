@@ -27,6 +27,7 @@ function MiPlanPage() {
     onSuccess: (_, plan) => {
       toast.success(`Plan actualizado a ${PLAN_CATALOG[plan].name}`);
       qc.invalidateQueries({ queryKey: ["my-plan"] });
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Error al cambiar de plan"),
   });
