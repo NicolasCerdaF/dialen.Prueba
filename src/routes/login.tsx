@@ -11,6 +11,23 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const AUTH_ERROR_ES: Array<[RegExp, string]> = [
+  [/password is known to be weak/i, "La contraseña es demasiado débil. Elige una más segura (mezcla mayúsculas, números y símbolos)."],
+  [/password should be at least/i, "La contraseña debe tener al menos 6 caracteres."],
+  [/invalid login credentials/i, "Correo o contraseña incorrectos."],
+  [/email not confirmed/i, "Debes confirmar tu correo antes de iniciar sesión."],
+  [/user already registered/i, "Este correo ya está registrado. Inicia sesión."],
+  [/email rate limit exceeded/i, "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."],
+  [/invalid email/i, "El correo ingresado no es válido."],
+  [/signup is disabled/i, "El registro está deshabilitado temporalmente."],
+  [/network|failed to fetch/i, "Error de conexión. Verifica tu internet e inténtalo de nuevo."],
+];
+
+function translateAuthError(message: string): string {
+  for (const [re, es] of AUTH_ERROR_ES) if (re.test(message)) return es;
+  return message;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
