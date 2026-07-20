@@ -225,7 +225,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav className="flex-1 overflow-y-auto px-3 pb-2 pt-1">
         <ul className="space-y-1">
-          {navGroups.map((group) => {
+          {groups.map((group) => {
             const GroupIcon = group.icon;
             const isOpen = open[group.id] ?? false;
             const isAiGroup = group.id === "ia";
