@@ -177,8 +177,8 @@ function MiPlanPage() {
                         : mutation.isPending
                           ? "Actualizando…"
                           : id === "premium"
-                            ? "Cambiar a Premium"
-                            : "Cambiar a Básico"}
+                            ? "Cambiar a Business"
+                            : "Cambiar a Start"}
                     </button>
                   </div>
                 );

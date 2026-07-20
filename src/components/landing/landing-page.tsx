@@ -409,11 +409,11 @@ export function LandingPage() {
             subtitle="Empieza con lo esencial o desbloquea toda la potencia de la IA comercial. Cambia cuando quieras."
           />
           <div className="mt-12 grid gap-6 md:grid-cols-2">
-            {/* Básico */}
+            {/* Start */}
             <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-8">
               <div className="flex items-center gap-2 text-white/70">
                 <Zap className="h-5 w-5 text-[#00C853]" />
-                <span className="text-sm uppercase tracking-widest">Plan Básico</span>
+                <span className="text-sm uppercase tracking-widest">Plan Start</span>
               </div>
               <h3 className="mt-3 font-semibold text-2xl">IA operativa para vender por WhatsApp</h3>
               <p className="mt-2 text-sm text-white/60">Bandeja unificada, CRM y una IA que te ayuda en cada conversación: sugerencias, resúmenes, cotizaciones automáticas y scoring de leads.</p>
@@ -440,24 +440,24 @@ export function LandingPage() {
                 to="/login"
                 className="mt-8 inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
               >
-                Empezar con Básico
+                Empezar con Start
               </Link>
             </div>
 
-            {/* Premium */}
+            {/* Business */}
             <div className="relative rounded-2xl border border-[#00C853]/40 bg-gradient-to-br from-[#00C853]/10 via-transparent to-[#00695C]/10 p-8 shadow-[0_20px_60px_-20px_rgba(0,200,83,0.35)]">
               <div className="absolute -top-3 right-6 rounded-full bg-gradient-to-r from-[#00C853] to-[#00695C] px-3 py-1 text-[11px] font-semibold text-white shadow-lg">
                 Recomendado
               </div>
               <div className="flex items-center gap-2 text-white/80">
                 <Sparkles className="h-5 w-5 text-[#00E676]" />
-                <span className="text-sm uppercase tracking-widest">Plan Premium</span>
+                <span className="text-sm uppercase tracking-widest">Plan Business</span>
               </div>
               <h3 className="mt-3 font-semibold text-2xl">IA que dirige tu operación completa</h3>
               <p className="mt-2 text-sm text-white/70">Suma el Director IA que prioriza tu día, automatizaciones con recetas y un dashboard ejecutivo con forecast de ingresos.</p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {[
-                  "Todo lo del Plan Básico",
+                  "Todo lo del Plan Start",
                   "Director Comercial IA (priorización 24/7)",
                   "Motor de Automatizaciones con recetas",
                   "Análisis IA avanzado del motor",
@@ -476,7 +476,7 @@ export function LandingPage() {
                 to="/login"
                 className="mt-8 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(0,200,83,0.7)]"
               >
-                Activar Premium <ArrowRight className="h-4 w-4" />
+                Activar Business <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

@@ -100,7 +100,7 @@ export function CreditsUsageCard() {
         >
           <span className="flex items-center gap-1.5 font-medium">
             <TrendingUp className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-            Sube a Premium — 6× más créditos y funciones avanzadas
+            Sube a Business — 6× más créditos y funciones avanzadas
           </span>
           <span className="font-semibold text-amber-600 dark:text-amber-400">Ver planes →</span>
         </Link>
