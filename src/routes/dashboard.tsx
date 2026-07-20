@@ -25,6 +25,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { CreditsUsageCard } from "@/components/credits-usage-card";
 import { cn } from "@/lib/utils";
 import { getDashboardData, type AiPriority, type AttentionBucket, type AttentionItem, type FunnelStageMini } from "@/lib/dashboard.functions";
 import { STAGE_STYLES } from "@/lib/pipeline";
