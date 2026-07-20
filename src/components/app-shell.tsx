@@ -23,6 +23,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
+import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -210,9 +212,12 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-5 pb-4 pt-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-[var(--shadow-glow)]">
-          <Sparkles className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
-        </div>
+        <img
+          src={dialenLogo.url}
+          alt="Dialen"
+          className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_0_12px_rgba(0,200,83,0.35)]"
+        />
+
         <div className="leading-tight">
           <div className="font-display text-[15px] font-semibold tracking-tight">
             <span className="text-gradient-primary">Dialen</span>
@@ -406,11 +411,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
 
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-primary">
-              <Sparkles className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
-            </div>
+            <img src={dialenLogo.url} alt="Dialen" className="h-7 w-7 object-contain" />
             <span className="font-display text-base font-semibold text-gradient-primary">Dialen</span>
           </div>
+
           <div className="ml-auto flex items-center gap-2">
             <CreditsPill />
             <ThemeToggle />

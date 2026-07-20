@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 import {
   Sparkles,
   MessageCircle,
@@ -54,9 +56,12 @@ export function LandingPage() {
       <header className="relative z-20 sticky top-0 backdrop-blur-xl bg-[#0F172A]/70 border-b border-white/5">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#00C853] to-[#00695C] shadow-[0_0_24px_-4px_rgba(0,200,83,0.55)]">
-              <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
+            <img
+              src={dialenLogo.url}
+              alt="Dialen"
+              className="h-10 w-10 object-contain drop-shadow-[0_0_18px_rgba(0,200,83,0.55)]"
+            />
+
             <div className="leading-tight">
               <div className="font-semibold tracking-tight">Dialen</div>
               <div className="text-[10px] uppercase tracking-widest text-white/50">by Nova Corp</div>
@@ -567,9 +572,8 @@ export function LandingPage() {
           <div className="grid gap-10 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#00C853] to-[#00695C]">
-                  <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-                </div>
+                <img src={dialenLogo.url} alt="Dialen" className="h-10 w-10 object-contain" />
+
                 <div className="leading-tight">
                   <div className="font-semibold tracking-tight">Dialen</div>
                   <div className="text-[10px] uppercase tracking-widest text-white/50">by Nova Corp</div>

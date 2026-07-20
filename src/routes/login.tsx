@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, MessageSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Iniciar sesión — Dialen" }] }),
@@ -70,11 +72,14 @@ function LoginPage() {
         {/* Logo header */}
         <div className="mb-10 flex flex-col items-center">
           <div className="group relative mb-4">
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-400 to-indigo-500 opacity-30 blur transition duration-1000 group-hover:opacity-60" />
-            <div className="relative rounded-2xl border border-white/10 bg-[#0F172A] p-4">
-              <MessageSquare className="h-10 w-10 text-cyan-400" strokeWidth={1.5} />
-            </div>
+            <div className="absolute -inset-2 rounded-[28px] bg-gradient-to-r from-emerald-400/40 to-cyan-500/30 opacity-60 blur-xl transition duration-1000 group-hover:opacity-90" />
+            <img
+              src={dialenLogo.url}
+              alt="Dialen"
+              className="relative h-24 w-24 object-contain drop-shadow-[0_0_24px_rgba(0,200,83,0.45)]"
+            />
           </div>
+
           <h1 className="font-display text-4xl font-bold tracking-tight text-white">Dialen</h1>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-500/80">
             by Nova Corp
