@@ -223,19 +223,19 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                     setOpen((p) => ({ ...p, [group.id]: !p[group.id] }))
                   }
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] transition-smooth",
+                    "flex w-full items-center gap-2 rounded-md px-2 py-2 text-[12px] font-bold uppercase tracking-[0.14em] transition-smooth border-l-2",
                     isAiGroup
-                      ? "text-[color:var(--ai)] hover:text-[color:var(--ai-glow)]"
-                      : "text-foreground/70 hover:text-foreground",
+                      ? "text-[color:var(--ai)] hover:text-[color:var(--ai-glow)] border-[color:var(--ai)]/60"
+                      : "text-primary hover:text-primary border-primary/50",
                   )}
                   aria-expanded={isOpen}
                 >
-                  <GroupIcon className="h-3.5 w-3.5" />
+                  <GroupIcon className={cn("h-4 w-4", isAiGroup ? "text-[color:var(--ai)]" : "text-primary")} />
                   <span className="flex-1 text-left">{group.label}</span>
                   {isAiGroup && <span className="ai-dot h-1.5 w-1.5 rounded-full" />}
                   <ChevronDown
                     className={cn(
-                      "h-3.5 w-3.5 transition-transform duration-200",
+                      "h-3.5 w-3.5 transition-transform duration-200 opacity-70",
                       isOpen ? "rotate-0" : "-rotate-90",
                     )}
                   />
@@ -261,6 +261,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                           </li>
                         );
                       }
+                      const isLocked = item.premium && !isPremium;
                       return (
                         <li key={`${group.id}-${item.label}`}>
                           <Link
@@ -272,7 +273,9 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                                 ? isAiGroup
                                   ? "bg-[color-mix(in_oklab,var(--ai)_10%,transparent)] text-foreground font-medium"
                                   : "bg-secondary text-foreground font-medium"
-                                : "text-foreground/85 hover:bg-secondary/70 hover:text-foreground",
+                                : isLocked
+                                  ? "text-amber-700/80 dark:text-amber-400/80 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300"
+                                  : "text-foreground/85 hover:bg-secondary/70 hover:text-foreground",
                             )}
                           >
                             {active && (
@@ -290,13 +293,24 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                                   ? isAiGroup
                                     ? "text-[color:var(--ai)]"
                                     : "text-primary"
-                                  : "text-foreground/70 group-hover:text-foreground",
+                                  : isLocked
+                                    ? "text-amber-600/80 dark:text-amber-400/80"
+                                    : "text-foreground/70 group-hover:text-foreground",
                               )}
                               strokeWidth={1.75}
                             />
                             <span className="flex-1 truncate">{item.label}</span>
-                            {item.premium && !isPremium && (
-                              <Lock className="h-3 w-3 flex-none text-amber-500/80" strokeWidth={2} />
+                            {item.premium && (
+                              isPremium ? (
+                                <span className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                  Pro
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                  <Lock className="h-2.5 w-2.5" strokeWidth={2.5} />
+                                  Pro
+                                </span>
+                              )
                             )}
                           </Link>
                         </li>
