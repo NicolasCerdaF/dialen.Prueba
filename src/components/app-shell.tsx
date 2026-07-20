@@ -101,7 +101,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Director Comercial IA", icon: Sparkles, to: "/director-ia", premium: "director-ia" },
       { label: "Automatizaciones", icon: Zap, to: "/automatizaciones", premium: "automatizaciones" },
-      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento", premium: "conocimiento" },
+      { label: "Conocimiento Empresarial", icon: BookOpen, to: "/conocimiento" },
       { label: "Análisis IA", icon: Brain, to: "/metricas-ia", premium: "metricas-ia" },
     ],
   },
