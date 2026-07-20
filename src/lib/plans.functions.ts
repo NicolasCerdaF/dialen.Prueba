@@ -14,33 +14,35 @@ export const PLAN_CATALOG: Record<PlanId, {
   basico: {
     id: "basico",
     name: "Plan Básico",
-    tagline: "Ideal para equipos pequeños que están arrancando con WhatsApp comercial.",
+    tagline: "IA operativa que te ayuda a vender en cada conversación de WhatsApp.",
     monthlyCredits: 500,
     features: [
       "Bandeja unificada de WhatsApp",
       "CRM de contactos y clientes",
       "Embudo comercial (5 etapas)",
-      "Cotizaciones básicas",
+      "Sugerencias IA en cada conversación",
+      "Resumen automático de conversaciones",
+      "Auto-borrador de cotizaciones con IA",
+      "Scoring IA de leads (Bandeja IA)",
+      "Base de conocimiento con búsqueda IA (RAG)",
       "Catálogo de productos",
-      "Sugerencias IA en conversaciones",
+      "Cotizaciones básicas",
       "Soporte por correo",
     ],
   },
   premium: {
     id: "premium",
     name: "Plan Premium",
-    tagline: "Para equipos comerciales que quieren escalar con IA avanzada y automatización total.",
+    tagline: "IA que además dirige tu operación: prioriza, automatiza y proyecta ingresos.",
     monthlyCredits: 3000,
     features: [
       "Todo lo del Plan Básico",
-      "Director Comercial IA (priorización 24/7)",
-      "Análisis IA avanzado con KPIs y forecast",
-      "Dashboard ejecutivo con proyección de ingresos",
-      "Automatizaciones con recetas",
+      "Director Comercial IA (priorización 24/7 de tu día)",
+      "Motor de Automatizaciones con recetas y flujos",
+      "Análisis IA avanzado (rendimiento del motor IA)",
+      "Dashboard ejecutivo con forecast de ingresos",
       "Cotizaciones con IA + versionado + firma",
       "Recomendador inteligente en Kanban e Inbox",
-      "Bandeja IA con scoring heurístico",
-      "Conocimiento empresarial con RAG semántico",
       "Soporte prioritario 24/7 + onboarding dedicado",
     ],
   },
@@ -66,11 +68,11 @@ export const getMyPlan = createServerFn({ method: "GET" })
   });
 
 // Feature keys gated by plan. Premium-only routes/features live here.
+// Básico incluye la IA operativa (Bandeja IA + Conocimiento). Premium desbloquea
+// la IA de gestión/dirección (Director IA, Automatizaciones, Métricas, Ejecutivo).
 export const PREMIUM_FEATURES = [
   "director-ia",
-  "bandeja-ia",
   "automatizaciones",
-  "conocimiento",
   "metricas-ia",
   "dashboard-ejecutivo",
 ] as const;
