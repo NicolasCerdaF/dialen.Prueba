@@ -109,7 +109,6 @@ function MiPlanPage() {
 
                     <div className="mt-4 rounded-lg bg-secondary/40 p-3 text-sm">
                       <div className="font-medium">{plan.monthlyCredits.toLocaleString("es-CL")} créditos IA / mes</div>
-                      <div className="mt-1 text-xs text-muted-foreground">{plan.limits.conversaciones}</div>
                     </div>
 
                     <ul className="mt-5 space-y-2 text-sm">
@@ -121,11 +120,6 @@ function MiPlanPage() {
                       ))}
                     </ul>
 
-                    <div className="mt-5 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-                      <div className="rounded border border-border px-2 py-1.5">{plan.limits.usuarios}</div>
-                      <div className="rounded border border-border px-2 py-1.5">{plan.limits.automatizaciones}</div>
-                      <div className="col-span-2 rounded border border-border px-2 py-1.5">{plan.limits.conocimiento}</div>
-                    </div>
 
                     <button
                       disabled={isCurrent || mutation.isPending}
