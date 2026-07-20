@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 import {
   Sparkles,
   MessageCircle,
