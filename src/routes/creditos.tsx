@@ -187,6 +187,7 @@ function CreditosPage() {
           </div>
         </div>
       </div>
+      </div>
     </AppShell>
   );
 }
