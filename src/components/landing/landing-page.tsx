@@ -415,17 +415,20 @@ export function LandingPage() {
                 <Zap className="h-5 w-5 text-[#00C853]" />
                 <span className="text-sm uppercase tracking-widest">Plan Básico</span>
               </div>
-              <h3 className="mt-3 font-semibold text-2xl">Para empezar a vender por WhatsApp</h3>
-              <p className="mt-2 text-sm text-white/60">Ideal para equipos pequeños que necesitan una bandeja unificada, CRM y cotizaciones sin complicaciones.</p>
+              <h3 className="mt-3 font-semibold text-2xl">IA operativa para vender por WhatsApp</h3>
+              <p className="mt-2 text-sm text-white/60">Bandeja unificada, CRM y una IA que te ayuda en cada conversación: sugerencias, resúmenes, cotizaciones automáticas y scoring de leads.</p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {[
                   "Bandeja unificada de WhatsApp",
                   "CRM de contactos y clientes",
                   "Embudo comercial de 5 etapas",
-                  "Cotizaciones y catálogo",
-                  "Sugerencias IA en conversaciones",
+                  "Sugerencias IA en cada conversación",
+                  "Resumen automático de conversaciones",
+                  "Auto-borrador de cotizaciones con IA",
+                  "Bandeja IA con scoring de leads",
+                  "Base de conocimiento con búsqueda IA",
+                  "Catálogo y cotizaciones",
                   "Soporte por correo",
-
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-white/80">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00C853]" />
@@ -450,20 +453,18 @@ export function LandingPage() {
                 <Sparkles className="h-5 w-5 text-[#00E676]" />
                 <span className="text-sm uppercase tracking-widest">Plan Premium</span>
               </div>
-              <h3 className="mt-3 font-semibold text-2xl">Escala con IA comercial completa</h3>
-              <p className="mt-2 text-sm text-white/70">Para equipos que quieren cerrar más rápido, con IA que prioriza, sugiere y automatiza el flujo de venta 24/7.</p>
+              <h3 className="mt-3 font-semibold text-2xl">IA que dirige tu operación completa</h3>
+              <p className="mt-2 text-sm text-white/70">Suma el Director IA que prioriza tu día, automatizaciones con recetas y un dashboard ejecutivo con forecast de ingresos.</p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {[
                   "Todo lo del Plan Básico",
                   "Director Comercial IA (priorización 24/7)",
-                  "Análisis IA avanzado + forecast de ingresos",
-                  "Dashboard ejecutivo en tiempo real",
-                  "Automatizaciones con recetas",
-                  "Cotizaciones IA + versionado",
-                  "Bandeja IA con scoring heurístico",
-                  "Conocimiento empresarial con RAG semántico",
+                  "Motor de Automatizaciones con recetas",
+                  "Análisis IA avanzado del motor",
+                  "Dashboard ejecutivo + forecast de ingresos",
+                  "Cotizaciones IA + versionado + firma",
+                  "Recomendador inteligente en Kanban e Inbox",
                   "Soporte prioritario + onboarding dedicado",
-
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-white">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00E676]" />
