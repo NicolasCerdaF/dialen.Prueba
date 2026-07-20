@@ -78,7 +78,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
       { label: "Conversaciones", icon: MessageSquare, to: "/conversaciones" },
-      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia", premium: "bandeja-ia" },
+      { label: "Bandeja IA", icon: Inbox, to: "/bandeja-ia" },
     ],
   },
   {
