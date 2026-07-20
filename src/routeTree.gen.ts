@@ -30,6 +30,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as BandejaIaRouteImport } from './routes/bandeja-ia'
 import { Route as AutomatizacionesRouteImport } from './routes/automatizaciones'
+import { Route as AdministradorRouteImport } from './routes/administrador'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.whatsapp'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
@@ -145,6 +146,11 @@ const AutomatizacionesRoute = AutomatizacionesRouteImport.update({
   path: '/automatizaciones',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdministradorRoute = AdministradorRouteImport.update({
+  id: '/administrador',
+  path: '/administrador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -196,6 +202,7 @@ const ApiPublicHooksFollowUpCheckRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/automatizaciones': typeof AutomatizacionesRoute
   '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/automatizaciones': typeof AutomatizacionesRoute
   '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/automatizaciones': typeof AutomatizacionesRoute
   '/bandeja-ia': typeof BandejaIaRoute
   '/catalogo': typeof CatalogoRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/administrador'
     | '/automatizaciones'
     | '/bandeja-ia'
     | '/catalogo'
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/administrador'
     | '/automatizaciones'
     | '/bandeja-ia'
     | '/catalogo'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/administrador'
     | '/automatizaciones'
     | '/bandeja-ia'
     | '/catalogo'
@@ -392,6 +404,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdministradorRoute: typeof AdministradorRoute
   AutomatizacionesRoute: typeof AutomatizacionesRoute
   BandejaIaRoute: typeof BandejaIaRoute
   CatalogoRoute: typeof CatalogoRoute
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AutomatizacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/administrador': {
+      id: '/administrador'
+      path: '/administrador'
+      fullPath: '/administrador'
+      preLoaderRoute: typeof AdministradorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -673,6 +693,7 @@ const CotizacionesRouteWithChildren = CotizacionesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdministradorRoute: AdministradorRoute,
   AutomatizacionesRoute: AutomatizacionesRoute,
   BandejaIaRoute: BandejaIaRoute,
   CatalogoRoute: CatalogoRoute,
