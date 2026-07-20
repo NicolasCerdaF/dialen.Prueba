@@ -30,8 +30,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarSystemStatus } from "@/components/sidebar-system-status";
 import { CreditsPill } from "@/components/credits-pill";
 import { useMyPlan } from "@/lib/use-plan";
-import { Lock } from "lucide-react";
+import { Lock, Shield } from "lucide-react";
 import type { PremiumFeature } from "@/lib/plans.functions";
+import { usePlatformAdmin } from "@/lib/use-platform-admin";
 
 type ExistingRoute =
   | "/"
@@ -53,7 +54,8 @@ type ExistingRoute =
   | "/onboarding/whatsapp"
   | "/mi-plan"
   | "/creditos"
-  | "/whatsapp";
+  | "/whatsapp"
+  | "/administrador";
 
 type NavItem = {
   label: string;
@@ -144,6 +146,18 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile, companyName, role, signOut } = useAuth();
   const { isPremium } = useMyPlan();
+  const { isPlatformAdmin } = usePlatformAdmin();
+  const groups = isPlatformAdmin
+    ? [
+        ...navGroups,
+        {
+          id: "plataforma",
+          label: "Plataforma",
+          icon: Shield,
+          items: [{ label: "Administrador", icon: Shield, to: "/administrador" as ExistingRoute }],
+        },
+      ]
+    : navGroups;
   const initials = (profile?.full_name ?? profile?.email ?? "U")
     .split(" ")
     .map((s) => s[0])
