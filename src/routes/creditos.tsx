@@ -11,14 +11,28 @@ export const Route = createFileRoute("/creditos")({
   component: CreditosPage,
 });
 
-type Pack = { id: string; credits: number; label: string; bonus?: string; popular?: boolean };
+type Pack = {
+  id: string;
+  credits: number;
+  bonusCredits?: number;
+  label: string;
+  bonus?: string;
+  popular?: boolean;
+  price: number; // CLP
+  tagline: string;
+};
 
+// Precios alineados al costo del software:
+// Plan Básico incluye 500 créditos/mes → Starter equivale a una recarga mensual.
+// Plan Premium incluye 3.000 créditos/mes → Scale ≈ una recarga Premium.
 const PACKS: Pack[] = [
-  { id: "starter", credits: 500, label: "Starter" },
-  { id: "growth", credits: 2000, label: "Growth", bonus: "+10% extra", popular: true },
-  { id: "scale", credits: 5000, label: "Scale", bonus: "+20% extra" },
-  { id: "enterprise", credits: 15000, label: "Enterprise", bonus: "+30% extra" },
+  { id: "starter", credits: 500, label: "Starter", price: 9990, tagline: "Ideal para el Plan Básico" },
+  { id: "growth", credits: 2000, bonusCredits: 200, label: "Growth", bonus: "+10% extra", popular: true, price: 29990, tagline: "Refuerzo mensual para equipos activos" },
+  { id: "scale", credits: 5000, bonusCredits: 1000, label: "Scale", bonus: "+20% extra", price: 59990, tagline: "Equivalente a un mes Premium" },
+  { id: "enterprise", credits: 15000, bonusCredits: 4500, label: "Enterprise", bonus: "+30% extra", price: 149990, tagline: "Para operaciones Premium a gran escala" },
 ];
+
+const fmtCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
 
 function CreditosPage() {
   const [selected, setSelected] = useState<string>("growth");
