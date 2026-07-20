@@ -35,7 +35,8 @@ function MiPlanPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-6xl px-6 py-8">
         <header className="mb-8">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" /> Suscripción
