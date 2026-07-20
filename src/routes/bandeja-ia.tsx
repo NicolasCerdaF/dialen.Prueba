@@ -46,7 +46,7 @@ export const Route = createFileRoute("/bandeja-ia")({
       { name: "description", content: "Capa de inteligencia sobre tus conversaciones de WhatsApp" },
     ],
   }),
-  component: () => (<PremiumGate feature="bandeja-ia" title="Bandeja IA"><BandejaIAPage /></PremiumGate>),
+  component: BandejaIAPage,
   errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
