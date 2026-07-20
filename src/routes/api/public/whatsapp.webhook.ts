@@ -38,6 +38,14 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         if (mode !== "subscribe" || !token) {
           return new Response("forbidden", { status: 403 });
         }
+
+        // 1) Global verify token (used during Meta app setup, before any channel exists)
+        const globalToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+        if (globalToken && token === globalToken) {
+          return new Response(challenge ?? "", { status: 200 });
+        }
+
+        // 2) Per-channel token (once customers connect their WhatsApp)
         const supabase = admin();
         const { data } = await supabase
           .from("whatsapp_channels")
