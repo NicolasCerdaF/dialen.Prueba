@@ -61,17 +61,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dialen — IA que responde tu WhatsApp Business" },
+      { title: "Bandeja Unificada — Dialen" },
       {
         name: "description",
         content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7.",
       },
-      { property: "og:title", content: "Dialen — IA que responde tu WhatsApp Business" },
-      { name: "twitter:title", content: "Dialen — IA que responde tu WhatsApp Business" },
+      { property: "og:title", content: "Bandeja Unificada — Dialen" },
+      { name: "twitter:title", content: "Bandeja Unificada — Dialen" },
       { property: "og:description", content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7." },
       { name: "twitter:description", content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7." },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dc934b6f-1e75-41dc-b7bb-1128fa554439/id-preview-fb135585--bb6e02ce-209d-4146-abe4-9288208938a5.lovable.app-1784505627119.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dc934b6f-1e75-41dc-b7bb-1128fa554439/id-preview-fb135585--bb6e02ce-209d-4146-abe4-9288208938a5.lovable.app-1784505627119.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
