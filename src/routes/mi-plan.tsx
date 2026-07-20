@@ -78,6 +78,14 @@ function MiPlanPage() {
               </div>
             </div>
 
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Compara los planes
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
             <div className="grid gap-6 md:grid-cols-2">
               {(["basico", "premium"] as PlanId[]).map((id) => {
                 const plan = PLAN_CATALOG[id];
@@ -92,18 +100,38 @@ function MiPlanPage() {
                       isPremium && !isCurrent && "ring-1 ring-amber-500/20",
                     )}
                   >
+                    <div
+                      className={cn(
+                        "absolute inset-x-0 top-0 h-1 rounded-t-2xl",
+                        isPremium
+                          ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                          : "bg-gradient-to-r from-primary/60 to-primary",
+                      )}
+                    />
                     {isPremium && (
                       <div className="absolute -top-3 right-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-[11px] font-semibold text-white shadow">
                         Recomendado
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      {isPremium ? (
-                        <Crown className="h-5 w-5 text-amber-500" />
-                      ) : (
-                        <Zap className="h-5 w-5 text-primary" />
-                      )}
-                      <h3 className="font-display text-lg font-semibold">{plan.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {isPremium ? (
+                          <Crown className="h-5 w-5 text-amber-500" />
+                        ) : (
+                          <Zap className="h-5 w-5 text-primary" />
+                        )}
+                        <h3 className="font-display text-lg font-semibold">{plan.name}</h3>
+                      </div>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                          isPremium
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        {isPremium ? "Avanzado" : "Esencial"}
+                      </span>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">{plan.tagline}</p>
 
@@ -111,7 +139,15 @@ function MiPlanPage() {
                       <div className="font-medium">{plan.monthlyCredits.toLocaleString("es-CL")} créditos IA / mes</div>
                     </div>
 
-                    <ul className="mt-5 space-y-2 text-sm">
+                    <div className="my-5 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Incluye
+                      </span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+
+                    <ul className="space-y-2 text-sm">
                       {plan.features.map((f) => (
                         <li key={f} className="flex items-start gap-2">
                           <Check className="mt-0.5 h-4 w-4 flex-none text-emerald-500" />
@@ -120,12 +156,13 @@ function MiPlanPage() {
                       ))}
                     </ul>
 
+                    <div className="my-5 h-px bg-border" />
 
                     <button
                       disabled={isCurrent || mutation.isPending}
                       onClick={() => mutation.mutate(id)}
                       className={cn(
-                        "mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition disabled:opacity-50",
+                        "w-full rounded-lg py-2.5 text-sm font-semibold transition disabled:opacity-50",
                         isCurrent
                           ? "border border-border bg-secondary text-muted-foreground"
                           : isPremium
@@ -145,6 +182,7 @@ function MiPlanPage() {
                 );
               })}
             </div>
+
 
             <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
               <p>
