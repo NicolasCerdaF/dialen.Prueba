@@ -688,15 +688,27 @@ function TestimonialCard({
   quote,
   author,
   role,
+  rating = 5,
+  tag,
 }: {
   quote: string;
   author: string;
   role: string;
+  rating?: number;
+  tag?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-      <Quote className="h-6 w-6 text-[#00C853]/60" />
-      <p className="mt-4 text-sm leading-relaxed text-white/80">{quote}</p>
+    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+      <div className="flex items-start justify-between">
+        <Quote className="h-6 w-6 text-[#00C853]/60" />
+        {tag && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-[#00C853]/25 bg-[#00C853]/10 px-2.5 py-0.5 text-[10px] font-medium text-[#00E676]">
+            <CheckCircle2 className="h-3 w-3" />
+            {tag}
+          </span>
+        )}
+      </div>
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-white/80">{quote}</p>
       <div className="mt-5 flex items-center gap-3 border-t border-white/5 pt-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#00C853]/15 text-xs font-semibold text-[#00E676]">
           {author
@@ -710,13 +722,180 @@ function TestimonialCard({
         </div>
         <div className="flex gap-0.5 text-[#00E676]">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className="h-3 w-3 fill-current" />
+            <Star
+              key={i}
+              className={`h-3 w-3 ${i < rating ? "fill-current" : "text-white/15"}`}
+            />
           ))}
         </div>
       </div>
     </div>
   );
 }
+
+const TESTIMONIALS: Array<{
+  quote: string;
+  author: string;
+  role: string;
+  rating: number;
+  tag?: string;
+}> = [
+  {
+    quote:
+      "Antes se nos escapaba 1 de cada 3 leads. Con Dialen respondemos al instante y cerramos el doble de cotizaciones.",
+    author: "Carolina M.",
+    role: "Gerente Comercial · Retail",
+    rating: 5,
+  },
+  {
+    quote:
+      "La IA cotiza sola desde el chat. Nuestros vendedores ahora solo cierran. Es otro nivel de productividad.",
+    author: "Andrés P.",
+    role: "CEO · Distribuidora industrial",
+    rating: 5,
+  },
+  {
+    quote:
+      "Por fin sé en qué etapa está cada cliente sin preguntarle al equipo. El embudo se actualiza solo.",
+    author: "Valentina R.",
+    role: "Dueña · E-commerce",
+    rating: 5,
+  },
+  {
+    quote:
+      "Tuvimos un problema con la sincronización de plantillas de WhatsApp. El soporte lo resolvió el mismo día y quedó perfecto.",
+    author: "Rodrigo S.",
+    role: "Jefe de Ventas · Ferretería mayorista",
+    rating: 4,
+    tag: "Resuelto rápido",
+  },
+  {
+    quote:
+      "Al inicio la IA respondía muy formal para nuestro rubro. La reentrenamos con el equipo de Dialen y ahora suena como nosotros.",
+    author: "Fernanda L.",
+    role: "Marketing · Inmobiliaria",
+    rating: 4,
+    tag: "Ajustado con soporte",
+  },
+  {
+    quote:
+      "Cambiamos de plan a mitad de mes y hubo un tema con la facturación. Lo corrigieron sin drama y nos avisaron proactivamente.",
+    author: "Matías O.",
+    role: "Administración · Servicios técnicos",
+    rating: 4,
+    tag: "Soporte proactivo",
+  },
+  {
+    quote:
+      "En 15 minutos estábamos operando. El equipo se quedó pendiente el primer día por si aparecía algo raro. Cero fricción.",
+    author: "Javiera T.",
+    role: "Cofundadora · Tienda online",
+    rating: 5,
+    tag: "Onboarding acompañado",
+  },
+  {
+    quote:
+      "Detectaron un caso borde en una automatización nuestra antes que nosotros y lo dejaron listo. Se nota que están encima.",
+    author: "Ignacio B.",
+    role: "Operaciones · Distribuidora",
+    rating: 5,
+    tag: "Monitoreo activo",
+  },
+  {
+    quote:
+      "Tuvimos una duda un domingo por la noche. Respondieron en menos de una hora con el fix aplicado. Sorprendente para el rubro.",
+    author: "Camila V.",
+    role: "Gerente · Clínica dental",
+    rating: 5,
+    tag: "Respuesta fuera de horario",
+  },
+];
+
+function TestimonialsCarousel() {
+  const [index, setIndex] = useState(0);
+  const [perView, setPerView] = useState(3);
+
+  const updatePerView = () => {
+    if (typeof window === "undefined") return;
+    const w = window.innerWidth;
+    setPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
+  };
+
+  const initRef = (node: HTMLDivElement | null) => {
+    if (node && perView === 3 && typeof window !== "undefined" && window.innerWidth < 1024) {
+      updatePerView();
+    }
+  };
+
+  if (typeof window !== "undefined") {
+    // attach once
+    (window as unknown as { __dialenTestimonialResize?: boolean }).__dialenTestimonialResize ??
+      ((): boolean => {
+        window.addEventListener("resize", updatePerView);
+        updatePerView();
+        return true;
+      })();
+  }
+
+  const pages = Math.max(1, TESTIMONIALS.length - perView + 1);
+  const safeIndex = Math.min(index, pages - 1);
+
+  const prev = () => setIndex((i) => (i - 1 + pages) % pages);
+  const next = () => setIndex((i) => (i + 1) % pages);
+
+  return (
+    <div className="mt-14" ref={initRef}>
+      <div className="overflow-hidden">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{
+            transform: `translateX(-${(safeIndex * 100) / perView}%)`,
+          }}
+        >
+          {TESTIMONIALS.map((t, i) => (
+            <div
+              key={i}
+              className="shrink-0 px-2.5"
+              style={{ width: `${100 / perView}%` }}
+            >
+              <TestimonialCard {...t} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-8 flex items-center justify-center gap-4">
+        <button
+          onClick={prev}
+          aria-label="Testimonio anterior"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#00C853]/40 hover:text-white"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="flex gap-1.5">
+          {Array.from({ length: pages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              aria-label={`Ir al testimonio ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${
+                i === safeIndex ? "w-6 bg-[#00E676]" : "w-1.5 bg-white/20 hover:bg-white/40"
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={next}
+          aria-label="Siguiente testimonio"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:border-[#00C853]/40 hover:text-white"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 function TrustBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
