@@ -66,6 +66,7 @@ export function LandingPage() {
             <a href="#producto" className="transition hover:text-white">Producto</a>
             <a href="#como-funciona" className="transition hover:text-white">Cómo funciona</a>
             <a href="#beneficios" className="transition hover:text-white">Beneficios</a>
+            <a href="#planes" className="transition hover:text-white">Planes</a>
             <a href="#faq" className="transition hover:text-white">Preguntas</a>
           </div>
           <div className="flex items-center gap-2">
@@ -398,6 +399,91 @@ export function LandingPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Planes */}
+        <section id="planes" className="mx-auto max-w-6xl px-6 pb-28 lg:px-10">
+          <SectionHeader
+            eyebrow="Planes"
+            title="Elige el plan que impulse tu operación"
+            subtitle="Empieza con lo esencial o desbloquea toda la potencia de la IA comercial. Cambia cuando quieras."
+          />
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {/* Básico */}
+            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+              <div className="flex items-center gap-2 text-white/70">
+                <Zap className="h-5 w-5 text-[#00C853]" />
+                <span className="text-sm uppercase tracking-widest">Plan Básico</span>
+              </div>
+              <h3 className="mt-3 font-semibold text-2xl">Para empezar a vender por WhatsApp</h3>
+              <p className="mt-2 text-sm text-white/60">Ideal para equipos pequeños que necesitan una bandeja unificada, CRM y cotizaciones sin complicaciones.</p>
+              <ul className="mt-6 space-y-2.5 text-sm">
+                {[
+                  "Bandeja unificada de WhatsApp",
+                  "CRM de contactos y clientes",
+                  "Embudo comercial de 5 etapas",
+                  "Cotizaciones y catálogo",
+                  "Sugerencias IA en conversaciones",
+                  "1 número de WhatsApp",
+                  "Hasta 3 usuarios",
+                  "Soporte por correo",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-white/80">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00C853]" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/login"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Empezar con Básico
+              </Link>
+            </div>
+
+            {/* Premium */}
+            <div className="relative rounded-2xl border border-[#00C853]/40 bg-gradient-to-br from-[#00C853]/10 via-transparent to-[#00695C]/10 p-8 shadow-[0_20px_60px_-20px_rgba(0,200,83,0.35)]">
+              <div className="absolute -top-3 right-6 rounded-full bg-gradient-to-r from-[#00C853] to-[#00695C] px-3 py-1 text-[11px] font-semibold text-white shadow-lg">
+                Recomendado
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
+                <Sparkles className="h-5 w-5 text-[#00E676]" />
+                <span className="text-sm uppercase tracking-widest">Plan Premium</span>
+              </div>
+              <h3 className="mt-3 font-semibold text-2xl">Escala con IA comercial completa</h3>
+              <p className="mt-2 text-sm text-white/70">Para equipos que quieren cerrar más rápido, con IA que prioriza, sugiere y automatiza el flujo de venta 24/7.</p>
+              <ul className="mt-6 space-y-2.5 text-sm">
+                {[
+                  "Todo lo del Plan Básico",
+                  "Director Comercial IA (priorización 24/7)",
+                  "Análisis IA avanzado + forecast de ingresos",
+                  "Dashboard ejecutivo en tiempo real",
+                  "Automatizaciones ilimitadas con recetas",
+                  "Cotizaciones IA + versionado",
+                  "Bandeja IA con scoring heurístico",
+                  "Conocimiento empresarial con RAG semántico",
+                  "Múltiples números de WhatsApp",
+                  "Usuarios y conversaciones ilimitados",
+                  "Soporte prioritario + onboarding dedicado",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-white">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00E676]" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/login"
+                className="mt-8 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(0,200,83,0.7)]"
+              >
+                Activar Premium <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-xs text-white/40">
+            Puedes cambiar de plan cuando quieras desde tu panel. Sin permanencia, sin sorpresas.
+          </p>
         </section>
 
         {/* FAQ */}

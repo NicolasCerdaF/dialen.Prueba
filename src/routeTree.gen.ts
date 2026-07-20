@@ -13,12 +13,14 @@ import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as WebhooksRouteImport } from './routes/webhooks'
 import { Route as PoliticasDePrivacidadRouteImport } from './routes/politicas-de-privacidad'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
+import { Route as MiPlanRouteImport } from './routes/mi-plan'
 import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as DirectorIaRouteImport } from './routes/director-ia'
 import { Route as DashboardEjecutivoRouteImport } from './routes/dashboard-ejecutivo'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CreditosRouteImport } from './routes/creditos'
 import { Route as CotizacionesRouteImport } from './routes/cotizaciones'
 import { Route as ConversacionesRouteImport } from './routes/conversaciones'
 import { Route as ContactosRouteImport } from './routes/contactos'
@@ -58,6 +60,11 @@ const OportunidadesRoute = OportunidadesRouteImport.update({
   path: '/oportunidades',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MiPlanRoute = MiPlanRouteImport.update({
+  id: '/mi-plan',
+  path: '/mi-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MetricasIaRoute = MetricasIaRouteImport.update({
   id: '/metricas-ia',
   path: '/metricas-ia',
@@ -86,6 +93,11 @@ const DashboardEjecutivoRoute = DashboardEjecutivoRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditosRoute = CreditosRouteImport.update({
+  id: '/creditos',
+  path: '/creditos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CotizacionesRoute = CotizacionesRouteImport.update({
@@ -193,12 +205,14 @@ export interface FileRoutesByFullPath {
   '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/creditos': typeof CreditosRoute
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/webhooks': typeof WebhooksRoute
@@ -223,12 +237,14 @@ export interface FileRoutesByTo {
   '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/creditos': typeof CreditosRoute
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/webhooks': typeof WebhooksRoute
@@ -254,12 +270,14 @@ export interface FileRoutesById {
   '/contactos': typeof ContactosRouteWithChildren
   '/conversaciones': typeof ConversacionesRoute
   '/cotizaciones': typeof CotizacionesRouteWithChildren
+  '/creditos': typeof CreditosRoute
   '/dashboard': typeof DashboardRoute
   '/dashboard-ejecutivo': typeof DashboardEjecutivoRoute
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
+  '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/webhooks': typeof WebhooksRoute
@@ -286,12 +304,14 @@ export interface FileRouteTypes {
     | '/contactos'
     | '/conversaciones'
     | '/cotizaciones'
+    | '/creditos'
     | '/dashboard'
     | '/dashboard-ejecutivo'
     | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
     | '/webhooks'
@@ -316,12 +336,14 @@ export interface FileRouteTypes {
     | '/contactos'
     | '/conversaciones'
     | '/cotizaciones'
+    | '/creditos'
     | '/dashboard'
     | '/dashboard-ejecutivo'
     | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
     | '/webhooks'
@@ -346,12 +368,14 @@ export interface FileRouteTypes {
     | '/contactos'
     | '/conversaciones'
     | '/cotizaciones'
+    | '/creditos'
     | '/dashboard'
     | '/dashboard-ejecutivo'
     | '/director-ia'
     | '/embudo'
     | '/login'
     | '/metricas-ia'
+    | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
     | '/webhooks'
@@ -377,12 +401,14 @@ export interface RootRouteChildren {
   ContactosRoute: typeof ContactosRouteWithChildren
   ConversacionesRoute: typeof ConversacionesRoute
   CotizacionesRoute: typeof CotizacionesRouteWithChildren
+  CreditosRoute: typeof CreditosRoute
   DashboardRoute: typeof DashboardRoute
   DashboardEjecutivoRoute: typeof DashboardEjecutivoRoute
   DirectorIaRoute: typeof DirectorIaRoute
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
   MetricasIaRoute: typeof MetricasIaRoute
+  MiPlanRoute: typeof MiPlanRoute
   OportunidadesRoute: typeof OportunidadesRoute
   PoliticasDePrivacidadRoute: typeof PoliticasDePrivacidadRoute
   WebhooksRoute: typeof WebhooksRoute
@@ -422,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/oportunidades'
       fullPath: '/oportunidades'
       preLoaderRoute: typeof OportunidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-plan': {
+      id: '/mi-plan'
+      path: '/mi-plan'
+      fullPath: '/mi-plan'
+      preLoaderRoute: typeof MiPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/metricas-ia': {
@@ -464,6 +497,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/creditos': {
+      id: '/creditos'
+      path: '/creditos'
+      fullPath: '/creditos'
+      preLoaderRoute: typeof CreditosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cotizaciones': {
@@ -642,12 +682,14 @@ const rootRouteChildren: RootRouteChildren = {
   ContactosRoute: ContactosRouteWithChildren,
   ConversacionesRoute: ConversacionesRoute,
   CotizacionesRoute: CotizacionesRouteWithChildren,
+  CreditosRoute: CreditosRoute,
   DashboardRoute: DashboardRoute,
   DashboardEjecutivoRoute: DashboardEjecutivoRoute,
   DirectorIaRoute: DirectorIaRoute,
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,
   MetricasIaRoute: MetricasIaRoute,
+  MiPlanRoute: MiPlanRoute,
   OportunidadesRoute: OportunidadesRoute,
   PoliticasDePrivacidadRoute: PoliticasDePrivacidadRoute,
   WebhooksRoute: WebhooksRoute,

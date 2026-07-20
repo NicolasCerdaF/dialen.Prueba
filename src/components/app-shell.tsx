@@ -47,6 +47,8 @@ type ExistingRoute =
   | "/conocimiento"
   | "/configuracion"
   | "/onboarding/whatsapp"
+  | "/mi-plan"
+  | "/creditos"
   | "/whatsapp";
 
 type NavItem = {
@@ -104,6 +106,15 @@ const navGroups: NavGroup[] = [
     icon: BarChart3,
     items: [
       { label: "Dashboard Ejecutivo", icon: LayoutDashboard, to: "/dashboard-ejecutivo" },
+    ],
+  },
+  {
+    id: "cuenta",
+    label: "Cuenta",
+    icon: Sparkles,
+    items: [
+      { label: "Mi Plan", icon: Sparkles, to: "/mi-plan" },
+      { label: "Comprar créditos", icon: Zap, to: "/creditos" },
     ],
   },
   {
