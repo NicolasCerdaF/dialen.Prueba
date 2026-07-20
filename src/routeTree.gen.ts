@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
+import { Route as PoliticasDePrivacidadRouteImport } from './routes/politicas-de-privacidad'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
 import { Route as LoginRouteImport } from './routes/login'
@@ -37,6 +38,11 @@ import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/pu
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticasDePrivacidadRoute = PoliticasDePrivacidadRouteImport.update({
+  id: '/politicas-de-privacidad',
+  path: '/politicas-de-privacidad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OportunidadesRoute = OportunidadesRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/oportunidades': typeof OportunidadesRoute
+  '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
   '/contactos/$id': typeof ContactosIdRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/politicas-de-privacidad'
     | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/politicas-de-privacidad'
     | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/metricas-ia'
     | '/oportunidades'
+    | '/politicas-de-privacidad'
     | '/whatsapp'
     | '/clientes/$id'
     | '/contactos/$id'
@@ -335,6 +347,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MetricasIaRoute: typeof MetricasIaRoute
   OportunidadesRoute: typeof OportunidadesRoute
+  PoliticasDePrivacidadRoute: typeof PoliticasDePrivacidadRoute
   WhatsappRoute: typeof WhatsappRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
   ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
@@ -348,6 +361,13 @@ declare module '@tanstack/react-router' {
       path: '/whatsapp'
       fullPath: '/whatsapp'
       preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politicas-de-privacidad': {
+      id: '/politicas-de-privacidad'
+      path: '/politicas-de-privacidad'
+      fullPath: '/politicas-de-privacidad'
+      preLoaderRoute: typeof PoliticasDePrivacidadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oportunidades': {
@@ -568,6 +588,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MetricasIaRoute: MetricasIaRoute,
   OportunidadesRoute: OportunidadesRoute,
+  PoliticasDePrivacidadRoute: PoliticasDePrivacidadRoute,
   WhatsappRoute: WhatsappRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
   ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
