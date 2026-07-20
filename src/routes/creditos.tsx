@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Coins, Sparkles, Check, CreditCard, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { useMyUsage } from "@/lib/use-plan";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/creditos")({
