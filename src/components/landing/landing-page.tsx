@@ -795,5 +795,3 @@ function FooterCol({
     </div>
   );
 }
-
-<Clock className="hidden" />
