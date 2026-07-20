@@ -76,7 +76,7 @@ function LoginPage() {
             <img
               src={dialenLogo.url}
               alt="Dialen"
-              className="relative h-24 w-24 object-contain drop-shadow-[0_0_24px_rgba(0,200,83,0.45)]"
+              className="relative h-40 w-40 object-contain drop-shadow-[0_0_32px_rgba(0,200,83,0.5)]"
             />
           </div>
 
