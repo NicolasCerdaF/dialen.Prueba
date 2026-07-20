@@ -143,6 +143,7 @@ function isItemActive(pathname: string, to?: ExistingRoute) {
 function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile, companyName, role, signOut } = useAuth();
+  const { isPremium } = useMyPlan();
   const initials = (profile?.full_name ?? profile?.email ?? "U")
     .split(" ")
     .map((s) => s[0])
