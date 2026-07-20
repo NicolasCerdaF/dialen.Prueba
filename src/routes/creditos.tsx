@@ -181,23 +181,40 @@ function CreditosPage() {
           <div className="rounded-2xl border border-border bg-card p-6">
             <h2 className="font-display text-lg font-semibold">Resumen</h2>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Paquete</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.label}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Créditos</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.credits.toLocaleString("es-CL")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Bonus</span>
-                <span className="font-medium">{PACKS.find((p) => p.id === selected)?.bonus ?? "—"}</span>
-              </div>
-              <div className="my-3 h-px bg-border" />
-              <div className="flex items-baseline justify-between">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-display text-lg font-semibold">Próximamente</span>
-              </div>
+              {(() => {
+                const sel = PACKS.find((p) => p.id === selected)!;
+                const totalCredits = sel.credits + (sel.bonusCredits ?? 0);
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Paquete</span>
+                      <span className="font-medium">{sel.label}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Créditos base</span>
+                      <span className="font-medium tabular-nums">{sel.credits.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bonus</span>
+                      <span className="font-medium tabular-nums">
+                        {sel.bonusCredits ? `+${sel.bonusCredits.toLocaleString("es-CL")} (${sel.bonus})` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total créditos</span>
+                      <span className="font-semibold tabular-nums">{totalCredits.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="my-3 h-px bg-border" />
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-muted-foreground">Total a pagar</span>
+                      <span className="font-display text-lg font-semibold">
+                        {fmtCLP(sel.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">IVA incluido · pago único, créditos sin vencimiento</div>
+                  </>
+                );
+              })()}
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 flex-none text-emerald-500" />
