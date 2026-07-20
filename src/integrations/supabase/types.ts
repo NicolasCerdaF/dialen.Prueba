@@ -1389,8 +1389,11 @@ export type Database = {
           company_id: string | null
           created_at: string
           email: string | null
+          external_ref: string | null
           full_name: string | null
           id: string
+          plan: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -1398,8 +1401,11 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email?: string | null
+          external_ref?: string | null
           full_name?: string | null
           id: string
+          plan?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -1407,8 +1413,11 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email?: string | null
+          external_ref?: string | null
           full_name?: string | null
           id?: string
+          plan?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -1420,6 +1429,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provision_log: {
+        Row: {
+          action: string
+          created_at: string
+          email: string | null
+          external_ref: string | null
+          id: string
+          ip: string | null
+          message: string | null
+          ok: boolean
+          payload: Json | null
+          plan: string | null
+          status_code: number | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          email?: string | null
+          external_ref?: string | null
+          id?: string
+          ip?: string | null
+          message?: string | null
+          ok: boolean
+          payload?: Json | null
+          plan?: string | null
+          status_code?: number | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          email?: string | null
+          external_ref?: string | null
+          id?: string
+          ip?: string | null
+          message?: string | null
+          ok?: boolean
+          payload?: Json | null
+          plan?: string | null
+          status_code?: number | null
+        }
+        Relationships: []
       }
       quote_events: {
         Row: {

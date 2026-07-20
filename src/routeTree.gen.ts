@@ -33,6 +33,8 @@ import { Route as OnboardingWhatsappRouteImport } from './routes/onboarding.what
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as ContactosIdRouteImport } from './routes/contactos.$id'
 import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
+import { Route as FunctionsV1PublicAdminProvisionRouteImport } from './routes/functions.v1.public-admin-provision'
+import { Route as ApiPublicAdminProvisionRouteImport } from './routes/api/public/admin-provision'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 import { Route as ApiPublicHooksFollowUpCheckRouteImport } from './routes/api/public/hooks/follow-up-check'
 
@@ -156,6 +158,17 @@ const ClientesIdRoute = ClientesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ClientesRoute,
 } as any)
+const FunctionsV1PublicAdminProvisionRoute =
+  FunctionsV1PublicAdminProvisionRouteImport.update({
+    id: '/functions/v1/public-admin-provision',
+    path: '/functions/v1/public-admin-provision',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAdminProvisionRoute = ApiPublicAdminProvisionRouteImport.update({
+  id: '/api/public/admin-provision',
+  path: '/api/public/admin-provision',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp/webhook',
@@ -194,6 +207,8 @@ export interface FileRoutesByFullPath {
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/admin-provision': typeof ApiPublicAdminProvisionRoute
+  '/functions/v1/public-admin-provision': typeof FunctionsV1PublicAdminProvisionRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -222,6 +237,8 @@ export interface FileRoutesByTo {
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/admin-provision': typeof ApiPublicAdminProvisionRoute
+  '/functions/v1/public-admin-provision': typeof FunctionsV1PublicAdminProvisionRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -251,6 +268,8 @@ export interface FileRoutesById {
   '/contactos/$id': typeof ContactosIdRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/onboarding/whatsapp': typeof OnboardingWhatsappRoute
+  '/api/public/admin-provision': typeof ApiPublicAdminProvisionRoute
+  '/functions/v1/public-admin-provision': typeof FunctionsV1PublicAdminProvisionRoute
   '/api/public/hooks/follow-up-check': typeof ApiPublicHooksFollowUpCheckRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -281,6 +300,8 @@ export interface FileRouteTypes {
     | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/admin-provision'
+    | '/functions/v1/public-admin-provision'
     | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -309,6 +330,8 @@ export interface FileRouteTypes {
     | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/admin-provision'
+    | '/functions/v1/public-admin-provision'
     | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   id:
@@ -337,6 +360,8 @@ export interface FileRouteTypes {
     | '/contactos/$id'
     | '/cotizaciones/$id'
     | '/onboarding/whatsapp'
+    | '/api/public/admin-provision'
+    | '/functions/v1/public-admin-provision'
     | '/api/public/hooks/follow-up-check'
     | '/api/public/whatsapp/webhook'
   fileRoutesById: FileRoutesById
@@ -363,6 +388,8 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   WhatsappRoute: typeof WhatsappRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
+  ApiPublicAdminProvisionRoute: typeof ApiPublicAdminProvisionRoute
+  FunctionsV1PublicAdminProvisionRoute: typeof FunctionsV1PublicAdminProvisionRoute
   ApiPublicHooksFollowUpCheckRoute: typeof ApiPublicHooksFollowUpCheckRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
@@ -537,6 +564,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesIdRouteImport
       parentRoute: typeof ClientesRoute
     }
+    '/functions/v1/public-admin-provision': {
+      id: '/functions/v1/public-admin-provision'
+      path: '/functions/v1/public-admin-provision'
+      fullPath: '/functions/v1/public-admin-provision'
+      preLoaderRoute: typeof FunctionsV1PublicAdminProvisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin-provision': {
+      id: '/api/public/admin-provision'
+      path: '/api/public/admin-provision'
+      fullPath: '/api/public/admin-provision'
+      preLoaderRoute: typeof ApiPublicAdminProvisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp/webhook': {
       id: '/api/public/whatsapp/webhook'
       path: '/api/public/whatsapp/webhook'
@@ -612,6 +653,8 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   WhatsappRoute: WhatsappRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
+  ApiPublicAdminProvisionRoute: ApiPublicAdminProvisionRoute,
+  FunctionsV1PublicAdminProvisionRoute: FunctionsV1PublicAdminProvisionRoute,
   ApiPublicHooksFollowUpCheckRoute: ApiPublicHooksFollowUpCheckRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
