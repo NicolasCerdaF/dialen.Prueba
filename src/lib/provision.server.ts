@@ -8,6 +8,62 @@ import { log } from "@/lib/logger";
 
 const VALID_PLANS = new Set(["basico", "premium"]);
 const LOGIN_REDIRECT = "https://dialen.novacorp.app";
+const LOGIN_URL = "https://dialen.novacorp.app/login";
+
+// activate_client accepts external plan names and maps to internal IDs.
+const EXTERNAL_PLAN_MAP: Record<string, "basico" | "premium"> = {
+  start: "basico",
+  business: "premium",
+};
+const ALLOWED_ACTIVATOR_ROLES = new Set([
+  "ceo",
+  "admin",
+  "operaciones",
+  "ops_implementacion_onboarding",
+]);
+
+// Simple in-memory rate limiter (per worker instance): 10 req / 60s per key.
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 10;
+const rateBuckets = new Map<string, number[]>();
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const bucket = (rateBuckets.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (bucket.length >= RATE_MAX) {
+    rateBuckets.set(key, bucket);
+    return true;
+  }
+  bucket.push(now);
+  rateBuckets.set(key, bucket);
+  return false;
+}
+
+function generateTempPassword(): string {
+  // 14 chars, guarantees upper + lower + digit + symbol.
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*?";
+  const all = upper + lower + digits + symbols;
+  const bytes = new Uint8Array(14);
+  crypto.getRandomValues(bytes);
+  const pick = (set: string, i: number) => set[bytes[i] % set.length];
+  const chars = [
+    pick(upper, 0),
+    pick(lower, 1),
+    pick(digits, 2),
+    pick(symbols, 3),
+    ...Array.from({ length: 10 }, (_, i) => pick(all, i + 4)),
+  ];
+  // Fisher-Yates shuffle with fresh entropy
+  const shuf = new Uint8Array(chars.length);
+  crypto.getRandomValues(shuf);
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = shuf[i] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -74,7 +130,9 @@ type ProvisionBody = {
   user_name?: string;
   plan?: string;
   external_ref?: string;
+  phone?: string;
   metadata?: Record<string, unknown>;
+  requested_by?: { email?: string; role?: string };
 };
 
 async function findUserByEmail(email: string) {
@@ -263,6 +321,123 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         .eq("id", user.id);
       await logCall({ action, email, plan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "plan_changed", payload: body });
       return json(200, { ok: true, status: "plan_changed", user_id: user.id, plan });
+    }
+
+    if (action === "activate_client") {
+      const ua = request.headers.get("user-agent") ?? null;
+      const requesterEmail = body.requested_by?.email?.trim().toLowerCase() ?? null;
+      const requesterRole = body.requested_by?.role?.trim() ?? null;
+      const rawPlan = body.plan?.trim().toLowerCase();
+      const auditPayload = { ...body, _ip: ip, _ua: ua };
+
+      if (!email) return badField("user_email", action, ip, auditPayload);
+      if (!rawPlan) return badField("plan", action, ip, auditPayload);
+
+      const mappedPlan = EXTERNAL_PLAN_MAP[rawPlan];
+      if (!mappedPlan) {
+        await logCall({ action, email, plan: rawPlan, external_ref: externalRef, ip, ok: false, status_code: 400, message: "invalid_plan", payload: auditPayload });
+        return json(400, { ok: false, error: "invalid_plan", detail: "plan must be 'start' or 'business'" });
+      }
+
+      if (!requesterRole || !ALLOWED_ACTIVATOR_ROLES.has(requesterRole)) {
+        await logCall({ action, email, plan: mappedPlan, external_ref: externalRef, ip, ok: false, status_code: 403, message: "forbidden_role", payload: auditPayload });
+        return json(403, { ok: false, error: "forbidden_role" });
+      }
+
+      const rateKey = `activate_client:${ip ?? "noip"}:${requesterEmail ?? "noemail"}`;
+      if (rateLimited(rateKey)) {
+        await logCall({ action, email, plan: mappedPlan, external_ref: externalRef, ip, ok: false, status_code: 429, message: "rate_limited", payload: auditPayload });
+        return json(429, { ok: false, error: "rate_limited" });
+      }
+
+      // Idempotency by external_ref: reactivate & switch plan, do NOT reissue password.
+      if (externalRef) {
+        const existingByRef = await findProfileByExternalRef(externalRef);
+        if (existingByRef) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({ plan: mappedPlan, status: "active" })
+            .eq("id", existingByRef.id);
+          await logCall({ action, email: existingByRef.email ?? email, plan: mappedPlan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "idempotent", payload: auditPayload });
+          return json(200, {
+            ok: true,
+            created: false,
+            user_email: existingByRef.email ?? email,
+            plan: rawPlan,
+            login_url: LOGIN_URL,
+            external_ref: externalRef,
+            activated_at: new Date().toISOString(),
+          });
+        }
+      }
+
+      const tempPassword = generateTempPassword();
+      const existing = await findUserByEmail(email);
+      let created = false;
+      let userId: string;
+
+      if (!existing) {
+        const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: {
+            full_name: body.user_name ?? email.split("@")[0],
+            phone: body.phone ?? null,
+          },
+        });
+        if (createErr || !newUser.user) {
+          await logCall({ action, email, plan: mappedPlan, external_ref: externalRef, ip, ok: false, status_code: 500, message: createErr?.message ?? "create_failed", payload: auditPayload });
+          return json(500, { ok: false, error: "internal_error", detail: createErr?.message ?? "create_failed" });
+        }
+        userId = newUser.user.id;
+        created = true;
+      } else {
+        const { error: updUserErr } = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          password: tempPassword,
+          email_confirm: true,
+          ban_duration: "none",
+        });
+        if (updUserErr) {
+          await logCall({ action, email, plan: mappedPlan, external_ref: externalRef, ip, ok: false, status_code: 500, message: updUserErr.message, payload: auditPayload });
+          return json(500, { ok: false, error: "internal_error", detail: updUserErr.message });
+        }
+        userId = existing.id;
+      }
+
+      const { error: profErr } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          plan: mappedPlan,
+          status: "active",
+          external_ref: externalRef ?? null,
+        })
+        .eq("id", userId);
+      if (profErr) {
+        await supabaseAdmin.from("profiles").upsert({
+          id: userId,
+          email,
+          full_name: body.user_name ?? email.split("@")[0],
+          plan: mappedPlan,
+          status: "active",
+          external_ref: externalRef ?? null,
+        });
+      }
+
+      const activatedAt = new Date().toISOString();
+      // NOTE: temp_password is intentionally NOT included in payload/message.
+      await logCall({ action, email, plan: mappedPlan, external_ref: externalRef, ip, ok: true, status_code: 200, message: created ? "created" : "reactivated", payload: auditPayload });
+
+      return json(200, {
+        ok: true,
+        created,
+        user_email: email,
+        plan: rawPlan,
+        temp_password: tempPassword,
+        login_url: LOGIN_URL,
+        external_ref: externalRef ?? null,
+        activated_at: activatedAt,
+      });
     }
 
     await logCall({ action: action ?? "unknown", email, plan, external_ref: externalRef, ip, ok: false, status_code: 400, message: "invalid_action", payload: body });
