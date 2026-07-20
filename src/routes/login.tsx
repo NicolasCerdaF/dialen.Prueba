@@ -1,10 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Sparkles } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/login")({
@@ -53,64 +51,113 @@ function LoginPage() {
     }
   };
 
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver al inicio
-        </Link>
-        <div className="mb-8 flex flex-col items-center justify-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-          </div>
-          <div className="text-center leading-tight">
-            <div className="font-display text-2xl font-semibold">
-              <span className="text-gradient-primary">Dialen</span>
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#020617] px-6 py-10 selection:bg-cyan-500/30">
+      {/* Ambient aurora glows */}
+      <div className="pointer-events-none absolute -top-[10%] -left-[10%] h-[55%] w-[55%] rounded-full bg-cyan-900/25 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-[10%] -right-[10%] h-[55%] w-[55%] rounded-full bg-indigo-900/25 blur-[120px]" />
+
+      {/* Back link */}
+      <Link
+        to="/"
+        className="absolute left-6 top-6 z-10 inline-flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver al inicio
+      </Link>
+
+      <div className="relative z-10 w-full max-w-md animate-fade-in">
+        {/* Logo header */}
+        <div className="mb-10 flex flex-col items-center">
+          <div className="group relative mb-4">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-400 to-indigo-500 opacity-30 blur transition duration-1000 group-hover:opacity-60" />
+            <div className="relative rounded-2xl border border-white/10 bg-[#0F172A] p-4">
+              <MessageSquare className="h-10 w-10 text-cyan-400" strokeWidth={1.5} />
             </div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">by Nova Corp</div>
+          </div>
+          <h1 className="font-display text-4xl font-bold tracking-tight text-white">Dialen</h1>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-500/80">
+            by Nova Corp
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl md:p-10">
+          {/* Internal top glow */}
+          <div className="pointer-events-none absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-cyan-500/60 to-transparent" />
+
+          <div className="space-y-6">
+            <div className="space-y-1.5 text-center">
+              <h2 className="font-display text-xl font-semibold text-white">Bienvenido de vuelta</h2>
+              <p className="text-sm text-slate-400">Ingresa a tu panel de ventas con IA</p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-medium text-slate-300">
+                  Correo corporativo
+                </label>
+                <input
+                  required
+                  type="email"
+                  placeholder="nombre@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <label className="block text-xs font-medium text-slate-300">Contraseña</label>
+                </div>
+                <input
+                  required
+                  type="password"
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-cyan-500 px-4 py-3 font-display font-semibold text-slate-950 transition-all hover:bg-cyan-400 disabled:opacity-60"
+              >
+                <span>{busy ? "Ingresando..." : "Entrar al panel"}</span>
+                {!busy && (
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    strokeWidth={2.5}
+                  />
+                )}
+              </button>
+            </form>
+
+            <div className="pt-2 text-center">
+              <p className="text-xs text-slate-500">
+                ¿Necesitas una cuenta?{" "}
+                <span className="font-medium text-slate-300">
+                  Contacta a tu ejecutivo de NovaCorp.
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-7">
-          <h1 className="mb-6 text-center font-display text-lg font-semibold">Iniciar sesión</h1>
-
-          <form onSubmit={submit} className="space-y-3">
-            <input
-              required
-              type="email"
-              placeholder="email@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-            <input
-              required
-              type="password"
-              minLength={6}
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-            <button
-              disabled={busy}
-              className="w-full rounded-lg bg-gradient-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              {busy ? "..." : "Entrar"}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            ¿Necesitas una cuenta? Contacta a tu ejecutivo de NovaCorp.
-          </p>
+        {/* Footer status pill */}
+        <div className="mt-8 flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-white/5 px-3 py-1">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
+              Impulsado por IA comercial
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
