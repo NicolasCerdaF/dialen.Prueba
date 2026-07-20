@@ -295,6 +295,9 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
                               strokeWidth={1.75}
                             />
                             <span className="flex-1 truncate">{item.label}</span>
+                            {item.premium && !isPremium && (
+                              <Lock className="h-3 w-3 flex-none text-amber-500/80" strokeWidth={2} />
+                            )}
                           </Link>
                         </li>
                       );
