@@ -13,7 +13,7 @@ export const PLAN_CATALOG: Record<PlanId, {
 }> = {
   basico: {
     id: "basico",
-    name: "Plan Básico",
+    name: "Plan Start",
     tagline: "IA operativa que te ayuda a vender en cada conversación de WhatsApp.",
     monthlyCredits: 500,
     features: [
@@ -32,7 +32,7 @@ export const PLAN_CATALOG: Record<PlanId, {
   },
   premium: {
     id: "premium",
-    name: "Plan Premium",
+    name: "Plan Business",
     tagline: "IA que además dirige tu operación: prioriza, automatiza y proyecta ingresos.",
     monthlyCredits: 3000,
     features: [
