@@ -10,7 +10,6 @@ export const PLAN_CATALOG: Record<PlanId, {
   tagline: string;
   monthlyCredits: number;
   features: string[];
-  limits: { conversaciones: string; usuarios: string; automatizaciones: string; conocimiento: string };
 }> = {
   basico: {
     id: "basico",
@@ -24,15 +23,8 @@ export const PLAN_CATALOG: Record<PlanId, {
       "Cotizaciones básicas",
       "Catálogo de productos",
       "Sugerencias IA en conversaciones",
-      "1 número de WhatsApp",
       "Soporte por correo",
     ],
-    limits: {
-      conversaciones: "Hasta 1.000 conversaciones/mes",
-      usuarios: "Hasta 3 usuarios",
-      automatizaciones: "3 automatizaciones activas",
-      conocimiento: "Base de conocimiento hasta 20 documentos",
-    },
   },
   premium: {
     id: "premium",
@@ -44,22 +36,16 @@ export const PLAN_CATALOG: Record<PlanId, {
       "Director Comercial IA (priorización 24/7)",
       "Análisis IA avanzado con KPIs y forecast",
       "Dashboard ejecutivo con proyección de ingresos",
-      "Automatizaciones ilimitadas con recetas",
+      "Automatizaciones con recetas",
       "Cotizaciones con IA + versionado + firma",
       "Recomendador inteligente en Kanban e Inbox",
       "Bandeja IA con scoring heurístico",
       "Conocimiento empresarial con RAG semántico",
-      "Múltiples números de WhatsApp",
       "Soporte prioritario 24/7 + onboarding dedicado",
     ],
-    limits: {
-      conversaciones: "Conversaciones ilimitadas",
-      usuarios: "Usuarios ilimitados",
-      automatizaciones: "Automatizaciones ilimitadas",
-      conocimiento: "Base de conocimiento ilimitada",
-    },
   },
 };
+
 
 export const getMyPlan = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
