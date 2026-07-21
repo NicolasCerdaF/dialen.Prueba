@@ -94,10 +94,18 @@ function AdministradorPage() {
     );
   }
 
+  return <AdminContent />;
+}
+
+function AdminContent() {
+  const hash = useRouterState({ select: (s) => s.location.hash });
+  const section: "overview" | "users" | "companies" =
+    hash === "users" ? "users" : hash === "companies" ? "companies" : "overview";
+
   return (
-    <AdminShell>
-      <div className="space-y-10">
-        <section id="overview" className="scroll-mt-24">
+    <AdminShell section={section}>
+      {section === "overview" && (
+        <section>
           <SectionHeading
             eyebrow="Vista general"
             title="Estado global de la plataforma"
@@ -105,8 +113,10 @@ function AdministradorPage() {
           />
           <MetricsBlock />
         </section>
+      )}
 
-        <section id="users" className="scroll-mt-24">
+      {section === "users" && (
+        <section>
           <SectionHeading
             eyebrow="Usuarios"
             title="Gestión de usuarios y créditos"
@@ -114,8 +124,10 @@ function AdministradorPage() {
           />
           <UsersBlock />
         </section>
+      )}
 
-        <section id="companies" className="scroll-mt-24">
+      {section === "companies" && (
+        <section>
           <SectionHeading
             eyebrow="Empresas"
             title="Cuentas de empresa"
@@ -123,7 +135,7 @@ function AdministradorPage() {
           />
           <CompaniesBlock />
         </section>
-      </div>
+      )}
     </AdminShell>
   );
 }
