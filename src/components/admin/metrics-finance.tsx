@@ -38,9 +38,10 @@ const PRICING = {
   start: { name: "Plan Start", priceCLP: 19_990, monthlyCredits: 1_400 },
   business: { name: "Plan Business", priceCLP: 59_990, monthlyCredits: 4_600 },
 };
-// Estimated raw AI cost per credit consumed (Gemini flash tier)
-// ≈ USD 0.0004 → CLP ~0.37. Buffer for safety: CLP 0.60/credit.
-const AI_COST_PER_CREDIT_CLP = 0.6;
+// Estimated raw AI cost per credit consumed (Gemini 2.0 flash tier).
+// Conversación promedio ≈ USD 0.0004 → CLP ~0.38 por crédito.
+// Start (1.400 cr) ≈ US$0.56 ≈ CLP 532 | Business (4.600 cr) ≈ US$1.84 ≈ CLP 1.748.
+const AI_COST_PER_CREDIT_CLP = 0.38;
 const USD_CLP = 950;
 
 const fmtCLP = (n: number) =>
