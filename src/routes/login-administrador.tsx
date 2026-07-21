@@ -62,13 +62,6 @@ function AdminLoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      const res = await checkAdmin();
-      if (!res?.isAdmin) {
-        await supabase.auth.signOut();
-        toast.error("Esta cuenta no tiene permisos de administrador.");
-        return;
-      }
-      navigate({ to: "/administrador", replace: true });
     } catch (err) {
       toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
     } finally {
