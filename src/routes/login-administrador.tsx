@@ -32,6 +32,26 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const requestReset = async () => {
+    if (!email) {
+      toast.error("Escribe tu correo administrador para enviarte el enlace.");
+      return;
+    }
+    setSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Te enviamos un correo con el enlace para crear tu contraseña.");
+    } catch (err) {
+      toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;

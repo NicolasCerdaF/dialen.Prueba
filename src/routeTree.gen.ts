@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as WebhooksRouteImport } from './routes/webhooks'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PoliticasDePrivacidadRouteImport } from './routes/politicas-de-privacidad'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as MiPlanRouteImport } from './routes/mi-plan'
@@ -50,6 +51,11 @@ const WhatsappRoute = WhatsappRouteImport.update({
 const WebhooksRoute = WebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PoliticasDePrivacidadRoute = PoliticasDePrivacidadRouteImport.update({
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/webhooks': typeof WebhooksRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/webhooks': typeof WebhooksRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -298,6 +306,7 @@ export interface FileRoutesById {
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
   '/politicas-de-privacidad': typeof PoliticasDePrivacidadRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/webhooks': typeof WebhooksRoute
   '/whatsapp': typeof WhatsappRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
+    | '/reset-password'
     | '/webhooks'
     | '/whatsapp'
     | '/clientes/$id'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
+    | '/reset-password'
     | '/webhooks'
     | '/whatsapp'
     | '/clientes/$id'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/mi-plan'
     | '/oportunidades'
     | '/politicas-de-privacidad'
+    | '/reset-password'
     | '/webhooks'
     | '/whatsapp'
     | '/clientes/$id'
@@ -437,6 +449,7 @@ export interface RootRouteChildren {
   MiPlanRoute: typeof MiPlanRoute
   OportunidadesRoute: typeof OportunidadesRoute
   PoliticasDePrivacidadRoute: typeof PoliticasDePrivacidadRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   WebhooksRoute: typeof WebhooksRoute
   WhatsappRoute: typeof WhatsappRoute
   OnboardingWhatsappRoute: typeof OnboardingWhatsappRoute
@@ -460,6 +473,13 @@ declare module '@tanstack/react-router' {
       path: '/webhooks'
       fullPath: '/webhooks'
       preLoaderRoute: typeof WebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/politicas-de-privacidad': {
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   MiPlanRoute: MiPlanRoute,
   OportunidadesRoute: OportunidadesRoute,
   PoliticasDePrivacidadRoute: PoliticasDePrivacidadRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   WebhooksRoute: WebhooksRoute,
   WhatsappRoute: WhatsappRoute,
   OnboardingWhatsappRoute: OnboardingWhatsappRoute,
