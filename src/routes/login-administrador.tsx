@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminAccount, usernameToEmail } from "@/lib/admin-account.functions";
+import { createAdminAccount } from "@/lib/admin-account.functions";
+import { isValidAdminUsername, normalizeAdminUsername, usernameToEmail } from "@/lib/admin-account.utils";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/platform-admin.functions";
 
@@ -13,8 +14,6 @@ export const Route = createFileRoute("/login-administrador")({
   head: () => ({ meta: [{ title: "Ingreso administrador — Dialen" }] }),
   component: AdminLoginPage,
 });
-
-const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
 
 const AUTH_ERROR_ES: Array<[RegExp, string]> = [
   [/invalid login credentials/i, "Usuario o contraseña incorrectos."],
@@ -69,8 +68,8 @@ function AdminLoginPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      const clean = username.trim().toLowerCase();
-      if (!USERNAME_RE.test(clean)) {
+      const clean = normalizeAdminUsername(username);
+      if (!isValidAdminUsername(clean)) {
         throw new Error("Nombre de usuario inválido.");
       }
       const { error } = await supabase.auth.signInWithPassword({
@@ -87,9 +86,9 @@ function AdminLoginPage() {
 
   const submitCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    const clean = newUsername.trim().toLowerCase();
-    if (!USERNAME_RE.test(clean)) {
-      toast.error("Usuario: 3-32 caracteres (letras, números, . _ -).");
+    const clean = normalizeAdminUsername(newUsername);
+    if (!isValidAdminUsername(clean)) {
+      toast.error("Escribe un nombre de usuario de al menos 3 letras o números.");
       return;
     }
     if (newPassword.length < 8) {
@@ -164,7 +163,7 @@ function AdminLoginPage() {
                   required
                   type="text"
                   autoComplete="username"
-                  placeholder="admin"
+                  placeholder="nicolas administrador"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
@@ -243,13 +242,13 @@ function AdminLoginPage() {
                   required
                   type="text"
                   autoComplete="username"
-                  placeholder="ej. nicolas"
+                  placeholder="ej. Nicolás Administrador"
                   value={newUsername}
                   onChange={(event) => setNewUsername(event.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
                 />
                 <p className="ml-1 text-[11px] text-slate-500">
-                  3–32 caracteres · letras, números, punto, guion o guion bajo
+                  Puedes usar nombre y apellido; no necesitas correo.
                 </p>
               </div>
 

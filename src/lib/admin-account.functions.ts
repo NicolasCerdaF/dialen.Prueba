@@ -1,11 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
-const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
-
-export function usernameToEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@admin.dialen.local`;
-}
+import { isValidAdminUsername, normalizeAdminUsername, usernameToEmail } from "./admin-account.utils";
 
 export const createAdminAccount = createServerFn({ method: "POST" })
   .inputValidator((d) =>
@@ -13,17 +8,15 @@ export const createAdminAccount = createServerFn({ method: "POST" })
       .object({
         username: z
           .string()
-          .trim()
-          .min(3)
-          .max(32)
-          .regex(USERNAME_RE, "Solo letras, números, punto, guion o guion bajo"),
+          .transform(normalizeAdminUsername)
+          .refine(isValidAdminUsername, "Escribe al menos 3 letras o números. Puedes usar espacios."),
         password: z.string().min(8).max(72),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const username = data.username.trim().toLowerCase();
+    const username = normalizeAdminUsername(data.username);
     const email = usernameToEmail(username);
 
     // If user already exists, block creation (they should sign in instead).
