@@ -34,7 +34,7 @@ export const getPlatformMetrics = createServerFn({ method: "GET" })
       supabaseAdmin.from("profiles").select("id, created_at"),
       supabaseAdmin.from("conversations").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("messages").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("quotes").select("total_amount, status, currency"),
+      supabaseAdmin.from("quotes").select("total, status, currency"),
     ]);
 
     const companies = companiesRes.data ?? [];
@@ -43,7 +43,7 @@ export const getPlatformMetrics = createServerFn({ method: "GET" })
 
     const acceptedTotal = (quotesRes.data ?? [])
       .filter((q: any) => q.status === "accepted")
-      .reduce((sum: number, q: any) => sum + (Number(q.total_amount) || 0), 0);
+      .reduce((sum: number, q: any) => sum + (Number(q.total) || 0), 0);
 
     // Signups last 30 days
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -264,7 +264,7 @@ export const getFinancialSeries = createServerFn({ method: "GET" })
       supabaseAdmin.from("ai_suggestions").select("created_at").gte("created_at", startIso),
       supabaseAdmin.from("automation_runs").select("created_at").gte("created_at", startIso),
       supabaseAdmin.from("director_insights").select("created_at").gte("created_at", startIso),
-      supabaseAdmin.from("quotes").select("total_amount, status, currency, created_at"),
+      supabaseAdmin.from("quotes").select("total, status, currency, created_at"),
     ]);
 
     const months: { key: string; label: string; year: number; month: number }[] = [];
@@ -309,7 +309,7 @@ export const getFinancialSeries = createServerFn({ method: "GET" })
     for (const q of quotesRes.data ?? []) {
       if (q.status !== "accepted") continue;
       const cur = (q.currency ?? "CLP").toUpperCase();
-      revByCurrency.set(cur, (revByCurrency.get(cur) ?? 0) + (Number(q.total_amount) || 0));
+      revByCurrency.set(cur, (revByCurrency.get(cur) ?? 0) + (Number(q.total) || 0));
     }
     const revenueByCurrency = Array.from(revByCurrency.entries()).map(([currency, total]) => ({
       currency,
