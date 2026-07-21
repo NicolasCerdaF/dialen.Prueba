@@ -15,6 +15,7 @@ import { Route as PoliticasDePrivacidadRouteImport } from './routes/politicas-de
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as MiPlanRouteImport } from './routes/mi-plan'
 import { Route as MetricasIaRouteImport } from './routes/metricas-ia'
+import { Route as LoginAdministradorRouteImport } from './routes/login-administrador'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as DirectorIaRouteImport } from './routes/director-ia'
@@ -69,6 +70,11 @@ const MiPlanRoute = MiPlanRouteImport.update({
 const MetricasIaRoute = MetricasIaRouteImport.update({
   id: '/metricas-ia',
   path: '/metricas-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginAdministradorRoute = LoginAdministradorRouteImport.update({
+  id: '/login-administrador',
+  path: '/login-administrador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/login-administrador': typeof LoginAdministradorRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/login-administrador': typeof LoginAdministradorRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/director-ia': typeof DirectorIaRoute
   '/embudo': typeof EmbudoRoute
   '/login': typeof LoginRoute
+  '/login-administrador': typeof LoginAdministradorRoute
   '/metricas-ia': typeof MetricasIaRoute
   '/mi-plan': typeof MiPlanRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/director-ia'
     | '/embudo'
     | '/login'
+    | '/login-administrador'
     | '/metricas-ia'
     | '/mi-plan'
     | '/oportunidades'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/director-ia'
     | '/embudo'
     | '/login'
+    | '/login-administrador'
     | '/metricas-ia'
     | '/mi-plan'
     | '/oportunidades'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/director-ia'
     | '/embudo'
     | '/login'
+    | '/login-administrador'
     | '/metricas-ia'
     | '/mi-plan'
     | '/oportunidades'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   DirectorIaRoute: typeof DirectorIaRoute
   EmbudoRoute: typeof EmbudoRoute
   LoginRoute: typeof LoginRoute
+  LoginAdministradorRoute: typeof LoginAdministradorRoute
   MetricasIaRoute: typeof MetricasIaRoute
   MiPlanRoute: typeof MiPlanRoute
   OportunidadesRoute: typeof OportunidadesRoute
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/metricas-ia'
       fullPath: '/metricas-ia'
       preLoaderRoute: typeof MetricasIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login-administrador': {
+      id: '/login-administrador'
+      path: '/login-administrador'
+      fullPath: '/login-administrador'
+      preLoaderRoute: typeof LoginAdministradorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -709,6 +729,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectorIaRoute: DirectorIaRoute,
   EmbudoRoute: EmbudoRoute,
   LoginRoute: LoginRoute,
+  LoginAdministradorRoute: LoginAdministradorRoute,
   MetricasIaRoute: MetricasIaRoute,
   MiPlanRoute: MiPlanRoute,
   OportunidadesRoute: OportunidadesRoute,
