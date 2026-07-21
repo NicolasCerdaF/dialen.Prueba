@@ -108,7 +108,6 @@ export const listPlatformUsers = createServerFn({ method: "GET" })
     await assertPlatformAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Auth users (source of truth for banned status + last sign in)
     const { data: authList, error: authErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
       perPage: 200,
@@ -118,18 +117,63 @@ export const listPlatformUsers = createServerFn({ method: "GET" })
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email, company_id");
-    const { data: companies } = await supabaseAdmin.from("companies").select("id, name");
-    const compById = new Map((companies ?? []).map((c: any) => [c.id, c.name]));
+    const { data: companies } = await supabaseAdmin
+      .from("companies")
+      .select("id, name, plan");
+    const compById = new Map((companies ?? []).map((c: any) => [c.id, c]));
+
+    // Per-company credit usage for current month (suggestions + automations + insights)
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const PLAN_CREDITS: Record<string, number> = { basico: 1400, premium: 4600 };
+
+    const companyIds = (companies ?? []).map((c: any) => c.id);
+    const usageByCompany = new Map<string, number>();
+    if (companyIds.length) {
+      const [sugg, runs, insights] = await Promise.all([
+        supabaseAdmin
+          .from("ai_suggestions")
+          .select("company_id")
+          .in("company_id", companyIds)
+          .gte("created_at", periodStart),
+        supabaseAdmin
+          .from("automation_runs")
+          .select("company_id")
+          .in("company_id", companyIds)
+          .gte("created_at", periodStart),
+        supabaseAdmin
+          .from("director_insights")
+          .select("company_id")
+          .in("company_id", companyIds)
+          .gte("created_at", periodStart),
+      ]);
+      for (const row of [
+        ...(sugg.data ?? []),
+        ...(runs.data ?? []),
+        ...(insights.data ?? []),
+      ] as any[]) {
+        if (!row.company_id) continue;
+        usageByCompany.set(row.company_id, (usageByCompany.get(row.company_id) ?? 0) + 1);
+      }
+    }
 
     return (authList?.users ?? []).map((u: any) => {
       const prof = (profiles ?? []).find((p: any) => p.id === u.id);
       const bannedUntil = u.banned_until ? new Date(u.banned_until).getTime() : 0;
+      const comp = prof?.company_id ? compById.get(prof.company_id) : null;
+      const plan = ((comp as any)?.plan ?? "basico") as string;
+      const included = PLAN_CREDITS[plan] ?? 0;
+      const used = prof?.company_id ? usageByCompany.get(prof.company_id) ?? 0 : 0;
       return {
         id: u.id,
         email: u.email ?? prof?.email ?? "",
         fullName: prof?.full_name ?? null,
         companyId: prof?.company_id ?? null,
-        companyName: prof?.company_id ? compById.get(prof.company_id) ?? null : null,
+        companyName: (comp as any)?.name ?? null,
+        plan,
+        creditsUsed: used,
+        creditsIncluded: included,
+        creditsPct: included > 0 ? Math.min(100, Math.round((used / included) * 100)) : 0,
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at ?? null,
         emailConfirmedAt: u.email_confirmed_at ?? null,
@@ -138,6 +182,7 @@ export const listPlatformUsers = createServerFn({ method: "GET" })
       };
     });
   });
+
 
 export const setUserBanned = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
