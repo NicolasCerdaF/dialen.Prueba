@@ -424,7 +424,30 @@ function UsersBlock() {
                     )}
                   </td>
                   <td className="p-3">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={
+                          u.plan === "premium"
+                            ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                            : "border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                        }
+                        onClick={() =>
+                          u.companyId &&
+                          setPlanTarget({
+                            companyId: u.companyId,
+                            companyName: u.companyName ?? u.email,
+                            email: u.email,
+                            currentPlan: u.plan,
+                          })
+                        }
+                        disabled={!u.companyId || busyId === u.companyId}
+                        title={u.plan === "premium" ? "Pasar a Start" : "Pasar a Business"}
+                      >
+                        <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        {u.plan === "premium" ? "→ Start" : "→ Business"}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
