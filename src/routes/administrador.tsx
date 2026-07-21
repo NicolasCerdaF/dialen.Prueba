@@ -516,6 +516,26 @@ function UsersBlock() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={!!planTarget} onOpenChange={(o) => !o && setPlanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {planTarget?.currentPlan === "premium" ? "Bajar a plan Start" : "Elevar a plan Business"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {planTarget?.currentPlan === "premium"
+                ? `${planTarget?.companyName} volverá al plan Start (1.400 créditos/mes) y perderá el acceso a los módulos avanzados de IA.`
+                : `${planTarget?.companyName} pasará al plan Business (4.600 créditos/mes) con acceso a todos los módulos estratégicos de IA.`}
+              {" "}El cambio se aplica de inmediato a todos los usuarios de esa empresa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doChangePlan}>Confirmar cambio</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
