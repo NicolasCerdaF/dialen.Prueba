@@ -164,15 +164,30 @@ function AdminLoginPage() {
               {!busy && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
             </button>
 
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Crear cuenta
+                </span>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={requestReset}
               disabled={sendingReset}
-              className="w-full text-center text-xs font-medium text-amber-200/80 underline-offset-4 transition hover:text-amber-100 hover:underline disabled:opacity-60"
+              className="w-full rounded-xl border border-amber-300/30 bg-amber-400/5 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-400/10 disabled:opacity-60"
             >
-              {sendingReset ? "Enviando enlace..." : "¿Olvidaste tu contraseña? Crea una nueva"}
+              {sendingReset ? "Enviando enlace..." : "Crear contraseña de administrador"}
             </button>
+            <p className="text-center text-[11px] text-slate-500">
+              Te enviaremos un enlace al correo para definir una contraseña nueva.
+            </p>
           </form>
+
 
           <div className="mt-6 rounded-2xl border border-white/5 bg-black/20 px-4 py-3 text-center text-xs text-slate-400">
             Si necesitas entrar a una cuenta cliente, usa el inicio de sesión normal.
