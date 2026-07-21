@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
@@ -31,21 +31,25 @@ function AdminLoginPage() {
   const checkAdmin = useServerFn(isPlatformAdmin);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "create">("login");
+  const [createEmail, setCreateEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
 
-  const requestReset = async () => {
-    if (!email) {
-      toast.error("Escribe tu correo administrador para enviarte el enlace.");
+  const sendCreationLink = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const targetEmail = createEmail.trim();
+    if (!targetEmail) {
+      toast.error("Ingresa el correo autorizado para crear la cuenta.");
       return;
     }
     setSendingReset(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      toast.success("Te enviamos un correo con el enlace para crear tu contraseña.");
+      toast.success("Te enviamos el enlace para crear tu contraseña de administrador.");
     } catch (err) {
       toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
     } finally {
@@ -127,66 +131,117 @@ function AdminLoginPage() {
         <div className="relative overflow-hidden rounded-[28px] border border-amber-400/15 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl md:p-10">
           <div className="pointer-events-none absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" />
 
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="ml-1 block text-xs font-semibold text-slate-300">
-                Correo administrador
-              </label>
-              <input
-                required
-                type="email"
-                placeholder="admin@novacorp.app"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="ml-1 block text-xs font-semibold text-slate-300">Contraseña</label>
-              <input
-                required
-                type="password"
-                minLength={6}
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 font-display font-semibold text-slate-950 transition hover:bg-amber-200 disabled:opacity-60"
-            >
-              <span>{busy ? "Verificando acceso..." : "Entrar como administrador"}</span>
-              {!busy && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
-            </button>
-
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+          {mode === "login" ? (
+            <form onSubmit={submit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-semibold text-slate-300">
+                  Correo administrador
+                </label>
+                <input
+                  required
+                  type="email"
+                  placeholder="admin@novacorp.app"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                />
               </div>
-              <div className="relative flex justify-center">
-                <span className="bg-transparent px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Crear cuenta
-                </span>
-              </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={requestReset}
-              disabled={sendingReset}
-              className="w-full rounded-xl border border-amber-300/30 bg-amber-400/5 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-400/10 disabled:opacity-60"
-            >
-              {sendingReset ? "Enviando enlace..." : "Crear cuenta"}
-            </button>
-            <p className="text-center text-[11px] text-slate-500">
-              Te enviaremos un enlace al correo para definir una contraseña nueva.
-            </p>
-          </form>
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-semibold text-slate-300">Contraseña</label>
+                <input
+                  required
+                  type="password"
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 font-display font-semibold text-slate-950 transition hover:bg-amber-200 disabled:opacity-60"
+              >
+                <span>{busy ? "Verificando acceso..." : "Entrar como administrador"}</span>
+                {!busy && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+              </button>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-[#0d1019] px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Primera vez
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateEmail(email);
+                  setMode("create");
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300/35 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-400/15"
+              >
+                <UserPlus className="h-4 w-4" />
+                Crear cuenta administradora
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={sendCreationLink} className="space-y-4">
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl bg-amber-300/20 p-2 text-amber-200">
+                    <UserPlus className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold text-white">
+                      Crear cuenta administradora
+                    </h2>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      Ingresa el correo autorizado. Recibirás un enlace para crear tu contraseña y activar el acceso.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-semibold text-slate-300">
+                  Correo para crear cuenta
+                </label>
+                <input
+                  required
+                  type="email"
+                  placeholder="admin@novacorp.app"
+                  value={createEmail}
+                  onChange={(event) => setCreateEmail(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={sendingReset}
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 font-display font-semibold text-slate-950 transition hover:bg-amber-200 disabled:opacity-60"
+              >
+                <span>{sendingReset ? "Enviando enlace..." : "Enviar enlace de creación"}</span>
+                {!sendingReset && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10"
+              >
+                Ya tengo cuenta, iniciar sesión
+              </button>
+            </form>
+          )}
 
 
           <div className="mt-6 rounded-2xl border border-white/5 bg-black/20 px-4 py-3 text-center text-xs text-slate-400">
