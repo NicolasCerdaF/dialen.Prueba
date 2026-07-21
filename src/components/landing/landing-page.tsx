@@ -82,6 +82,12 @@ export function LandingPage() {
               Iniciar sesión
             </Link>
             <Link
+              to="/administrador"
+              className="hidden sm:inline-flex rounded-lg border border-amber-400/30 bg-amber-400/5 px-4 py-2 text-sm font-medium text-amber-200 transition hover:border-amber-400/60 hover:bg-amber-400/10"
+            >
+              Iniciar adm
+            </Link>
+            <Link
               to="/login"
               className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-6px_rgba(0,200,83,0.6)]"
             >
