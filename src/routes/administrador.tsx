@@ -20,6 +20,8 @@ import {
   Zap,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { MetricsFinance } from "@/components/admin/metrics-finance";
+
 import {
   AlertDialog,
   AlertDialogAction,
