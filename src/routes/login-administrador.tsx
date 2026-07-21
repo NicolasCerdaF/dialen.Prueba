@@ -32,6 +32,26 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const requestReset = async () => {
+    if (!email) {
+      toast.error("Escribe tu correo administrador para enviarte el enlace.");
+      return;
+    }
+    setSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Te enviamos un correo con el enlace para crear tu contraseña.");
+    } catch (err) {
+      toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +162,15 @@ function AdminLoginPage() {
             >
               <span>{busy ? "Verificando acceso..." : "Entrar como administrador"}</span>
               {!busy && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={requestReset}
+              disabled={sendingReset}
+              className="w-full text-center text-xs font-medium text-amber-200/80 underline-offset-4 transition hover:text-amber-100 hover:underline disabled:opacity-60"
+            >
+              {sendingReset ? "Enviando enlace..." : "¿Olvidaste tu contraseña? Crea una nueva"}
             </button>
           </form>
 
