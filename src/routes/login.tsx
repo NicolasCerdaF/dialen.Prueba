@@ -2,9 +2,12 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/platform-admin.functions";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 
 
 export const Route = createFileRoute("/login")({
@@ -36,9 +39,26 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const checkAdmin = useServerFn(isPlatformAdmin);
+
   useEffect(() => {
-    if (session) navigate({ to: "/", replace: true });
-  }, [session, navigate]);
+    let cancelled = false;
+    if (!session) return;
+    (async () => {
+      try {
+        const res = await checkAdmin();
+        if (cancelled) return;
+        navigate({ to: res?.isAdmin ? "/administrador" : "/", replace: true });
+      } catch {
+        if (!cancelled) navigate({ to: "/", replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session, navigate, checkAdmin]);
+
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
