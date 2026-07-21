@@ -47,6 +47,7 @@ import {
   listPlatformCompanies,
   listPlatformUsers,
   resetUserPassword,
+  setCompanyPlan,
   setUserBanned,
 } from "@/lib/platform-admin.functions";
 
