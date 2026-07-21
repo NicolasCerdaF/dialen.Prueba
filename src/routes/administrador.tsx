@@ -47,6 +47,7 @@ import {
   listPlatformCompanies,
   listPlatformUsers,
   resetUserPassword,
+  setCompanyPlan,
   setUserBanned,
 } from "@/lib/platform-admin.functions";
 
@@ -250,6 +251,7 @@ function UsersBlock() {
   const fn = useServerFn(listPlatformUsers);
   const banFn = useServerFn(setUserBanned);
   const resetFn = useServerFn(resetUserPassword);
+  const planFn = useServerFn(setCompanyPlan);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["platform-users"], queryFn: () => fn() });
 
@@ -257,6 +259,12 @@ function UsersBlock() {
   const [confirmBan, setConfirmBan] = useState<{ id: string; email: string; banned: boolean } | null>(
     null,
   );
+  const [planTarget, setPlanTarget] = useState<{
+    companyId: string;
+    companyName: string;
+    email: string;
+    currentPlan: string;
+  } | null>(null);
   const [resetTarget, setResetTarget] = useState<{ id: string; email: string } | null>(null);
   const [resetResult, setResetResult] = useState<{ email: string; password: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -299,6 +307,30 @@ function UsersBlock() {
     } finally {
       setBusyId(null);
       setResetTarget(null);
+    }
+  }
+
+  async function doChangePlan() {
+    if (!planTarget) return;
+    const next = planTarget.currentPlan === "premium" ? "basico" : "premium";
+    setBusyId(planTarget.companyId);
+    try {
+      await planFn({ data: { companyId: planTarget.companyId, plan: next } });
+      toast.success(
+        next === "premium"
+          ? `${planTarget.companyName} ahora está en Business`
+          : `${planTarget.companyName} ahora está en Start`,
+      );
+      qc.invalidateQueries({ queryKey: ["platform-users"] });
+      qc.invalidateQueries({ queryKey: ["platform-companies"] });
+      qc.invalidateQueries({ queryKey: ["platform-metrics"] });
+      qc.invalidateQueries({ queryKey: ["my-plan"] });
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setBusyId(null);
+      setPlanTarget(null);
     }
   }
 
@@ -392,7 +424,30 @@ function UsersBlock() {
                     )}
                   </td>
                   <td className="p-3">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={
+                          u.plan === "premium"
+                            ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                            : "border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                        }
+                        onClick={() =>
+                          u.companyId &&
+                          setPlanTarget({
+                            companyId: u.companyId,
+                            companyName: u.companyName ?? u.email,
+                            email: u.email,
+                            currentPlan: u.plan,
+                          })
+                        }
+                        disabled={!u.companyId || busyId === u.companyId}
+                        title={u.plan === "premium" ? "Pasar a Start" : "Pasar a Business"}
+                      >
+                        <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        {u.plan === "premium" ? "→ Start" : "→ Business"}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -461,6 +516,26 @@ function UsersBlock() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={!!planTarget} onOpenChange={(o) => !o && setPlanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {planTarget?.currentPlan === "premium" ? "Bajar a plan Start" : "Elevar a plan Business"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {planTarget?.currentPlan === "premium"
+                ? `${planTarget?.companyName} volverá al plan Start (1.400 créditos/mes) y perderá el acceso a los módulos avanzados de IA.`
+                : `${planTarget?.companyName} pasará al plan Business (4.600 créditos/mes) con acceso a todos los módulos estratégicos de IA.`}
+              {" "}El cambio se aplica de inmediato a todos los usuarios de esa empresa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doChangePlan}>Confirmar cambio</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -514,8 +589,16 @@ function UsersBlock() {
 
 function CompaniesBlock() {
   const fn = useServerFn(listPlatformCompanies);
+  const planFn = useServerFn(setCompanyPlan);
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ["platform-companies"], queryFn: () => fn() });
   const [search, setSearch] = useState("");
+  const [planTarget, setPlanTarget] = useState<{
+    id: string;
+    name: string;
+    currentPlan: string;
+  } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const list = q.data ?? [];
@@ -528,6 +611,30 @@ function CompaniesBlock() {
         c.ownerName?.toLowerCase().includes(s),
     );
   }, [q.data, search]);
+
+  async function doChangePlan() {
+    if (!planTarget) return;
+    const next = planTarget.currentPlan === "premium" ? "basico" : "premium";
+    setBusyId(planTarget.id);
+    try {
+      await planFn({ data: { companyId: planTarget.id, plan: next } });
+      toast.success(
+        next === "premium"
+          ? `${planTarget.name} ahora está en Business`
+          : `${planTarget.name} ahora está en Start`,
+      );
+      qc.invalidateQueries({ queryKey: ["platform-companies"] });
+      qc.invalidateQueries({ queryKey: ["platform-users"] });
+      qc.invalidateQueries({ queryKey: ["platform-metrics"] });
+      qc.invalidateQueries({ queryKey: ["my-plan"] });
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setBusyId(null);
+      setPlanTarget(null);
+    }
+  }
 
   return (
     <AdminCard>
@@ -547,7 +654,7 @@ function CompaniesBlock() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead className="border-b border-slate-800 bg-slate-950/40 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
               <th className="p-3 text-left font-medium">Empresa</th>
@@ -555,6 +662,7 @@ function CompaniesBlock() {
               <th className="p-3 text-left font-medium">Plan</th>
               <th className="p-3 text-right font-medium">Usuarios</th>
               <th className="p-3 text-left font-medium">Creada</th>
+              <th className="p-3 text-right font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -580,11 +688,29 @@ function CompaniesBlock() {
                 <td className="p-3 text-xs text-slate-400">
                   {new Date(c.createdAt).toLocaleDateString("es-CL")}
                 </td>
+                <td className="p-3 text-right">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={
+                      c.plan === "premium"
+                        ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                        : "border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                    }
+                    onClick={() =>
+                      setPlanTarget({ id: c.id, name: c.name, currentPlan: c.plan })
+                    }
+                    disabled={busyId === c.id}
+                  >
+                    <Sparkles className="mr-1 h-3.5 w-3.5" />
+                    {c.plan === "premium" ? "Pasar a Start" : "Pasar a Business"}
+                  </Button>
+                </td>
               </tr>
             ))}
             {!q.isLoading && filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-slate-500">
+                <td colSpan={6} className="p-6 text-center text-slate-500">
                   Sin resultados.
                 </td>
               </tr>
@@ -592,6 +718,28 @@ function CompaniesBlock() {
           </tbody>
         </table>
       </div>
+
+      <AlertDialog open={!!planTarget} onOpenChange={(o) => !o && setPlanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {planTarget?.currentPlan === "premium"
+                ? "Bajar a plan Start"
+                : "Elevar a plan Business"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {planTarget?.currentPlan === "premium"
+                ? `${planTarget?.name} volverá al plan Start (1.400 créditos/mes) y perderá el acceso a los módulos avanzados de IA.`
+                : `${planTarget?.name} pasará al plan Business (4.600 créditos/mes) con acceso a todos los módulos estratégicos de IA.`}
+              {" "}El cambio se aplica de inmediato a todos los usuarios de esa empresa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doChangePlan}>Confirmar cambio</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminCard>
   );
 }

@@ -224,3 +224,25 @@ export const resetUserPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { password };
   });
+
+export const setCompanyPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        companyId: z.string().uuid(),
+        plan: z.enum(["basico", "premium"]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertPlatformAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("companies")
+      .update({ plan: data.plan })
+      .eq("id", data.companyId);
+    if (error) throw new Error(error.message);
+    return { ok: true, plan: data.plan };
+  });
+
