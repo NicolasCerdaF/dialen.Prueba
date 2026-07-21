@@ -2,9 +2,12 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/platform-admin.functions";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+
 
 
 export const Route = createFileRoute("/login")({
