@@ -310,6 +310,30 @@ function UsersBlock() {
     }
   }
 
+  async function doChangePlan() {
+    if (!planTarget) return;
+    const next = planTarget.currentPlan === "premium" ? "basico" : "premium";
+    setBusyId(planTarget.companyId);
+    try {
+      await planFn({ data: { companyId: planTarget.companyId, plan: next } });
+      toast.success(
+        next === "premium"
+          ? `${planTarget.companyName} ahora está en Business`
+          : `${planTarget.companyName} ahora está en Start`,
+      );
+      qc.invalidateQueries({ queryKey: ["platform-users"] });
+      qc.invalidateQueries({ queryKey: ["platform-companies"] });
+      qc.invalidateQueries({ queryKey: ["platform-metrics"] });
+      qc.invalidateQueries({ queryKey: ["my-plan"] });
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setBusyId(null);
+      setPlanTarget(null);
+    }
+  }
+
   return (
     <AdminCard>
       <div className="flex flex-col gap-3 border-b border-slate-800 p-4 sm:flex-row sm:items-center sm:justify-between">
