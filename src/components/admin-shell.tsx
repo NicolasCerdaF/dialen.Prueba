@@ -1,5 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
-import { LogOut, Shield, LayoutDashboard, Users, Building2 } from "lucide-react";
+import { LogOut, Shield, LayoutDashboard, Users, Building2, LineChart } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
@@ -15,7 +15,7 @@ export function AdminShell({
 }: {
   children: ReactNode;
   /** Which admin section is active for the side nav */
-  section?: "overview" | "companies" | "users";
+  section?: "overview" | "companies" | "users" | "metrics";
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile, signOut } = useAuth();
@@ -30,9 +30,11 @@ export function AdminShell({
 
   const tabs = [
     { id: "overview" as const, label: "Vista general", icon: LayoutDashboard, hash: "#overview" },
+    { id: "metrics" as const, label: "Métricas", icon: LineChart, hash: "#metrics" },
     { id: "users" as const, label: "Usuarios", icon: Users, hash: "#users" },
     { id: "companies" as const, label: "Empresas", icon: Building2, hash: "#companies" },
   ];
+
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100">

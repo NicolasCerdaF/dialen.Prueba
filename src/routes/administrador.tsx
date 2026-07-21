@@ -20,6 +20,8 @@ import {
   Zap,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { MetricsFinance } from "@/components/admin/metrics-finance";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,8 +102,14 @@ function AdministradorPage() {
 
 function AdminContent() {
   const hash = useRouterState({ select: (s) => s.location.hash });
-  const section: "overview" | "users" | "companies" =
-    hash === "users" ? "users" : hash === "companies" ? "companies" : "overview";
+  const section: "overview" | "users" | "companies" | "metrics" =
+    hash === "users"
+      ? "users"
+      : hash === "companies"
+        ? "companies"
+        : hash === "metrics"
+          ? "metrics"
+          : "overview";
 
   return (
     <AdminShell section={section}>
@@ -113,6 +121,17 @@ function AdminContent() {
             description="Métricas en vivo de todas las cuentas, empresas y consumo de crédito IA."
           />
           <MetricsBlock />
+        </section>
+      )}
+
+      {section === "metrics" && (
+        <section>
+          <SectionHeading
+            eyebrow="Métricas"
+            title="Finanzas, consumo y proyecciones"
+            description="Ingresos recurrentes, costo de créditos IA, márgenes y proyección de MRR."
+          />
+          <MetricsFinance />
         </section>
       )}
 
@@ -140,6 +159,7 @@ function AdminContent() {
     </AdminShell>
   );
 }
+
 
 function SectionHeading({
   eyebrow,

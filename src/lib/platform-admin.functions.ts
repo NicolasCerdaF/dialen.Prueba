@@ -34,7 +34,7 @@ export const getPlatformMetrics = createServerFn({ method: "GET" })
       supabaseAdmin.from("profiles").select("id, created_at"),
       supabaseAdmin.from("conversations").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("messages").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("quotes").select("total_amount, status, currency"),
+      supabaseAdmin.from("quotes").select("total, status, currency"),
     ]);
 
     const companies = companiesRes.data ?? [];
@@ -43,7 +43,7 @@ export const getPlatformMetrics = createServerFn({ method: "GET" })
 
     const acceptedTotal = (quotesRes.data ?? [])
       .filter((q: any) => q.status === "accepted")
-      .reduce((sum: number, q: any) => sum + (Number(q.total_amount) || 0), 0);
+      .reduce((sum: number, q: any) => sum + (Number(q.total) || 0), 0);
 
     // Signups last 30 days
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -244,5 +244,82 @@ export const setCompanyPlan = createServerFn({ method: "POST" })
       .eq("id", data.companyId);
     if (error) throw new Error(error.message);
     return { ok: true, plan: data.plan };
+  });
+
+// Financial metrics: monthly signup series, monthly AI usage, revenue by currency.
+export const getFinancialSeries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertPlatformAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const now = new Date();
+    const monthsBack = 6;
+    const startMonth = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1), 1);
+    const startIso = startMonth.toISOString();
+
+    const [profilesRes, companiesRes, suggRes, runsRes, insightsRes, quotesRes] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, created_at").gte("created_at", startIso),
+      supabaseAdmin.from("companies").select("id, plan, created_at").gte("created_at", startIso),
+      supabaseAdmin.from("ai_suggestions").select("created_at").gte("created_at", startIso),
+      supabaseAdmin.from("automation_runs").select("created_at").gte("created_at", startIso),
+      supabaseAdmin.from("director_insights").select("created_at").gte("created_at", startIso),
+      supabaseAdmin.from("quotes").select("total, status, currency, created_at"),
+    ]);
+
+    const months: { key: string; label: string; year: number; month: number }[] = [];
+    for (let i = 0; i < monthsBack; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1 - i), 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: d.toLocaleDateString("es-CL", { month: "short", year: "2-digit" }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+      });
+    }
+
+    const bucketize = (rows: any[] | null | undefined) => {
+      const out = new Map<string, number>();
+      for (const r of rows ?? []) {
+        const d = new Date(r.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        out.set(key, (out.get(key) ?? 0) + 1);
+      }
+      return out;
+    };
+
+    const signupsB = bucketize(profilesRes.data);
+    const companiesB = bucketize(companiesRes.data);
+    const aiB = bucketize([
+      ...(suggRes.data ?? []),
+      ...(runsRes.data ?? []),
+      ...(insightsRes.data ?? []),
+    ]);
+
+    const series = months.map((m) => ({
+      month: m.label,
+      key: m.key,
+      signups: signupsB.get(m.key) ?? 0,
+      companies: companiesB.get(m.key) ?? 0,
+      ai: aiB.get(m.key) ?? 0,
+    }));
+
+    // Revenue by currency (accepted quotes only)
+    const revByCurrency = new Map<string, number>();
+    for (const q of quotesRes.data ?? []) {
+      if (q.status !== "accepted") continue;
+      const cur = (q.currency ?? "CLP").toUpperCase();
+      revByCurrency.set(cur, (revByCurrency.get(cur) ?? 0) + (Number(q.total) || 0));
+    }
+    const revenueByCurrency = Array.from(revByCurrency.entries()).map(([currency, total]) => ({
+      currency,
+      total,
+    }));
+
+    // Total AI operations current month
+    const currentKey = months[months.length - 1].key;
+    const currentMonthAi = aiB.get(currentKey) ?? 0;
+
+    return { series, revenueByCurrency, currentMonthAi };
   });
 
