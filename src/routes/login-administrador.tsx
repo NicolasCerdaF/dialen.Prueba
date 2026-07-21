@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
+import { createAdminAccount, usernameToEmail } from "@/lib/admin-account.functions";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/platform-admin.functions";
 
@@ -13,10 +14,11 @@ export const Route = createFileRoute("/login-administrador")({
   component: AdminLoginPage,
 });
 
+const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
+
 const AUTH_ERROR_ES: Array<[RegExp, string]> = [
-  [/invalid login credentials/i, "Correo o contraseña incorrectos."],
-  [/email not confirmed/i, "Debes confirmar tu correo antes de iniciar sesión."],
-  [/invalid email/i, "El correo ingresado no es válido."],
+  [/invalid login credentials/i, "Usuario o contraseña incorrectos."],
+  [/email not confirmed/i, "Debes confirmar tu cuenta antes de iniciar sesión."],
   [/network|failed to fetch/i, "Error de conexión. Verifica tu internet e inténtalo de nuevo."],
 ];
 
@@ -29,33 +31,16 @@ function AdminLoginPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const checkAdmin = useServerFn(isPlatformAdmin);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"login" | "create">("login");
-  const [createEmail, setCreateEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [sendingReset, setSendingReset] = useState(false);
+  const createAccount = useServerFn(createAdminAccount);
 
-  const sendCreationLink = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const targetEmail = createEmail.trim();
-    if (!targetEmail) {
-      toast.error("Ingresa el correo autorizado para crear la cuenta.");
-      return;
-    }
-    setSendingReset(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      toast.success("Te enviamos el enlace para crear tu contraseña de administrador.");
-    } catch (err) {
-      toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
-    } finally {
-      setSendingReset(false);
-    }
-  };
+  const [mode, setMode] = useState<"login" | "create">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,12 +69,50 @@ function AdminLoginPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const clean = username.trim().toLowerCase();
+      if (!USERNAME_RE.test(clean)) {
+        throw new Error("Nombre de usuario inválido.");
+      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(clean),
+        password,
+      });
       if (error) throw error;
     } catch (err) {
       toast.error(translateAuthError(err instanceof Error ? err.message : "Error"));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const submitCreate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const clean = newUsername.trim().toLowerCase();
+    if (!USERNAME_RE.test(clean)) {
+      toast.error("Usuario: 3-32 caracteres (letras, números, . _ -).");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Las contraseñas no coinciden.");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createAccount({ data: { username: clean, password: newPassword } });
+      toast.success("Cuenta creada. Iniciando sesión…");
+      const { error } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(clean),
+        password: newPassword,
+      });
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo crear la cuenta");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -135,14 +158,15 @@ function AdminLoginPage() {
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">
                 <label className="ml-1 block text-xs font-semibold text-slate-300">
-                  Correo administrador
+                  Nombre de usuario
                 </label>
                 <input
                   required
-                  type="email"
-                  placeholder="admin@novacorp.app"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  type="text"
+                  autoComplete="username"
+                  placeholder="admin"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
                 />
               </div>
@@ -152,7 +176,8 @@ function AdminLoginPage() {
                 <input
                   required
                   type="password"
-                  minLength={6}
+                  minLength={8}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -183,17 +208,17 @@ function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setCreateEmail(email);
+                  setNewUsername(username);
                   setMode("create");
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300/35 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-400/15"
               >
                 <UserPlus className="h-4 w-4" />
-                Crear cuenta administradora
+                Crear cuenta
               </button>
             </form>
           ) : (
-            <form onSubmit={sendCreationLink} className="space-y-4">
+            <form onSubmit={submitCreate} className="space-y-4">
               <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-xl bg-amber-300/20 p-2 text-amber-200">
@@ -204,7 +229,7 @@ function AdminLoginPage() {
                       Crear cuenta administradora
                     </h2>
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Ingresa el correo autorizado. Recibirás un enlace para crear tu contraseña y activar el acceso.
+                      Elige un nombre de usuario y una contraseña. No se requiere correo.
                     </p>
                   </div>
                 </div>
@@ -212,25 +237,59 @@ function AdminLoginPage() {
 
               <div className="space-y-2">
                 <label className="ml-1 block text-xs font-semibold text-slate-300">
-                  Correo para crear cuenta
+                  Nombre de usuario
                 </label>
                 <input
                   required
-                  type="email"
-                  placeholder="admin@novacorp.app"
-                  value={createEmail}
-                  onChange={(event) => setCreateEmail(event.target.value)}
+                  type="text"
+                  autoComplete="username"
+                  placeholder="ej. nicolas"
+                  value={newUsername}
+                  onChange={(event) => setNewUsername(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                />
+                <p className="ml-1 text-[11px] text-slate-500">
+                  3–32 caracteres · letras, números, punto, guion o guion bajo
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-semibold text-slate-300">Contraseña</label>
+                <input
+                  required
+                  type="password"
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="Mínimo 8 caracteres"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="ml-1 block text-xs font-semibold text-slate-300">
+                  Confirmar contraseña
+                </label>
+                <input
+                  required
+                  type="password"
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="Repite la contraseña"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={sendingReset}
+                disabled={creating}
                 className="group flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 font-display font-semibold text-slate-950 transition hover:bg-amber-200 disabled:opacity-60"
               >
-                <span>{sendingReset ? "Enviando enlace..." : "Enviar enlace de creación"}</span>
-                {!sendingReset && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+                <span>{creating ? "Creando cuenta..." : "Crear cuenta"}</span>
+                {!creating && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
               </button>
 
               <button
@@ -242,7 +301,6 @@ function AdminLoginPage() {
               </button>
             </form>
           )}
-
 
           <div className="mt-6 rounded-2xl border border-white/5 bg-black/20 px-4 py-3 text-center text-xs text-slate-400">
             Si necesitas entrar a una cuenta cliente, usa el inicio de sesión normal.
