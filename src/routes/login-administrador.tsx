@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminAccount, isValidAdminUsername, normalizeAdminUsername, usernameToEmail } from "@/lib/admin-account.functions";
+import { createAdminAccount } from "@/lib/admin-account.functions";
+import { isValidAdminUsername, normalizeAdminUsername, usernameToEmail } from "@/lib/admin-account.utils";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/platform-admin.functions";
 
