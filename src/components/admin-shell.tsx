@@ -1,5 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
-import { LogOut, Shield, LayoutDashboard, Users, Building2 } from "lucide-react";
+import { LogOut, Shield, LayoutDashboard, Users, Building2, LineChart } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
