@@ -82,7 +82,8 @@ export function LandingPage() {
               Iniciar sesión
             </Link>
             <Link
-              to="/administrador"
+              to="/login"
+              search={{ admin: 1 }}
               className="hidden sm:inline-flex rounded-lg border border-amber-400/30 bg-amber-400/5 px-4 py-2 text-sm font-medium text-amber-200 transition hover:border-amber-400/60 hover:bg-amber-400/10"
             >
               Iniciar adm
