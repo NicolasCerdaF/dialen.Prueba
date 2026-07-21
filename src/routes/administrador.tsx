@@ -251,6 +251,7 @@ function UsersBlock() {
   const fn = useServerFn(listPlatformUsers);
   const banFn = useServerFn(setUserBanned);
   const resetFn = useServerFn(resetUserPassword);
+  const planFn = useServerFn(setCompanyPlan);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["platform-users"], queryFn: () => fn() });
 
@@ -258,6 +259,12 @@ function UsersBlock() {
   const [confirmBan, setConfirmBan] = useState<{ id: string; email: string; banned: boolean } | null>(
     null,
   );
+  const [planTarget, setPlanTarget] = useState<{
+    companyId: string;
+    companyName: string;
+    email: string;
+    currentPlan: string;
+  } | null>(null);
   const [resetTarget, setResetTarget] = useState<{ id: string; email: string } | null>(null);
   const [resetResult, setResetResult] = useState<{ email: string; password: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
