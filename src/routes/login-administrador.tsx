@@ -181,7 +181,7 @@ function AdminLoginPage() {
               disabled={sendingReset}
               className="w-full rounded-xl border border-amber-300/30 bg-amber-400/5 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-400/10 disabled:opacity-60"
             >
-              {sendingReset ? "Enviando enlace..." : "Crear contraseña de administrador"}
+              {sendingReset ? "Enviando enlace..." : "Crear cuenta"}
             </button>
             <p className="text-center text-[11px] text-slate-500">
               Te enviaremos un enlace al correo para definir una contraseña nueva.
