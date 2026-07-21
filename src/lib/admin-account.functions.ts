@@ -1,10 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
+const EMAIL_USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,30}[a-z0-9]$/;
+
+export function normalizeAdminUsername(username: string): string {
+  return username.trim().replace(/\s+/g, " ");
+}
+
+export function usernameToSlug(username: string): string {
+  return normalizeAdminUsername(username)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, ".")
+    .replace(/[^a-z0-9._-]/g, "")
+    .replace(/[._-]{2,}/g, ".")
+    .replace(/^[._-]+|[._-]+$/g, "")
+    .slice(0, 32);
+}
+
+export function isValidAdminUsername(username: string): boolean {
+  const clean = normalizeAdminUsername(username);
+  const slug = usernameToSlug(clean);
+  return clean.length >= 3 && clean.length <= 40 && EMAIL_USERNAME_RE.test(slug);
+}
 
 export function usernameToEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@admin.dialen.local`;
+  return `${usernameToSlug(username)}@admin.dialen.local`;
 }
 
 export const createAdminAccount = createServerFn({ method: "POST" })
@@ -13,17 +35,15 @@ export const createAdminAccount = createServerFn({ method: "POST" })
       .object({
         username: z
           .string()
-          .trim()
-          .min(3)
-          .max(32)
-          .regex(USERNAME_RE, "Solo letras, números, punto, guion o guion bajo"),
+          .transform(normalizeAdminUsername)
+          .refine(isValidAdminUsername, "Escribe al menos 3 letras o números. Puedes usar espacios."),
         password: z.string().min(8).max(72),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const username = data.username.trim().toLowerCase();
+    const username = normalizeAdminUsername(data.username);
     const email = usernameToEmail(username);
 
     // If user already exists, block creation (they should sign in instead).
