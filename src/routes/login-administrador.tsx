@@ -163,6 +163,15 @@ function AdminLoginPage() {
               <span>{busy ? "Verificando acceso..." : "Entrar como administrador"}</span>
               {!busy && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
             </button>
+
+            <button
+              type="button"
+              onClick={requestReset}
+              disabled={sendingReset}
+              className="w-full text-center text-xs font-medium text-amber-200/80 underline-offset-4 transition hover:text-amber-100 hover:underline disabled:opacity-60"
+            >
+              {sendingReset ? "Enviando enlace..." : "¿Olvidaste tu contraseña? Crea una nueva"}
+            </button>
           </form>
 
           <div className="mt-6 rounded-2xl border border-white/5 bg-black/20 px-4 py-3 text-center text-xs text-slate-400">
