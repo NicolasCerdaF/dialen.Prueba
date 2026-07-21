@@ -35,8 +35,8 @@ import {
 // Business inputs — pricing model (CLP monthly + credit economics)
 // ============================================================================
 const PRICING = {
-  start: { name: "Plan Start", priceCLP: 19_990, monthlyCredits: 1_400 },
-  business: { name: "Plan Business", priceCLP: 59_990, monthlyCredits: 4_600 },
+  start: { name: "Plan Start", priceCLP: 79_000, monthlyCredits: 1_400 },
+  business: { name: "Plan Business", priceCLP: 129_000, monthlyCredits: 4_600 },
 };
 // Estimated raw AI cost per credit consumed (Gemini 2.0 flash tier).
 // Conversación promedio ≈ USD 0.0004 → CLP ~0.38 por crédito.
