@@ -380,6 +380,7 @@ export type Database = {
           language: string
           name: string
           owner_id: string
+          plan: string
           updated_at: string
         }
         Insert: {
@@ -396,6 +397,7 @@ export type Database = {
           language?: string
           name: string
           owner_id: string
+          plan?: string
           updated_at?: string
         }
         Update: {
@@ -412,6 +414,7 @@ export type Database = {
           language?: string
           name?: string
           owner_id?: string
+          plan?: string
           updated_at?: string
         }
         Relationships: []
