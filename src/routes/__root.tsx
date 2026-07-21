@@ -120,7 +120,7 @@ function AuthGate() {
       </div>
     );
   }
-  const publicRoutes = ["/", "/login-administrador", "/politicas-de-privacidad"];
+  const publicRoutes = ["/", "/login-administrador", "/politicas-de-privacidad", "/reset-password"];
   const isPublic = publicRoutes.includes(pathname);
   if (!session && pathname !== "/login" && !isPublic) {
     return <Navigate to="/login" replace />;
