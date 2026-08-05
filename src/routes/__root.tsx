@@ -115,8 +115,18 @@ function AuthGate() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Cargando...
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground whitespace-pre-wrap p-8 text-center max-w-4xl mx-auto">
+        Necesito que actúes únicamente como analista del proyecto.
+
+Antes de responder, revisa y analiza el estado actual del código fuente, la arquitectura, las funcionalidades, las pantallas, los flujos, las integraciones, la base de datos y toda la lógica que ya se encuentra implementada en el proyecto.
+
+A continuación, responderás una serie de preguntas. Cada respuesta debe basarse exclusivamente en la implementación actual del proyecto. No hagas suposiciones sobre funcionalidades futuras, no infieras comportamientos que no existan y no describas cómo "debería" funcionar el sistema, sino cómo funciona actualmente según el código.
+
+Si una funcionalidad está parcialmente implementada, indícalo claramente y especifica qué partes existen y cuáles aún faltan. Si una funcionalidad no existe, señálalo explícitamente. Si no puedes determinar una respuesta con certeza a partir del código, responde que no hay suficiente evidencia en la implementación en lugar de asumir información.
+
+No generes código, no propongas mejoras, no sugieras refactorizaciones, no diseñes soluciones y no realices ningún cambio en archivos, componentes, configuraciones o base de datos. Tu única tarea es inspeccionar el proyecto y responder las preguntas de forma precisa, objetiva y sustentada en la implementación existente.
+
+Siempre que sea posible, indica en qué archivos, módulos o componentes encontraste la evidencia que respalda tu respuesta, para que pueda verificarla posteriormente.
       </div>
     );
   }
