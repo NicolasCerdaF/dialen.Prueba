@@ -61,13 +61,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bandeja Unificada — Dialen" },
+      { title: "Dialen — WhatsApp + IA que vende por ti" },
       {
         name: "description",
         content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7.",
       },
-      { property: "og:title", content: "Bandeja Unificada — Dialen" },
-      { name: "twitter:title", content: "Bandeja Unificada — Dialen" },
+      { property: "og:title", content: "Dialen — WhatsApp + IA que vende por ti" },
+      { name: "twitter:title", content: "Dialen — WhatsApp + IA que vende por ti" },
       { property: "og:description", content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7." },
       { name: "twitter:description", content: "Dialen by Nova Corp: conecta tu WhatsApp Business y deja que la IA responda a tus clientes 24/7." },
       { name: "twitter:card", content: "summary_large_image" },
