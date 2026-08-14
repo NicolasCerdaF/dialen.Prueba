@@ -101,10 +101,10 @@ export function LandingPage() {
       <main className="relative z-10">
         {/* HERO */}
         <section className="mx-auto flex max-w-7xl flex-col items-center px-6 pb-24 pt-16 text-center lg:px-10 lg:pt-24">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#00C853]/30 bg-[#00C853]/10 px-3 py-1 text-xs font-medium text-[#00E676] backdrop-blur">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3 py-1 text-xs font-medium text-[#A855F7] backdrop-blur">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00E676]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#A855F7] opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#A855F7]" />
             </span>
             WhatsApp + IA que vende por ti
           </div>
@@ -112,12 +112,12 @@ export function LandingPage() {
           <h1 className="max-w-4xl text-balance font-display text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl">
             Convierte cada conversación de{" "}
             <span className="relative inline-block">
-              <span className="bg-gradient-to-r from-[#00E676] via-[#00C853] to-[#00695C] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#A855F7] via-[#7C3AED] to-[#5B21B6] bg-clip-text text-transparent">
                 WhatsApp
               </span>
               <svg
                 aria-hidden
-                className="absolute -bottom-2 left-0 w-full text-[#00C853]/60"
+                className="absolute -bottom-2 left-0 w-full text-[#7C3AED]/60"
                 viewBox="0 0 300 12"
                 fill="none"
               >
@@ -141,7 +141,7 @@ export function LandingPage() {
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <Link
               to="/login"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00C853] to-[#00695C] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_rgba(0,200,83,0.6)] transition hover:shadow-[0_16px_50px_-10px_rgba(0,200,83,0.8)]"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.6)] transition hover:shadow-[0_16px_50px_-10px_rgba(124,58,237,0.8)]"
             >
               Ingresar a Dialen
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
@@ -157,13 +157,13 @@ export function LandingPage() {
           {/* Trust strip */}
           <div className="mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[11px] uppercase tracking-widest text-white/40">
             <span className="flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-[#00C853]" /> API oficial de Meta
+              <span className="h-1 w-1 rounded-full bg-[#7C3AED]" /> API oficial de Meta
             </span>
             <span className="flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-[#00C853]" /> Datos alojados en Chile
+              <span className="h-1 w-1 rounded-full bg-[#7C3AED]" /> Datos alojados en Chile
             </span>
             <span className="flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-[#00C853]" /> IA de última generación
+              <span className="h-1 w-1 rounded-full bg-[#7C3AED]" /> IA de última generación
             </span>
           </div>
         </section>
