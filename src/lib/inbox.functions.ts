@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { toDbConversationStatus } from "@/lib/conversation-status";
 
 // ---------- Assign / reassign / unassign conversation ----------
 const AssignInput = z.object({
@@ -86,9 +87,10 @@ export const setConversationStatus = createServerFn({ method: "POST" })
       .eq("id", data.conversation_id)
       .maybeSingle();
     if (!convo) throw new Error("Conversación no encontrada");
+    const dbStatus = toDbConversationStatus(data.status);
     const { error } = await supabase
       .from("conversations")
-      .update({ status: data.status as any, updated_at: new Date().toISOString() })
+      .update({ status: dbStatus as any, updated_at: new Date().toISOString() })
       .eq("id", data.conversation_id);
     if (error) throw new Error(error.message);
     await supabase.from("conversation_events").insert({
@@ -96,7 +98,7 @@ export const setConversationStatus = createServerFn({ method: "POST" })
       company_id: convo.company_id,
       actor_id: userId,
       event_type: "status_changed",
-      payload: { from: convo.status, to: data.status },
+      payload: { from: convo.status, to: data.status, db_status: dbStatus },
     });
     return { ok: true };
   });

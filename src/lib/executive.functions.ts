@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCredits, withPremiumFeature } from "@/lib/plan-middleware";
 import { z } from "zod";
 import { normalizeStage, STAGES } from "@/lib/pipeline";
 import { callChat } from "@/lib/ai-router.server";
@@ -262,16 +262,11 @@ async function computeTotalsBlock(supabase: any, companyId: string, from: string
 
 }
 
-export const getExecutiveDashboard = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw: unknown) =>
-    z
-      .object({ range: z.union([z.literal(7), z.literal(30), z.literal(90)]).default(30) })
-      .parse(raw),
-  )
-  .handler(async ({ data, context }): Promise<ExecutiveDashboard> => {
-    const { supabase, userId } = context;
-    const range = data.range;
+async function buildExecutiveDashboard(
+  supabase: import("@supabase/supabase-js").SupabaseClient,
+  userId: string,
+  range: ExecRange,
+): Promise<ExecutiveDashboard> {
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -649,23 +644,41 @@ export const getExecutiveDashboard = createServerFn({ method: "POST" })
         whatsappConnected: channel?.status === "connected",
       },
     };
-  });
+  }
+
+export const getExecutiveDashboard = createServerFn({ method: "POST" })
+  .middleware([...withPremiumFeature("dashboard-ejecutivo")])
+  .inputValidator((raw: unknown) =>
+    z
+      .object({ range: z.union([z.literal(7), z.literal(30), z.literal(90)]).default(30) })
+      .parse(raw),
+  )
+  .handler(async ({ data, context }) =>
+    buildExecutiveDashboard(context.supabase, context.userId, data.range),
+  );
 
 // ---------- AI narrative briefing ----------
 
 export const generateExecutiveBriefing = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...withPremiumFeature("dashboard-ejecutivo"), requireCredits(1)])
   .inputValidator((raw: unknown) =>
     z
       .object({ range: z.union([z.literal(7), z.literal(30), z.literal(90)]).default(30) })
       .parse(raw),
   )
   .handler(async ({ data, context }): Promise<{ briefing: string }> => {
+    const { supabase, userId } = context;
     const hasAny =
       process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY;
     if (!hasAny) throw new Error("Falta configurar al menos una API key de IA");
-    const dash = await getExecutiveDashboard({ data: { range: data.range } });
-    void context; // ensure auth
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const dash = await buildExecutiveDashboard(supabase, userId, data.range);
 
     const currency = dash.totals.currency;
     const summary = {
@@ -705,8 +718,9 @@ export const generateExecutiveBriefing = createServerFn({ method: "POST" })
 Sé específico, sin cifras redundantes. Datos: ${JSON.stringify(summary)}`;
 
     const briefing = await callChat({
-      tier: "medium", // briefing ejecutivo → OpenAI
+      tier: "medium",
       scope: "exec-briefing",
+      companyId: profile?.company_id ?? null,
       temperature: 0.4,
       maxTokens: 500,
       timeoutMs: 30_000,

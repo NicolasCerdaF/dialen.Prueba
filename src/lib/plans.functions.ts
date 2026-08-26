@@ -167,3 +167,15 @@ export const changeMyPlan = createServerFn({ method: "POST" })
     }
     return { ok: true, plan: data.plan };
   });
+
+/** Ensures companies.plan matches owner profile after client-side workspace bootstrap. */
+export const syncMyCompanyPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { getPlanForUser, bootstrapCompanyPlan } = await import("@/lib/plans.server");
+    const resolved = await getPlanForUser(context.supabase, context.userId);
+    if (resolved.company_id) {
+      await bootstrapCompanyPlan(context.supabase, resolved.company_id, context.userId);
+    }
+    return { ok: true, plan: resolved.plan };
+  });

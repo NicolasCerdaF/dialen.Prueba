@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requirePlanFeature } from "@/lib/plan-middleware";
 import {
   ACTION_BY_TYPE,
   evaluateConditions,
@@ -8,6 +9,8 @@ import {
   type FlowAction,
 } from "@/lib/automations/registry";
 import type { CrmCustomer } from "@/lib/crm.functions";
+
+const automationsMiddleware = [requireSupabaseAuth, requirePlanFeature("automatizaciones")] as const;
 
 // -------- Types --------
 export type Automation = {
@@ -57,7 +60,7 @@ const FlowSchema = z.object({
 
 // -------- List --------
 export const listAutomations = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("automations")
@@ -69,7 +72,7 @@ export const listAutomations = createServerFn({ method: "GET" })
 
 // -------- Get one --------
 export const getAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
@@ -80,7 +83,7 @@ export const getAutomation = createServerFn({ method: "POST" })
 
 // -------- Create --------
 export const createAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { name: string; description?: string }) =>
     z.object({ name: z.string().min(1).max(120), description: z.string().max(500).optional() }).parse(d))
   .handler(async ({ data, context }) => {
@@ -104,7 +107,7 @@ export const createAutomation = createServerFn({ method: "POST" })
 
 // -------- Update flow (bumps version + snapshot) --------
 export const saveAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: {
     id: string; name?: string; description?: string | null; flow?: FlowDefinition;
   }) => z.object({
@@ -154,7 +157,7 @@ export const saveAutomation = createServerFn({ method: "POST" })
 
 // -------- Status toggle --------
 export const setAutomationStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { id: string; status: "draft"|"active"|"paused"|"error" }) =>
     z.object({ id: z.string().uuid(), status: z.enum(["draft","active","paused","error"]) }).parse(d))
   .handler(async ({ data, context }) => {
@@ -166,7 +169,7 @@ export const setAutomationStatus = createServerFn({ method: "POST" })
 
 // -------- Duplicate --------
 export const duplicateAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -189,7 +192,7 @@ export const duplicateAutomation = createServerFn({ method: "POST" })
 
 // -------- Delete --------
 export const deleteAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("automations").delete().eq("id", data.id);
@@ -199,7 +202,7 @@ export const deleteAutomation = createServerFn({ method: "POST" })
 
 // -------- Import from JSON --------
 export const importAutomation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { name: string; description?: string | null; flow: FlowDefinition }) =>
     z.object({
       name: z.string().min(1).max(120),
@@ -227,7 +230,7 @@ export const importAutomation = createServerFn({ method: "POST" })
 
 // -------- List recent runs --------
 export const listAutomationRuns = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { automation_id: string; limit?: number }) =>
     z.object({ automation_id: z.string().uuid(), limit: z.number().int().min(1).max(200).default(50) }).parse(d))
   .handler(async ({ data, context }) => {
@@ -242,7 +245,7 @@ export const listAutomationRuns = createServerFn({ method: "POST" })
 
 // -------- Executor: run one flow against a customer --------
 export const runAutomationForCustomer = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { automation_id: string; customer_id: string; message_body?: string; triggered_by?: string }) =>
     z.object({
       automation_id: z.string().uuid(),
@@ -502,7 +505,7 @@ async function bumpCounters(supabase: any, flow: any, duration: number, isError:
 
 // -------- Advanced list (search, filter, sort, page) --------
 export const listAutomationsAdvanced = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: {
     search?: string | null;
     status?: "all" | "draft" | "active" | "paused" | "error";
@@ -551,7 +554,7 @@ export const listAutomationsAdvanced = createServerFn({ method: "POST" })
 
 // -------- Bulk operations --------
 export const bulkAutomationAction = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: {
     ids: string[];
     action: "activate" | "pause" | "delete" | "duplicate";
@@ -594,7 +597,7 @@ export const bulkAutomationAction = createServerFn({ method: "POST" })
 
 // -------- Export bundle --------
 export const exportAutomationsBundle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { ids?: string[] }) =>
     z.object({ ids: z.array(z.string().uuid()).max(500).optional() }).parse(d))
   .handler(async ({ data, context }) => {
@@ -627,7 +630,7 @@ export type AutomationsAggregate = {
 };
 
 export const getAutomationsAggregate = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .handler(async ({ context }): Promise<AutomationsAggregate> => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userId).maybeSingle();
@@ -703,7 +706,7 @@ export type GlobalRun = AutomationRun & {
 };
 
 export const listAllRuns = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: {
     status?: "all" | "success" | "skipped" | "error";
     automation_id?: string | null;
@@ -757,7 +760,7 @@ export type AutomationVersion = {
 };
 
 export const listAutomationVersions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { automation_id: string }) =>
     z.object({ automation_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
@@ -772,7 +775,7 @@ export const listAutomationVersions = createServerFn({ method: "POST" })
   });
 
 export const restoreAutomationVersion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: { automation_id: string; version: number }) =>
     z.object({ automation_id: z.string().uuid(), version: z.number().int().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
@@ -811,7 +814,7 @@ export const restoreAutomationVersion = createServerFn({ method: "POST" })
 
 // -------- Test run picker --------
 export const pickTestCustomers = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userId).maybeSingle();
@@ -828,7 +831,7 @@ export const pickTestCustomers = createServerFn({ method: "GET" })
 // Other modules call this to fire real automations. It filters by trigger type
 // and evaluates simple trigger-config guards (to_stage, min_score, field, etc.).
 export const dispatchAutomationEvent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .inputValidator((d: {
     trigger_type: string;
     customer_id: string;
@@ -883,7 +886,7 @@ export const dispatchAutomationEvent = createServerFn({ method: "POST" })
 
 // -------- Recipe suggestions based on company data --------
 export const getRecipeSuggestions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware(automationsMiddleware)
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userId).maybeSingle();

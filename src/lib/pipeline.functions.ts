@@ -70,7 +70,7 @@ export const getPipelineAggregates = createServerFn({ method: "GET" })
         .select(
           "customer_id, score, reason_code, product:products(id, name, price, currency)",
         )
-        .eq("status", "pending")
+        .in("status", ["active", "pending"])
         .order("score", { ascending: false })
         .limit(1000),
       supabase

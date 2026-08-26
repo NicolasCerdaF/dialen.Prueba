@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { syncMyCompanyPlan } from "@/lib/plans.functions";
 
 type Profile = {
   id: string;
@@ -44,6 +45,8 @@ async function ensureWorkspaceForUser(user: User, profile: Profile | null): Prom
         role: "admin",
       });
     }
+
+    void syncMyCompanyPlan().catch(() => {});
 
     return profile;
   }
@@ -89,6 +92,10 @@ async function ensureWorkspaceForUser(user: User, profile: Profile | null): Prom
     user_id: user.id,
     company_id: companyId,
     role: "admin",
+  });
+
+  void syncMyCompanyPlan().catch(() => {
+    /* best-effort plan sync after bootstrap */
   });
 
   return nextProfile;

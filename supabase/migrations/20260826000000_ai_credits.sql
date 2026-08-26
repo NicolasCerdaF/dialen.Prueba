@@ -24,3 +24,8 @@ CREATE POLICY ai_credit_events_company_read ON public.ai_credit_events
       SELECT company_id FROM public.profiles WHERE id = auth.uid()
     )
   );
+
+-- AL-1: unify legacy recommendation status
+UPDATE public.product_recommendations
+SET status = 'active'
+WHERE status = 'pending';

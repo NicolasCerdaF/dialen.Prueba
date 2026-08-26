@@ -90,6 +90,9 @@ async function getCompanyId(supabase: any, userId: string): Promise<string> {
 
   await ensureOwnerAdminRole(supabase, userId, resolvedCompanyId);
 
+  const { bootstrapCompanyPlan } = await import("@/lib/plans.server");
+  await bootstrapCompanyPlan(supabase, resolvedCompanyId, userId);
+
   return resolvedCompanyId;
 }
 

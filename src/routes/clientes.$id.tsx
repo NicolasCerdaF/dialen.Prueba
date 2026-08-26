@@ -965,6 +965,7 @@ import {
   REASON_CODES,
   type ReasonCode,
 } from "@/lib/recommender.functions";
+import { isLiveRecommendationStatus } from "@/lib/recommender.shared";
 import { RefreshCw } from "lucide-react";
 
 function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged: () => void }) {
@@ -1147,8 +1148,8 @@ function ActiveRecommendations({
     };
   }, [customerId, qc]);
 
-  const active = recos.filter((r) => r.status === "pending");
-  const history = recos.filter((r) => r.status !== "pending").slice(0, 12);
+  const active = recos.filter((r) => isLiveRecommendationStatus(r.status));
+  const history = recos.filter((r) => !isLiveRecommendationStatus(r.status)).slice(0, 12);
   const money = (n: number, cur = "USD") =>
     new Intl.NumberFormat("es-ES", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(n || 0);
 

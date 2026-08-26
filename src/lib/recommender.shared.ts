@@ -12,3 +12,11 @@ export const REASON_CODES = {
   churn_rescue: "Oferta para retener cliente en riesgo",
 } as const;
 export type ReasonCode = keyof typeof REASON_CODES;
+
+/** Canonical live recommendation status (AL-1). Legacy rows may still use "pending". */
+export const RECOMMENDATION_ACTIVE_STATUS = "active" as const;
+export const RECOMMENDATION_LIVE_STATUSES = ["active", "pending"] as const;
+
+export function isLiveRecommendationStatus(status: string): boolean {
+  return status === RECOMMENDATION_ACTIVE_STATUS || status === "pending";
+}

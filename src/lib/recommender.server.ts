@@ -2,7 +2,7 @@
 // Extracted so the orchestrator can call the same logic without RPC.
 
 import { normalizeStage } from "@/lib/pipeline";
-import { REASON_CODES, type ReasonCode } from "@/lib/recommender.shared";
+import { REASON_CODES, RECOMMENDATION_ACTIVE_STATUS, RECOMMENDATION_LIVE_STATUSES, type ReasonCode } from "@/lib/recommender.shared";
 
 export async function runGenerateRecommendations(
   supabase: any,
@@ -137,7 +137,7 @@ export async function runGenerateRecommendations(
     .from("product_recommendations")
     .select("id, product_id")
     .eq("customer_id", args.customer_id)
-    .eq("status", "pending");
+    .in("status", [...RECOMMENDATION_LIVE_STATUSES]);
   const toExpire = (existingPending ?? []).filter((r: any) => !keepIds.has(r.product_id));
   if (toExpire.length > 0) {
     await supabase
@@ -167,7 +167,7 @@ export async function runGenerateRecommendations(
       score: Number(t.score.toFixed(4)),
       probability: probability || null,
       stage,
-      status: "pending",
+      status: RECOMMENDATION_ACTIVE_STATUS,
       signals: t.signals as any,
       context: {
         customer_tags: [...customerTags],

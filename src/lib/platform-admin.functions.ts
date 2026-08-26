@@ -238,11 +238,8 @@ export const setCompanyPlan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertPlatformAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("companies")
-      .update({ plan: data.plan })
-      .eq("id", data.companyId);
-    if (error) throw new Error(error.message);
+    const { setCompanyPlanUnified } = await import("@/lib/plans.server");
+    await setCompanyPlanUnified(supabaseAdmin, data.companyId, data.plan);
     return { ok: true, plan: data.plan };
   });
 

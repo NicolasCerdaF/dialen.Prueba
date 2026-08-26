@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanFeature } from "@/lib/plan-middleware";
-import { REASON_CODES, type ReasonCode } from "@/lib/recommender.shared";
+import { REASON_CODES, RECOMMENDATION_LIVE_STATUSES, type ReasonCode } from "@/lib/recommender.shared";
 
 // Re-export for backwards compatibility (routes import from this file).
 export { REASON_CODES };
@@ -130,7 +130,7 @@ export const getTopRecommendationsForCustomers = createServerFn({ method: "POST"
         "customer_id, score, reason_code, product:products(id, name, price, currency)",
       )
       .in("customer_id", data.customer_ids)
-      .eq("status", "pending")
+      .in("status", [...RECOMMENDATION_LIVE_STATUSES])
       .order("score", { ascending: false });
     const map: Record<string, any> = {};
     for (const r of rows ?? []) {

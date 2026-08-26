@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireCredits, withPremiumFeature } from "@/lib/plan-middleware";
 import { normalizeStage } from "@/lib/pipeline";
 import { log } from "@/lib/logger";
@@ -85,8 +84,10 @@ function money(v: number, c: string) {
 
 // ---------------------- listing / mutations ----------------------
 
+const directorMiddleware = withPremiumFeature("director-ia");
+
 export const listDirectorInsights = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...directorMiddleware])
   .inputValidator(
     (i: {
       status?: Status | "all";
@@ -132,7 +133,7 @@ export const listDirectorInsights = createServerFn({ method: "GET" })
   });
 
 export const getDirectorSummary = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...directorMiddleware])
   .handler(async ({ context }): Promise<DirectorSummary> => {
     const { supabase, userId } = context;
     const empty: DirectorSummary = {
@@ -185,7 +186,7 @@ export const getDirectorSummary = createServerFn({ method: "GET" })
   });
 
 export const updateInsightStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...directorMiddleware])
   .inputValidator((i: { id: string; status: Status; snoozeHours?: number }) => i)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -209,7 +210,7 @@ export const updateInsightStatus = createServerFn({ method: "POST" })
   });
 
 export const bulkUpdateInsightStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...directorMiddleware])
   .inputValidator((i: { ids: string[]; status: Status; snoozeHours?: number }) => i)
   .handler(async ({ context, data }) => {
     if (data.ids.length === 0) return { ok: true, count: 0 };

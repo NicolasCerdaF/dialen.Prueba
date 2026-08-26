@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { withPremiumFeature } from "@/lib/plan-middleware";
+
+const metricasMiddleware = withPremiumFeature("metricas-ia");
 
 // ---------- Types ----------
 
@@ -154,7 +156,7 @@ function confBucket(v: number): number {
 // ---------- Main analytics fn ----------
 
 export const getAiAnalytics = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(metricasMiddleware)
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -703,7 +705,7 @@ export const getAiAnalytics = createServerFn({ method: "POST" })
 // ---------- Suggestions feed for the module ----------
 
 export const listAnalyticsSuggestions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(metricasMiddleware)
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -776,7 +778,7 @@ export const listAnalyticsSuggestions = createServerFn({ method: "POST" })
 // ---------- Feedback: mark suggestion outcome ----------
 
 export const setSuggestionFeedback = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(metricasMiddleware)
   .inputValidator((input: unknown) =>
     z
       .object({

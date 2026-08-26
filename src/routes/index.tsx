@@ -57,6 +57,9 @@ import {
   draftQuoteFromMessage,
 } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
+import { normalizeStage, getStage, STAGES, STAGE_STYLES } from "@/lib/pipeline";
+import { toUiConversationStatus } from "@/lib/conversation-status";
+import { isLiveRecommendationStatus } from "@/lib/recommender.shared";
 import { LandingPage } from "@/components/landing/landing-page";
 import { InlinePremiumGate } from "@/components/premium-gate";
 import { useMyUsage } from "@/lib/use-plan";
@@ -100,8 +103,6 @@ type FilterKey =
   | "stage:ganado"
   | "stage:perdido";
 
-import { normalizeStage, getStage, STAGES, STAGE_STYLES } from "@/lib/pipeline";
-
 function InboxPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -144,7 +145,10 @@ function InboxPage() {
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(100);
       if (error) throw error;
-      return (data as any) ?? [];
+      return ((data as any) ?? []).map((c: any) => ({
+        ...c,
+        status: toUiConversationStatus(String(c.status ?? "open")),
+      })) as Conversation[];
     },
     staleTime: 15_000,
   });
@@ -1493,7 +1497,7 @@ function RecommendedProducts({
     }
   }
 
-  const active = (recos ?? []).filter((r) => r.status === "pending").slice(0, 4);
+  const active = (recos ?? []).filter((r) => isLiveRecommendationStatus(r.status)).slice(0, 4);
 
   return (
     <Section

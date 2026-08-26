@@ -5,6 +5,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { log } from "@/lib/logger";
+import { setUserPlanUnified, type PlanId } from "@/lib/plans.server";
 
 const VALID_PLANS = new Set(["basico", "premium"]);
 const LOGIN_REDIRECT = "https://dialen.novacorp.app";
@@ -21,6 +22,17 @@ const ALLOWED_ACTIVATOR_ROLES = new Set([
   "operaciones",
   "ops_implementacion_onboarding",
 ]);
+
+async function syncProvisionedPlan(
+  userId: string,
+  plan: PlanId,
+  opts?: { externalRef?: string | null },
+) {
+  await setUserPlanUnified(supabaseAdmin, userId, plan, {
+    profileStatus: "active",
+    externalRef: opts?.externalRef ?? undefined,
+  });
+}
 
 // Simple in-memory rate limiter (per worker instance): 10 req / 60s per key.
 const RATE_WINDOW_MS = 60_000;
@@ -223,10 +235,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         if (existingByRef) {
           // Ensure plan matches request (no downgrade guard here — just apply)
           if (existingByRef.plan !== plan || existingByRef.status !== "active") {
-            await supabaseAdmin
-              .from("profiles")
-              .update({ plan, status: "active" })
-              .eq("id", existingByRef.id);
+            await syncProvisionedPlan(existingByRef.id, plan as PlanId, { externalRef });
           }
           const link = await generateMagicLink(existingByRef.email ?? email);
           await logCall({ action, email, plan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "idempotent", payload: body });
@@ -257,26 +266,8 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         user = created.user;
       }
 
-      // handle_new_user trigger populated profiles on insert. Update plan / ref.
-      const { error: updErr } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          plan,
-          status: "active",
-          external_ref: externalRef ?? null,
-        })
-        .eq("id", user.id);
-      if (updErr) {
-        // If profile row doesn't exist yet for some reason, insert minimal one.
-        await supabaseAdmin.from("profiles").upsert({
-          id: user.id,
-          email,
-          full_name: body.user_name ?? email.split("@")[0],
-          plan,
-          status: "active",
-          external_ref: externalRef ?? null,
-        });
-      }
+      // handle_new_user trigger populated profiles on insert. Sync plan across company + team.
+      await syncProvisionedPlan(user.id, plan as PlanId, { externalRef: externalRef ?? null });
 
       const loginUrl = await generateMagicLink(email);
       await logCall({ action, email, plan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "activated", payload: body });
@@ -315,10 +306,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         await logCall({ action, email, plan, external_ref: externalRef, ip, ok: false, status_code: 404, message: "user_not_found", payload: body });
         return json(404, { ok: false, error: "user_not_found" });
       }
-      await supabaseAdmin
-        .from("profiles")
-        .update({ plan, status: "active", external_ref: externalRef ?? undefined })
-        .eq("id", user.id);
+      await syncProvisionedPlan(user.id, plan as PlanId, { externalRef: externalRef ?? null });
       await logCall({ action, email, plan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "plan_changed", payload: body });
       return json(200, { ok: true, status: "plan_changed", user_id: user.id, plan });
     }
@@ -354,10 +342,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
       if (externalRef) {
         const existingByRef = await findProfileByExternalRef(externalRef);
         if (existingByRef) {
-          await supabaseAdmin
-            .from("profiles")
-            .update({ plan: mappedPlan, status: "active" })
-            .eq("id", existingByRef.id);
+          await syncProvisionedPlan(existingByRef.id, mappedPlan, { externalRef });
           await logCall({ action, email: existingByRef.email ?? email, plan: mappedPlan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "idempotent", payload: auditPayload });
           return json(200, {
             ok: true,
@@ -405,24 +390,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         userId = existing.id;
       }
 
-      const { error: profErr } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          plan: mappedPlan,
-          status: "active",
-          external_ref: externalRef ?? null,
-        })
-        .eq("id", userId);
-      if (profErr) {
-        await supabaseAdmin.from("profiles").upsert({
-          id: userId,
-          email,
-          full_name: body.user_name ?? email.split("@")[0],
-          plan: mappedPlan,
-          status: "active",
-          external_ref: externalRef ?? null,
-        });
-      }
+      await syncProvisionedPlan(userId, mappedPlan, { externalRef: externalRef ?? null });
 
       const activatedAt = new Date().toISOString();
       // NOTE: temp_password is intentionally NOT included in payload/message.
