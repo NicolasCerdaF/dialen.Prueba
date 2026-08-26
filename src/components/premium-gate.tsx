@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Crown, Lock, Sparkles } from "lucide-react";
+import { Crown, Loader2, Lock, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useMyPlan } from "@/lib/use-plan";
@@ -20,7 +20,17 @@ type Props = {
  */
 export function PremiumGate({ feature, title, description, children, withShell = true }: Props) {
   const { has, isLoading } = useMyPlan();
-  if (isLoading) return <>{children}</>;
+
+  if (isLoading) {
+    const loading = (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+        <span className="sr-only">Verificando plan…</span>
+      </div>
+    );
+    return withShell ? <AppShell>{loading}</AppShell> : loading;
+  }
+
   if (has(feature)) return <>{children}</>;
 
   const locked = (
@@ -65,4 +75,43 @@ export function PremiumGate({ feature, title, description, children, withShell =
   );
 
   return withShell ? <AppShell>{locked}</AppShell> : locked;
+}
+
+type InlineProps = {
+  feature: PremiumFeature;
+  title?: string;
+  children: ReactNode;
+};
+
+/** Compact gate for sidebars and embedded panels (inbox, CRM, kanban). */
+export function InlinePremiumGate({ feature, title = "Recomendador IA", children }: InlineProps) {
+  const { has, isLoading } = useMyPlan();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    );
+  }
+
+  if (has(feature)) return <>{children}</>;
+
+  return (
+    <div className="mx-3 my-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-center">
+      <div className="mb-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+        <Crown className="h-3 w-3" /> Business
+      </div>
+      <p className="text-[11px] font-medium">{title}</p>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        Disponible en el Plan Business.
+      </p>
+      <Link
+        to="/mi-plan"
+        className="mt-2 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1 text-[10px] font-semibold text-white"
+      >
+        Actualizar plan
+      </Link>
+    </div>
+  );
 }

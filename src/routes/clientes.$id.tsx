@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { RouteError } from "@/components/route-error";
+import { InlinePremiumGate } from "@/components/premium-gate";
 
 export const Route = createFileRoute("/clientes/$id")({
   head: () => ({ meta: [{ title: "Ficha de cliente — Dialen" }] }),
@@ -1014,7 +1015,9 @@ function ProductsTab({ customerId, onChanged }: { customerId: string; onChanged:
 
   return (
     <div className="space-y-4">
-      <ActiveRecommendations customerId={customerId} onChanged={onChanged} />
+      <InlinePremiumGate feature="recommendador" title="Recomendador IA">
+        <ActiveRecommendations customerId={customerId} onChanged={onChanged} />
+      </InlinePremiumGate>
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-medium">Productos vinculados</div>

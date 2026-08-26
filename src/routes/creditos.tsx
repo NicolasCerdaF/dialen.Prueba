@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Coins, Sparkles, Check, CreditCard, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { useMyUsage } from "@/lib/use-plan";
+import { purchaseCreditPack } from "@/lib/plans.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/creditos")({
@@ -12,19 +15,16 @@ export const Route = createFileRoute("/creditos")({
 });
 
 type Pack = {
-  id: string;
+  id: "starter" | "growth" | "scale" | "enterprise";
   credits: number;
   bonusCredits?: number;
   label: string;
   bonus?: string;
   popular?: boolean;
-  price: number; // CLP
+  price: number;
   tagline: string;
 };
 
-// Precios alineados al costo del software:
-// Plan Start incluye 1.400 créditos/mes → Starter equivale a una recarga mensual.
-// Plan Business incluye 4.600 créditos/mes → Scale ≈ una recarga Business.
 const PACKS: Pack[] = [
   { id: "starter", credits: 1500, label: "Starter", price: 6990, tagline: "Refuerzo puntual para el Plan Start" },
   { id: "growth", credits: 4500, bonusCredits: 500, label: "Growth", bonus: "+10% extra", popular: true, price: 19990, tagline: "Recarga mensual para equipos activos" },
@@ -35,23 +35,31 @@ const PACKS: Pack[] = [
 const fmtCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
 
 function CreditosPage() {
-  const [selected, setSelected] = useState<string>("growth");
-  const [processing, setProcessing] = useState(false);
-  const { data: usage } = useMyUsage();
-  const included = usage?.included ?? 0;
-  const used = usage?.used ?? 0;
-  const remaining = usage?.remaining ?? 0;
-  const pct = usage?.pct ?? 0;
+  const [selected, setSelected] = useState<Pack["id"]>("growth");
+  const qc = useQueryClient();
+  const { data: usage, isExhausted, remaining, included, used, pct } = useMyUsage();
+  const buyFn = useServerFn(purchaseCreditPack);
 
-  const buy = () => {
-    setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      toast.info("Pasarela de pago próximamente disponible", {
-        description: "Estamos integrando Stripe para procesar las compras de créditos.",
-      });
-    }, 800);
-  };
+  const purchase = useMutation({
+    mutationFn: (packId: Pack["id"]) => buyFn({ data: { pack_id: packId } }),
+    onSuccess: (res) => {
+      toast.success(`${res.added.toLocaleString("es-CL")} créditos añadidos a tu saldo bonus`);
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "No se pudo procesar la compra";
+      if (msg.includes("bonus_credits")) {
+        toast.error("Migración pendiente", {
+          description: "Ejecuta supabase/migrations/20260826000000_ai_credits.sql en tu proyecto Supabase.",
+        });
+        return;
+      }
+      toast.error(msg);
+    },
+  });
+
+  const monthlyAllowance = usage?.monthlyAllowance ?? included;
+  const bonusCredits = usage?.bonusCredits ?? 0;
 
   return (
     <AppShell>
@@ -63,12 +71,15 @@ function CreditosPage() {
           </div>
           <h1 className="mt-1 font-display text-3xl font-semibold">Comprar créditos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Los créditos se consumen al usar la IA (Director Comercial, sugerencias, cotizaciones, análisis). Compra
-            paquetes adicionales cuando lo necesites — no expiran.
+            Los créditos se consumen al usar la IA (sugerencias, auto-respuesta, embeddings, Director IA, automatizaciones).
+            Compra paquetes adicionales cuando lo necesites — no expiran.
           </p>
         </header>
 
-        <div className="mb-8 rounded-2xl border border-border bg-card p-6">
+        <div className={cn(
+          "mb-8 rounded-2xl border bg-card p-6",
+          isExhausted ? "border-red-500/40 bg-red-500/5" : "border-border",
+        )}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
@@ -77,15 +88,30 @@ function CreditosPage() {
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">Saldo disponible este mes</div>
                 <div className="font-display text-2xl font-semibold tabular-nums">
-                  {remaining.toLocaleString("es-CL")} <span className="text-sm font-normal text-muted-foreground">/ {included.toLocaleString("es-CL")} créditos</span>
+                  {remaining.toLocaleString("es-CL")}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    / {included.toLocaleString("es-CL")} créditos
+                  </span>
                 </div>
               </div>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-              <div>Usados: <span className="font-semibold text-foreground tabular-nums">{used.toLocaleString("es-CL")}</span> ({pct}%)</div>
-              <div className="mt-0.5">Se recargan según tu plan cada mes.</div>
+              <div>
+                Usados: <span className="font-semibold text-foreground tabular-nums">{used.toLocaleString("es-CL")}</span> ({pct}%)
+              </div>
+              <div className="mt-0.5">
+                Plan: {monthlyAllowance.toLocaleString("es-CL")}/mes
+                {bonusCredits > 0 && (
+                  <> · Bonus: <span className="font-semibold text-foreground">{bonusCredits.toLocaleString("es-CL")}</span></>
+                )}
+              </div>
             </div>
           </div>
+          {isExhausted && (
+            <p className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">
+              Agotaste tus créditos IA. Compra un paquete abajo para seguir usando la IA hoy.
+            </p>
+          )}
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary">
             <div
               className={cn(
@@ -97,13 +123,13 @@ function CreditosPage() {
           </div>
         </div>
 
-
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PACKS.map((p) => {
             const isSel = selected === p.id;
             return (
               <button
                 key={p.id}
+                type="button"
                 onClick={() => setSelected(p.id)}
                 className={cn(
                   "relative rounded-2xl border bg-card p-5 text-left transition",
@@ -129,7 +155,9 @@ function CreditosPage() {
                     <Check className="h-3 w-3" /> {p.bonus}
                   </div>
                 )}
-                <div className="mt-3 font-display text-lg font-semibold">{fmtCLP(p.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span></div>
+                <div className="mt-3 font-display text-lg font-semibold">
+                  {fmtCLP(p.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span>
+                </div>
                 <div className="text-[11px] text-muted-foreground">
                   {p.tagline} · ${Math.round(p.price / (p.credits + (p.bonusCredits ?? 0))).toLocaleString("es-CL")} por crédito
                 </div>
@@ -141,40 +169,40 @@ function CreditosPage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           <div className="rounded-2xl border border-border bg-card p-6">
             <h2 className="font-display text-lg font-semibold">Método de pago</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Estamos habilitando la pasarela de pago. Muy pronto podrás cargar créditos al instante.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Stripe estará disponible pronto. Mientras tanto puedes acreditar créditos bonus en modo demo (sin cobro real).
+            </p>
 
             <div className="mt-5 space-y-3">
               {[
-                { label: "Tarjeta de crédito/débito", desc: "Visa, Mastercard, Amex" },
-                { label: "Transferencia bancaria", desc: "Chile — Webpay/Servipag" },
-                { label: "Facturación empresa", desc: "Orden de compra + factura electrónica" },
+                { label: "Tarjeta de crédito/débito", desc: "Visa, Mastercard, Amex — próximamente" },
+                { label: "Transferencia bancaria", desc: "Chile — Webpay/Servipag — próximamente" },
+                { label: "Demo / acreditación inmediata", desc: "Suma créditos bonus sin pasarela (desarrollo)" },
               ].map((m, i) => (
                 <label
                   key={m.label}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-3 opacity-60",
-                    i === 0 ? "border-primary/40" : "border-border",
+                    "flex items-center gap-3 rounded-lg border p-3",
+                    i === 2 ? "border-primary/40 bg-primary/5" : "border-border opacity-70",
                   )}
                 >
-                  <input type="radio" disabled name="pay" defaultChecked={i === 0} className="h-4 w-4" />
+                  <input type="radio" name="pay" defaultChecked={i === 2} readOnly className="h-4 w-4" />
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
                     <div className="text-sm font-medium">{m.label}</div>
                     <div className="text-xs text-muted-foreground">{m.desc}</div>
                   </div>
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                    Próximamente
-                  </span>
                 </label>
               ))}
             </div>
 
             <button
-              onClick={buy}
-              disabled={processing}
+              type="button"
+              onClick={() => purchase.mutate(selected)}
+              disabled={purchase.isPending}
               className="mt-6 w-full rounded-lg bg-gradient-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {processing ? "Procesando…" : "Comprar créditos"}
+              {purchase.isPending ? "Acreditando…" : "Acreditar créditos (demo)"}
             </button>
           </div>
 
@@ -211,15 +239,20 @@ function CreditosPage() {
                         {fmtCLP(sel.price)} <span className="text-xs font-normal text-muted-foreground">CLP</span>
                       </span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">IVA incluido · pago único, créditos sin vencimiento</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Modo demo: sin cobro · créditos bonus sin vencimiento
+                    </div>
                   </>
                 );
               })()}
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 flex-none text-emerald-500" />
-              Pagos procesados de forma segura. No almacenamos datos de tarjeta.
+              Los créditos bonus se suman a tu cupo mensual del plan.
             </div>
+            <Link to="/mi-plan" className="mt-4 inline-block text-xs text-primary hover:underline">
+              Ver mi plan y cupo mensual →
+            </Link>
           </div>
         </div>
       </div>

@@ -16,7 +16,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withCredits } from "@/lib/plan-middleware";
 
 export type OrchestrationTrigger =
   | "message_received"
@@ -69,7 +69,7 @@ function makeSignature(input: {
 }
 
 export const orchestrateCustomer = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(withCredits(1))
   .inputValidator((d) => OrchestrateInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

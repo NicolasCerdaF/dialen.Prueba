@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCredits, withPremiumFeature } from "@/lib/plan-middleware";
 import { normalizeStage } from "@/lib/pipeline";
 import { log } from "@/lib/logger";
 
@@ -249,7 +250,7 @@ type InsightDraft = {
 };
 
 export const computeDirectorInsights = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...withPremiumFeature("director-ia"), requireCredits(1)])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase
@@ -663,7 +664,7 @@ export const computeDirectorInsights = createServerFn({ method: "POST" })
 // -------------------------- AI narrative briefing --------------------------
 
 export const generateDirectorBriefing = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([...withPremiumFeature("director-ia"), requireCredits(1)])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase

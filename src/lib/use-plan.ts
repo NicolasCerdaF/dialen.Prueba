@@ -24,10 +24,21 @@ export function useMyPlan() {
 export function useMyUsage() {
   const { session } = useAuth();
   const fn = useServerFn(getMyUsage);
-  return useQuery({
+  const q = useQuery({
     queryKey: ["my-usage"],
     queryFn: () => fn({}),
     staleTime: 30_000,
     enabled: !!session?.user,
   });
+  const remaining = q.data?.remaining ?? 0;
+  const included = q.data?.included ?? 0;
+  const used = q.data?.used ?? 0;
+  return {
+    ...q,
+    remaining,
+    included,
+    used,
+    isExhausted: included > 0 && remaining <= 0,
+    isLow: included > 0 && remaining > 0 && remaining <= Math.ceil(included * 0.1),
+  };
 }

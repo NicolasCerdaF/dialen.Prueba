@@ -1,16 +1,22 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Crown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/platform-admin.functions";
+import { changeMyPlan, PLAN_CATALOG } from "@/lib/plans.functions";
+import { planFromSearchParam } from "@/lib/plans.config";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
 
-
+const loginSearchSchema = z.object({
+  plan: z.enum(["start", "business"]).optional(),
+});
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search) => loginSearchSchema.parse(search),
   head: () => ({ meta: [{ title: "Iniciar sesión — Dialen" }] }),
   component: LoginPage,
 });
@@ -35,30 +41,44 @@ function translateAuthError(message: string): string {
 function LoginPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { plan: planParam } = Route.useSearch();
+  const selectedPlan = planFromSearchParam(planParam);
+  const selectedPlanInfo = selectedPlan ? PLAN_CATALOG[selectedPlan] : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const planAppliedRef = useRef(false);
 
   const checkAdmin = useServerFn(isPlatformAdmin);
+  const applyPlan = useServerFn(changeMyPlan);
 
   useEffect(() => {
     let cancelled = false;
     if (!session) return;
+
     (async () => {
       try {
+        if (selectedPlan && !planAppliedRef.current) {
+          planAppliedRef.current = true;
+          await applyPlan({ data: { plan: selectedPlan } });
+        }
         const res = await checkAdmin();
         if (cancelled) return;
         navigate({ to: res?.isAdmin ? "/administrador" : "/", replace: true });
-      } catch {
-        if (!cancelled) navigate({ to: "/", replace: true });
+      } catch (err) {
+        if (cancelled) return;
+        if (selectedPlan && err instanceof Error) {
+          toast.error(`Sesión iniciada, pero no se pudo aplicar el plan: ${err.message}`);
+        }
+        navigate({ to: "/", replace: true });
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [session, navigate, checkAdmin]);
-
-
+  }, [session, navigate, checkAdmin, applyPlan, selectedPlan]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +136,29 @@ function LoginPage() {
               <h2 className="font-display text-xl font-semibold text-white">Bienvenido de vuelta</h2>
               <p className="text-sm text-slate-400">Ingresa a tu panel de ventas con IA</p>
             </div>
+
+            {selectedPlanInfo && (
+              <div
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                  selectedPlan === "premium"
+                    ? "border-amber-500/30 bg-amber-500/10"
+                    : "border-cyan-500/30 bg-cyan-500/10"
+                }`}
+              >
+                {selectedPlan === "premium" ? (
+                  <Crown className="h-5 w-5 shrink-0 text-amber-400" />
+                ) : (
+                  <Sparkles className="h-5 w-5 shrink-0 text-cyan-400" />
+                )}
+                <div className="text-left">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Plan seleccionado
+                  </div>
+                  <div className="text-sm font-semibold text-white">{selectedPlanInfo.name}</div>
+                  <div className="text-xs text-slate-400">Se aplicará al iniciar sesión</div>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">

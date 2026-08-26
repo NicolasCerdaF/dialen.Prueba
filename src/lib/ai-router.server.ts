@@ -68,10 +68,20 @@ export async function callChat(opts: {
   companyId?: string | null;
   scope?: string;
   timeoutMs?: number;
+  /** Skip credit enforcement (internal/platform only). */
+  skipCreditCheck?: boolean;
 }): Promise<string> {
   const tier: AiTier = opts.tier ?? "fast";
   const { cfg, key } = pickProvider(tier);
   const scope = opts.scope ?? `ai-${cfg.name}`;
+
+  if (opts.companyId && !opts.skipCreditCheck) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { assertHasCredits, getPlanForCompany, recordLlmCreditEvent, shouldRecordLlmCreditEvent } =
+      await import("@/lib/credits.server");
+    const plan = await getPlanForCompany(supabaseAdmin, opts.companyId);
+    await assertHasCredits(supabaseAdmin, opts.companyId, plan, 1);
+  }
 
   let headers: Record<string, string> = { "Content-Type": "application/json" };
   let body: unknown;
@@ -110,9 +120,25 @@ export async function callChat(opts: {
 
   if (cfg.name === "anthropic") {
     const parts = Array.isArray(json?.content) ? json.content : [];
-    return parts.map((p: any) => (typeof p?.text === "string" ? p.text : "")).join("").trim();
+    const text = parts.map((p: any) => (typeof p?.text === "string" ? p.text : "")).join("").trim();
+    await maybeRecordLlmCredit(opts.companyId, scope, opts.skipCreditCheck);
+    return text;
   }
-  return json?.choices?.[0]?.message?.content?.trim() ?? "";
+  const text = json?.choices?.[0]?.message?.content?.trim() ?? "";
+  await maybeRecordLlmCredit(opts.companyId, scope, opts.skipCreditCheck);
+  return text;
+}
+
+async function maybeRecordLlmCredit(
+  companyId: string | null | undefined,
+  scope: string,
+  skip?: boolean,
+): Promise<void> {
+  if (!companyId || skip) return;
+  const { shouldRecordLlmCreditEvent, recordLlmCreditEvent } = await import("@/lib/credits.server");
+  if (!shouldRecordLlmCreditEvent(scope)) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await recordLlmCreditEvent(supabaseAdmin, companyId, scope, 1);
 }
 
 // ---------- Embeddings (siempre OpenAI, 1536 dims para pgvector) ----------
@@ -123,10 +149,19 @@ export const EMBED_DIMS = 1536;
 
 export async function embedTexts(
   inputs: string[],
-  opts: { scope?: string; companyId?: string | null; timeoutMs?: number } = {},
+  opts: { scope?: string; companyId?: string | null; timeoutMs?: number; skipCreditCheck?: boolean } = {},
 ): Promise<number[][]> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY no configurada");
+
+  if (opts.companyId && !opts.skipCreditCheck) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { assertHasCredits, getPlanForCompany } = await import("@/lib/credits.server");
+    const plan = await getPlanForCompany(supabaseAdmin, opts.companyId);
+    await assertHasCredits(supabaseAdmin, opts.companyId, plan, 1);
+  }
+
+  const scope = opts.scope ?? "embed-openai";
   const res = await aiFetch(
     EMBED_URL,
     {
@@ -145,5 +180,10 @@ export async function embedTexts(
   );
   const json: any = await res.json();
   const data: any[] = json?.data ?? [];
+  if (opts.companyId && !opts.skipCreditCheck) {
+    const { recordLlmCreditEvent } = await import("@/lib/credits.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await recordLlmCreditEvent(supabaseAdmin, opts.companyId, scope, 1);
+  }
   return data.map((d) => d.embedding as number[]);
 }

@@ -84,6 +84,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { cn } from "@/lib/utils";
+import { useMyPlan } from "@/lib/use-plan";
 
 import { CustomerQuickPanel } from "@/components/embudo/quick-panel";
 
@@ -129,6 +130,8 @@ const DEFAULT_FILTERS: Filters = {
 
 function EmbudoPage() {
   const qc = useQueryClient();
+  const { has: hasPlanFeature } = useMyPlan();
+  const canReco = hasPlanFeature("recommendador");
   const listFn = useServerFn(listCustomers);
   const teamFn = useServerFn(listTeamMembers);
   const aggFn = useServerFn(getPipelineAggregates);
@@ -186,11 +189,11 @@ function EmbudoPage() {
       const threshold = STAGNANT_DAYS_BY_STAGE[k];
       if (filters.stagnant && !(threshold && daysSince(c.updated_at) > threshold)) return false;
       const agg = aggMap.get(c.id);
-      if (filters.hasReco && !agg?.top_reco) return false;
+      if (filters.hasReco && canReco && !agg?.top_reco) return false;
       if (filters.hasQuote && !(agg?.quotes.active_count ?? 0)) return false;
       return true;
     });
-  }, [customers, filters, aggMap]);
+  }, [customers, filters, aggMap, canReco]);
 
   const grouped = useMemo(() => {
     const g: Record<string, CrmCustomer[]> = {};
@@ -450,7 +453,7 @@ function EmbudoPage() {
                 className="h-9 pl-8"
               />
             </div>
-            <FiltersPopover filters={filters} setFilters={setFilters} team={team} />
+            <FiltersPopover filters={filters} setFilters={setFilters} team={team} canReco={canReco} />
             {anyFilterActive && (
               <Button variant="ghost" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)} className="gap-1">
                 <XCircle className="h-3.5 w-3.5" /> Limpiar
@@ -486,6 +489,7 @@ function EmbudoPage() {
               selection={selection}
               onToggle={toggle}
               onOpen={setOpenCustomerId}
+              canReco={canReco}
             />
           )}
           {filters.view === "list" && (
@@ -625,10 +629,12 @@ function FiltersPopover({
   filters,
   setFilters,
   team,
+  canReco,
 }: {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
   team: { id: string; full_name: string | null; email: string | null }[];
+  canReco: boolean;
 }) {
   return (
     <Popover>
@@ -679,7 +685,9 @@ function FiltersPopover({
           <div className="space-y-2 rounded-md border p-2">
             <Toggle checked={filters.vip} onChange={(v) => setFilters((f) => ({ ...f, vip: v }))} label="Sólo VIP" />
             <Toggle checked={filters.stagnant} onChange={(v) => setFilters((f) => ({ ...f, stagnant: v }))} label="Sólo estancados" />
-            <Toggle checked={filters.hasReco} onChange={(v) => setFilters((f) => ({ ...f, hasReco: v }))} label="Con recomendación IA" />
+            {canReco && (
+              <Toggle checked={filters.hasReco} onChange={(v) => setFilters((f) => ({ ...f, hasReco: v }))} label="Con recomendación IA" />
+            )}
             <Toggle checked={filters.hasQuote} onChange={(v) => setFilters((f) => ({ ...f, hasQuote: v }))} label="Con cotización activa" />
           </div>
         </div>
@@ -781,6 +789,7 @@ function KanbanView({
   selection,
   onToggle,
   onOpen,
+  canReco,
 }: {
   grouped: Record<string, CrmCustomer[]>;
   team: { id: string; full_name: string | null; email: string | null }[];
@@ -788,6 +797,7 @@ function KanbanView({
   selection: Set<string>;
   onToggle: (id: string) => void;
   onOpen: (id: string) => void;
+  canReco: boolean;
 }) {
   return (
     <div className="h-full overflow-x-auto overflow-y-hidden px-4 py-4 sm:px-6 sm:py-5">
@@ -852,6 +862,7 @@ function KanbanView({
                       onToggle={() => onToggle(c.id)}
                       onOpen={() => onOpen(c.id)}
                       stagnantThreshold={stagnantThreshold}
+                      canReco={canReco}
                     />
                   ))
                 )}
@@ -875,6 +886,7 @@ function CustomerCard({
   onToggle,
   onOpen,
   stagnantThreshold,
+  canReco,
 }: {
   customer: CrmCustomer;
   team: { id: string; full_name: string | null; email: string | null }[];
@@ -883,6 +895,7 @@ function CustomerCard({
   onToggle: () => void;
   onOpen: () => void;
   stagnantThreshold?: number;
+  canReco: boolean;
 }) {
   const initials = (customer.name ?? customer.phone).slice(0, 2).toUpperCase();
   const owner = team.find((t) => t.id === customer.assignee_id);
@@ -1012,18 +1025,26 @@ function CustomerCard({
         </span>
       </div>
 
-      {topReco ? (
-        <div className="mt-2 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[10px]" title={topReco.reason_code ?? undefined}>
-          <Sparkles className="h-3 w-3 shrink-0 text-primary" />
-          <span className="truncate font-medium text-foreground">{topReco.name}</span>
-          <span className="ml-auto shrink-0 text-muted-foreground">
-            {topReco.currency} {topReco.price.toLocaleString()}
-          </span>
-        </div>
+      {canReco ? (
+        topReco ? (
+          <div className="mt-2 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[10px]" title={topReco.reason_code ?? undefined}>
+            <Sparkles className="h-3 w-3 shrink-0 text-primary" />
+            <span className="truncate font-medium text-foreground">{topReco.name}</span>
+            <span className="ml-auto shrink-0 text-muted-foreground">
+              {topReco.currency} {topReco.price.toLocaleString()}
+            </span>
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
+            <Sparkles className="h-3 w-3" />
+            <span>Sin recomendación IA aún</span>
+          </div>
+        )
       ) : (
-        <div className="mt-2 flex items-center gap-1 rounded-md border border-dashed border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
-          <Sparkles className="h-3 w-3" />
-          <span>Sin recomendación IA aún</span>
+        <div className="mt-2 rounded-md border border-amber-500/25 bg-amber-500/5 px-2 py-1 text-[10px] text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1">
+            <Sparkles className="h-3 w-3" /> Recomendador IA · Plan Business
+          </span>
         </div>
       )}
     </div>

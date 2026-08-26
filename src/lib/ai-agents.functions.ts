@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { withCredits } from "@/lib/plan-middleware";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 
 // ---------- Analyze conversation with the Sales+Analysis agents ----------
 export const analyzeConversation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(withCredits(1))
   .inputValidator((d: { conversation_id: string }) =>
     z.object({ conversation_id: z.string().uuid() }).parse(d),
   )

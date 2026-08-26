@@ -372,6 +372,7 @@ export type Database = {
           ai_custom_prompt: string | null
           ai_personality: Database["public"]["Enums"]["ai_personality"]
           ai_response_style: string
+          bonus_credits: number
           created_at: string
           demo_mode: boolean
           follow_up_enabled: boolean
@@ -389,6 +390,7 @@ export type Database = {
           ai_custom_prompt?: string | null
           ai_personality?: Database["public"]["Enums"]["ai_personality"]
           ai_response_style?: string
+          bonus_credits?: number
           created_at?: string
           demo_mode?: boolean
           follow_up_enabled?: boolean
@@ -406,6 +408,7 @@ export type Database = {
           ai_custom_prompt?: string | null
           ai_personality?: Database["public"]["Enums"]["ai_personality"]
           ai_response_style?: string
+          bonus_credits?: number
           created_at?: string
           demo_mode?: boolean
           follow_up_enabled?: boolean
@@ -418,6 +421,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_credit_events: {
+        Row: {
+          company_id: string
+          cost: number
+          created_at: string
+          id: string
+          scope: string
+        }
+        Insert: {
+          company_id: string
+          cost?: number
+          created_at?: string
+          id?: string
+          scope: string
+        }
+        Update: {
+          company_id?: string
+          cost?: number
+          created_at?: string
+          id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversation_events: {
         Row: {

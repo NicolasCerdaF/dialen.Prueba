@@ -500,7 +500,7 @@ export const generateQuoteDraft = createServerFn({ method: "POST" })
         "id, product_id, score, probability, reason_code, reason, product:products(id, name, sku, price, cost, currency)",
       )
       .eq("customer_id", data.customer_id)
-      .eq("status", "active")
+      .eq("status", "pending")
       .order("score", { ascending: false })
       .limit(data.max_items);
 

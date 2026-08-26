@@ -58,6 +58,8 @@ import {
 } from "@/lib/quotes.functions";
 import { cn } from "@/lib/utils";
 import { LandingPage } from "@/components/landing/landing-page";
+import { InlinePremiumGate } from "@/components/premium-gate";
+import { useMyUsage } from "@/lib/use-plan";
 
 
 export const Route = createFileRoute("/")({
@@ -990,7 +992,9 @@ function ContextSidebar({ conversationId }: { conversationId: string }) {
       <AiPanel conversationId={conversationId} customerId={customer.id} />
 
       {/* AI Recommendation Engine — Productos recomendados en este momento */}
-      <RecommendedProducts customerId={customer.id} conversationId={conversationId} />
+      <InlinePremiumGate feature="recommendador" title="Recomendador IA">
+        <RecommendedProducts customerId={customer.id} conversationId={conversationId} />
+      </InlinePremiumGate>
 
       {/* Cotizaciones dentro del chat — canal de cierre */}
       <ConversationQuotes customerId={customer.id} conversationId={conversationId} />
@@ -1156,6 +1160,7 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
   const qc = useQueryClient();
   const analyzeFn = useServerFn(analyzeConversation);
   const statusFn = useServerFn(setSuggestionStatus);
+  const { isExhausted } = useMyUsage();
   const [analyzing, setAnalyzing] = useState(false);
 
   const { data: suggestion } = useQuery({
@@ -1204,12 +1209,17 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
   }, [conversationId, customerId, qc]);
 
   async function analyze() {
+    if (isExhausted) {
+      toast.error("Sin créditos IA este mes. Compra más en Comprar créditos.");
+      return;
+    }
     setAnalyzing(true);
     try {
       await analyzeFn({ data: { conversation_id: conversationId } });
       toast.success("Análisis de IA generado");
       qc.invalidateQueries({ queryKey: ["ai-suggestion", conversationId] });
       qc.invalidateQueries({ queryKey: ["ai-insight", customerId] });
+      qc.invalidateQueries({ queryKey: ["my-usage"] });
     } catch (err: any) {
       toast.error(err?.message ?? "No se pudo analizar");
     } finally {
@@ -1321,9 +1331,9 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
               )}
               <button
                 onClick={analyze}
-                disabled={analyzing}
+                disabled={analyzing || isExhausted}
                 className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-secondary disabled:opacity-50"
-                title="Volver a analizar"
+                title={isExhausted ? "Sin créditos IA" : "Volver a analizar"}
               >
                 {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               </button>
@@ -1349,9 +1359,9 @@ function AiPanel({ conversationId, customerId }: { conversationId: string; custo
             </p>
             <button
               onClick={analyze}
-              disabled={analyzing}
+              disabled={analyzing || isExhausted}
               className="mt-2 inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10px] font-medium hover:bg-secondary disabled:opacity-50"
-              title="Forzar un análisis ahora"
+              title={isExhausted ? "Sin créditos IA — ve a Comprar créditos" : "Forzar un análisis ahora"}
             >
               {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Forzar análisis

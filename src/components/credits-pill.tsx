@@ -5,19 +5,23 @@ import { cn } from "@/lib/utils";
 
 export function CreditsPill() {
   const { plan, isPremium } = useMyPlan();
-  const { data } = useMyUsage();
-  const used = data?.used ?? 0;
-  const included = data?.included ?? 0;
-  const pct = data?.pct ?? 0;
-  const critical = pct >= 90;
-  const warning = pct >= 70 && !critical;
+  const { data, remaining, included, used, pct, isExhausted } = useMyUsage();
+  const critical = pct >= 90 || isExhausted;
+  const warning = (pct >= 70 && !critical) || (remaining > 0 && remaining <= Math.ceil((included || 1) * 0.1));
 
   return (
     <div className="flex items-center gap-2">
       <Link
         to="/creditos"
-        title={`${used.toLocaleString("es-CL")} de ${included.toLocaleString("es-CL")} créditos IA usados este mes`}
-        className="group hidden items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1 transition hover:border-primary/40 hover:bg-card sm:inline-flex"
+        title={
+          isExhausted
+            ? "Sin créditos IA — compra más"
+            : `${remaining.toLocaleString("es-CL")} disponibles de ${included.toLocaleString("es-CL")} (${used.toLocaleString("es-CL")} usados)`
+        }
+        className={cn(
+          "group hidden items-center gap-2 rounded-full border bg-card/60 px-2.5 py-1 transition hover:border-primary/40 hover:bg-card sm:inline-flex",
+          isExhausted && "border-red-500/40 bg-red-500/5",
+        )}
       >
         <Coins
           className={cn(
@@ -26,7 +30,9 @@ export function CreditsPill() {
           )}
         />
         <div className="flex items-baseline gap-1 text-[11px]">
-          <span className="font-semibold tabular-nums">{used.toLocaleString("es-CL")}</span>
+          <span className="font-semibold tabular-nums">
+            {isExhausted ? "0" : remaining.toLocaleString("es-CL")}
+          </span>
           <span className="text-muted-foreground">/ {included.toLocaleString("es-CL")}</span>
         </div>
         <div className="h-1 w-14 overflow-hidden rounded-full bg-secondary">

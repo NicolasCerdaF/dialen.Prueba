@@ -88,7 +88,7 @@ export async function runSalesAnalysis(
   } catch (e: any) {
     if (e instanceof AiGatewayError) {
       if (e.status === 429) throw new Error("La IA está saturada. Reintenta en 1 minuto.");
-      if (e.status === 402) throw new Error("Sin créditos de IA. Recarga en Configuración.");
+      if (e.status === 402) throw new Error("Sin créditos IA este mes. Compra más en Comprar créditos.");
     }
     throw new Error(e?.message ?? "IA no disponible");
   }

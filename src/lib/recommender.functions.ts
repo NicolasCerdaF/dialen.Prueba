@@ -1,11 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requirePlanFeature } from "@/lib/plan-middleware";
 import { REASON_CODES, type ReasonCode } from "@/lib/recommender.shared";
 
 // Re-export for backwards compatibility (routes import from this file).
 export { REASON_CODES };
 export type { ReasonCode };
+
+const recommendadorMiddleware = [requireSupabaseAuth, requirePlanFeature("recommendador")] as const;
 
 export type Recommendation = {
   id: string;
@@ -42,7 +45,7 @@ const GenerateInput = z.object({
 });
 
 export const generateRecommendations = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(recommendadorMiddleware)
   .inputValidator((d) => GenerateInput.parse(d))
   .handler(async ({ data, context }) => {
     const { runGenerateRecommendations } = await import("@/lib/recommender.server");
@@ -51,7 +54,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
 
 // ---------- List active + historical recommendations for a customer ----------
 export const listRecommendations = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(recommendadorMiddleware)
   .inputValidator((d: { customer_id: string; limit?: number }) =>
     z
       .object({ customer_id: z.string().uuid(), limit: z.number().int().min(1).max(100).default(30) })
@@ -78,7 +81,7 @@ const StatusInput = z.object({
 });
 
 export const setRecommendationStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(recommendadorMiddleware)
   .inputValidator((d) => StatusInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -114,7 +117,7 @@ export const setRecommendationStatus = createServerFn({ method: "POST" })
 
 // ---------- Top recommendation per customer (for Kanban) ----------
 export const getTopRecommendationsForCustomers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware(recommendadorMiddleware)
   .inputValidator((d: { customer_ids: string[] }) =>
     z.object({ customer_ids: z.array(z.string().uuid()).max(500) }).parse(d),
   )

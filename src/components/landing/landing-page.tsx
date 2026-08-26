@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import dialenLogo from "@/assets/dialen-isotipo.png.asset.json";
+import { PLAN_CATALOG, planToSearchParam, type PlanId } from "@/lib/plans.config";
 
 import {
   Sparkles,
@@ -89,6 +90,7 @@ export function LandingPage() {
             </Link>
             <Link
               to="/login"
+              search={{ plan: "start" }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-6px_rgba(0,200,83,0.6)]"
             >
               Empezar
@@ -420,76 +422,9 @@ export function LandingPage() {
             subtitle="Empieza con lo esencial o desbloquea toda la potencia de la IA comercial. Cambia cuando quieras."
           />
           <div className="mt-12 grid gap-6 md:grid-cols-2">
-            {/* Start */}
-            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-              <div className="flex items-center gap-2 text-white/70">
-                <Zap className="h-5 w-5 text-[#00C853]" />
-                <span className="text-sm uppercase tracking-widest">Plan Start</span>
-              </div>
-              <h3 className="mt-3 font-semibold text-2xl">IA operativa para vender por WhatsApp</h3>
-              <p className="mt-2 text-sm text-white/60">Bandeja unificada, CRM y una IA que te ayuda en cada conversación: sugerencias, resúmenes, cotizaciones automáticas y scoring de leads.</p>
-              <ul className="mt-6 space-y-2.5 text-sm">
-                {[
-                  "Bandeja unificada de WhatsApp",
-                  "CRM de contactos y clientes",
-                  "Embudo comercial de 5 etapas",
-                  "Sugerencias IA en cada conversación",
-                  "Resumen automático de conversaciones",
-                  "Auto-borrador de cotizaciones con IA",
-                  "Bandeja IA con scoring de leads",
-                  "Base de conocimiento con búsqueda IA",
-                  "Catálogo y cotizaciones",
-                  "Soporte por correo",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-white/80">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00C853]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/login"
-                className="mt-8 inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Empezar con Start
-              </Link>
-            </div>
-
-            {/* Business */}
-            <div className="relative rounded-2xl border border-[#00C853]/40 bg-gradient-to-br from-[#00C853]/10 via-transparent to-[#00695C]/10 p-8 shadow-[0_20px_60px_-20px_rgba(0,200,83,0.35)]">
-              <div className="absolute -top-3 right-6 rounded-full bg-gradient-to-r from-[#00C853] to-[#00695C] px-3 py-1 text-[11px] font-semibold text-white shadow-lg">
-                Recomendado
-              </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <Sparkles className="h-5 w-5 text-[#00E676]" />
-                <span className="text-sm uppercase tracking-widest">Plan Business</span>
-              </div>
-              <h3 className="mt-3 font-semibold text-2xl">IA que dirige tu operación completa</h3>
-              <p className="mt-2 text-sm text-white/70">Suma el Director IA que prioriza tu día, automatizaciones con recetas y un dashboard ejecutivo con forecast de ingresos.</p>
-              <ul className="mt-6 space-y-2.5 text-sm">
-                {[
-                  "Todo lo del Plan Start",
-                  "Director Comercial IA (priorización 24/7)",
-                  "Motor de Automatizaciones con recetas",
-                  "Análisis IA avanzado del motor",
-                  "Dashboard ejecutivo + forecast de ingresos",
-                  "Cotizaciones IA + versionado + firma",
-                  "Recomendador inteligente en Kanban e Inbox",
-                  "Soporte prioritario + onboarding dedicado",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-white">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#00E676]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/login"
-                className="mt-8 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(0,200,83,0.7)]"
-              >
-                Activar Business <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+            {(Object.keys(PLAN_CATALOG) as PlanId[]).map((planId) => (
+              <PlanCard key={planId} planId={planId} />
+            ))}
           </div>
           <p className="mt-6 text-center text-xs text-white/40">
             Puedes cambiar de plan cuando quieras desde tu panel. Sin permanencia, sin sorpresas.
@@ -957,6 +892,61 @@ function TrustBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
         {icon}
       </span>
       {label}
+    </div>
+  );
+}
+
+function PlanCard({ planId }: { planId: PlanId }) {
+  const plan = PLAN_CATALOG[planId];
+  const isPremium = planId === "premium";
+  const Icon = isPremium ? Sparkles : Zap;
+  const checkColor = isPremium ? "text-[#00E676]" : "text-[#00C853]";
+  const textColor = isPremium ? "text-white" : "text-white/80";
+
+  return (
+    <div
+      className={
+        isPremium
+          ? "relative rounded-2xl border border-[#00C853]/40 bg-gradient-to-br from-[#00C853]/10 via-transparent to-[#00695C]/10 p-8 shadow-[0_20px_60px_-20px_rgba(0,200,83,0.35)]"
+          : "relative rounded-2xl border border-white/10 bg-white/[0.03] p-8"
+      }
+    >
+      {isPremium && (
+        <div className="absolute -top-3 right-6 rounded-full bg-gradient-to-r from-[#00C853] to-[#00695C] px-3 py-1 text-[11px] font-semibold text-white shadow-lg">
+          Recomendado
+        </div>
+      )}
+      <div className={`flex items-center gap-2 ${isPremium ? "text-white/80" : "text-white/70"}`}>
+        <Icon className={`h-5 w-5 ${isPremium ? "text-[#00E676]" : "text-[#00C853]"}`} />
+        <span className="text-sm uppercase tracking-widest">{plan.name}</span>
+      </div>
+      <h3 className="mt-3 font-semibold text-2xl">{plan.tagline.split(".")[0]}.</h3>
+      <p className={`mt-2 text-sm ${isPremium ? "text-white/70" : "text-white/60"}`}>{plan.tagline}</p>
+      <ul className="mt-6 space-y-2.5 text-sm">
+        {plan.features.map((f) => (
+          <li key={f} className={`flex items-start gap-2 ${textColor}`}>
+            <CheckCircle2 className={`mt-0.5 h-4 w-4 flex-none ${checkColor}`} />
+            {f}
+          </li>
+        ))}
+      </ul>
+      <Link
+        to="/login"
+        search={{ plan: planToSearchParam(planId) }}
+        className={
+          isPremium
+            ? "mt-8 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#00C853] to-[#00695C] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(0,200,83,0.7)]"
+            : "mt-8 inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+        }
+      >
+        {isPremium ? (
+          <>
+            Activar Business <ArrowRight className="h-4 w-4" />
+          </>
+        ) : (
+          "Empezar con Start"
+        )}
+      </Link>
     </div>
   );
 }

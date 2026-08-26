@@ -52,18 +52,14 @@ export const PLAN_CATALOG: Record<PlanId, {
 export const getMyPlan = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("profiles")
-      .select("plan, status, external_ref, updated_at")
-      .eq("id", context.userId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    const plan = ((data?.plan as PlanId) ?? "basico") as PlanId;
+    const { getPlanForUser } = await import("@/lib/plans.server");
+    const resolved = await getPlanForUser(context.supabase, context.userId);
+    const plan = PLAN_CATALOG[resolved.plan] ? resolved.plan : ("basico" as PlanId);
     return {
-      plan: PLAN_CATALOG[plan] ? plan : ("basico" as PlanId),
-      status: data?.status ?? "active",
-      external_ref: data?.external_ref ?? null,
-      updated_at: data?.updated_at ?? null,
+      plan,
+      status: resolved.status,
+      external_ref: resolved.external_ref,
+      updated_at: resolved.updated_at,
     };
   });
 
@@ -75,6 +71,7 @@ export const PREMIUM_FEATURES = [
   "automatizaciones",
   "metricas-ia",
   "dashboard-ejecutivo",
+  "recommendador",
 ] as const;
 export type PremiumFeature = (typeof PREMIUM_FEATURES)[number];
 
@@ -83,74 +80,90 @@ export function planIncludes(plan: PlanId, feature: PremiumFeature): boolean {
   return false;
 }
 
-// AI-credit usage for the current calendar month, using activity as a proxy:
-// ai_suggestions + automation_runs + director_insights created this period.
+// AI-credit usage for the current calendar month.
 export const getMyUsage = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("plan, company_id")
-      .eq("id", userId)
-      .maybeSingle();
-    const plan = ((prof?.plan as PlanId) ?? "basico") as PlanId;
-    const included = PLAN_CATALOG[plan]?.monthlyCredits ?? 0;
-    const company_id = prof?.company_id as string | undefined;
+    const { getPlanForUser } = await import("@/lib/plans.server");
+    const { getCreditSnapshot } = await import("@/lib/credits.server");
+    const resolved = await getPlanForUser(supabase, userId);
+    const plan = PLAN_CATALOG[resolved.plan] ? resolved.plan : ("basico" as PlanId);
 
-    const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-
-    let used = 0;
-    let breakdown = { suggestions: 0, automations: 0, insights: 0 };
-    if (company_id) {
-      const [sugg, runs, insights] = await Promise.all([
-        supabase
-          .from("ai_suggestions")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", company_id)
-          .gte("created_at", periodStart),
-        supabase
-          .from("automation_runs")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", company_id)
-          .gte("created_at", periodStart),
-        supabase
-          .from("director_insights")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", company_id)
-          .gte("created_at", periodStart),
-      ]);
-      breakdown = {
-        suggestions: sugg.count ?? 0,
-        automations: runs.count ?? 0,
-        insights: insights.count ?? 0,
+    if (!resolved.company_id) {
+      const monthlyAllowance = PLAN_CATALOG[plan]?.monthlyCredits ?? 0;
+      return {
+        plan,
+        monthlyAllowance,
+        bonusCredits: 0,
+        included: monthlyAllowance,
+        used: 0,
+        remaining: monthlyAllowance,
+        pct: 0,
+        breakdown: { suggestions: 0, automations: 0, insights: 0, llmEvents: 0 },
+        period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+        period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
       };
-      used = breakdown.suggestions + breakdown.automations + breakdown.insights;
     }
-    const remaining = Math.max(included - used, 0);
-    const pct = included > 0 ? Math.min(100, Math.round((used / included) * 100)) : 0;
+
+    const snapshot = await getCreditSnapshot(supabase, resolved.company_id, plan);
     return {
-      plan,
-      included,
-      used,
-      remaining,
-      pct,
-      breakdown,
-      period_start: periodStart,
-      period_end: periodEnd,
+      plan: snapshot.plan,
+      monthlyAllowance: snapshot.monthlyAllowance,
+      bonusCredits: snapshot.bonusCredits,
+      included: snapshot.included,
+      used: snapshot.used,
+      remaining: snapshot.remaining,
+      pct: snapshot.pct,
+      breakdown: snapshot.breakdown,
+      period_start: snapshot.period_start,
+      period_end: snapshot.period_end,
     };
+  });
+
+const PurchasePackSchema = z.object({
+  pack_id: z.enum(["starter", "growth", "scale", "enterprise"]),
+});
+
+/** Dev/mock purchase — adds bonus credits (no Stripe yet). */
+export const purchaseCreditPack = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => PurchasePackSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const PACK_CREDITS: Record<string, number> = {
+      starter: 1500,
+      growth: 5000,
+      scale: 12000,
+      enterprise: 38000,
+    };
+    const credits = PACK_CREDITS[data.pack_id];
+    if (!credits) throw new Error("Paquete no válido");
+
+    const { getPlanForUser } = await import("@/lib/plans.server");
+    const { addBonusCredits } = await import("@/lib/credits.server");
+    const resolved = await getPlanForUser(context.supabase, context.userId);
+    if (!resolved.company_id) throw new Error("Sin empresa asociada");
+
+    const bonusCredits = await addBonusCredits(context.supabase, resolved.company_id, credits);
+    return { ok: true, added: credits, bonusCredits };
   });
 
 export const changeMyPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ plan: z.enum(["basico", "premium"]) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("profiles")
-      .update({ plan: data.plan, status: "active" })
-      .eq("id", context.userId);
-    if (error) throw new Error(error.message);
+    const { getPlanForUser, setCompanyPlanUnified, setUserPlanUnified } = await import(
+      "@/lib/plans.server"
+    );
+    const resolved = await getPlanForUser(context.supabase, context.userId);
+    if (resolved.company_id) {
+      await setCompanyPlanUnified(context.supabase, resolved.company_id, data.plan, {
+        profileStatus: "active",
+      });
+    } else {
+      await setUserPlanUnified(context.supabase, context.userId, data.plan, {
+        profileStatus: "active",
+      });
+    }
     return { ok: true, plan: data.plan };
   });
