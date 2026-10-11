@@ -5,6 +5,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { log } from "@/lib/logger";
+import { applySevenDayTrialToCompany } from "@/lib/billing-period.server";
 import { setUserPlanUnified, type PlanId } from "@/lib/plans.server";
 
 const VALID_PLANS = new Set(["basico", "premium"]);
@@ -32,6 +33,17 @@ async function syncProvisionedPlan(
     profileStatus: "active",
     externalRef: opts?.externalRef ?? undefined,
   });
+}
+
+async function maybeApplySevenDayTrial(userId: string, enabled: boolean) {
+  if (!enabled) return null;
+  const { data: prof } = await supabaseAdmin
+    .from("profiles")
+    .select("company_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!prof?.company_id) return null;
+  return applySevenDayTrialToCompany(supabaseAdmin, prof.company_id);
 }
 
 // Simple in-memory rate limiter (per worker instance): 10 req / 60s per key.
@@ -145,6 +157,8 @@ type ProvisionBody = {
   phone?: string;
   metadata?: Record<string, unknown>;
   requested_by?: { email?: string; role?: string };
+  /** When true: 7 days free with full plan credits, then monthly billing from trial end. */
+  seven_day_trial?: boolean;
 };
 
 async function findUserByEmail(email: string) {
@@ -268,6 +282,10 @@ export async function handleProvisionRequest(request: Request): Promise<Response
 
       // handle_new_user trigger populated profiles on insert. Sync plan across company + team.
       await syncProvisionedPlan(user.id, plan as PlanId, { externalRef: externalRef ?? null });
+      const trial =
+        body.seven_day_trial === true || body.metadata?.seven_day_trial === true
+          ? await maybeApplySevenDayTrial(user.id, true)
+          : null;
 
       const loginUrl = await generateMagicLink(email);
       await logCall({ action, email, plan, external_ref: externalRef, ip, ok: true, status_code: 200, message: "activated", payload: body });
@@ -277,6 +295,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         user_id: user.id,
         plan,
         login_url: loginUrl,
+        trial_ends_at: trial?.trialEndsAt ?? null,
       });
     }
 
@@ -391,6 +410,10 @@ export async function handleProvisionRequest(request: Request): Promise<Response
       }
 
       await syncProvisionedPlan(userId, mappedPlan, { externalRef: externalRef ?? null });
+      const trial =
+        body.seven_day_trial === true || body.metadata?.seven_day_trial === true
+          ? await maybeApplySevenDayTrial(userId, true)
+          : null;
 
       const activatedAt = new Date().toISOString();
       // NOTE: temp_password is intentionally NOT included in payload/message.
@@ -405,6 +428,7 @@ export async function handleProvisionRequest(request: Request): Promise<Response
         login_url: LOGIN_URL,
         external_ref: externalRef ?? null,
         activated_at: activatedAt,
+        trial_ends_at: trial?.trialEndsAt ?? null,
       });
     }
 

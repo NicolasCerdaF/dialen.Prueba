@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { MetricsFinance } from "@/components/admin/metrics-finance";
+import { CreateClientAccountButton } from "@/components/admin/create-client-account-dialog";
 
 import {
   AlertDialog,
@@ -366,8 +367,11 @@ function UsersBlock() {
             className="border-slate-800 bg-slate-950/60 pl-9 text-slate-100 placeholder:text-slate-500"
           />
         </div>
-        <div className="text-xs text-slate-500">
-          {q.isLoading ? "Cargando…" : `${filtered.length} usuario${filtered.length === 1 ? "" : "s"}`}
+        <div className="flex flex-wrap items-center gap-3">
+          <CreateClientAccountButton />
+          <div className="text-xs text-slate-500">
+            {q.isLoading ? "Cargando…" : `${filtered.length} usuario${filtered.length === 1 ? "" : "s"}`}
+          </div>
         </div>
       </div>
 
@@ -377,7 +381,7 @@ function UsersBlock() {
             <tr>
               <th className="p-3 text-left font-medium">Usuario</th>
               <th className="p-3 text-left font-medium">Empresa / plan</th>
-              <th className="p-3 text-left font-medium">Consumo IA (mes)</th>
+              <th className="p-3 text-left font-medium">Consumo IA (periodo)</th>
               <th className="p-3 text-left font-medium">Último acceso</th>
               <th className="p-3 text-left font-medium">Estado</th>
               <th className="p-3 text-right font-medium">Acciones</th>
@@ -404,6 +408,11 @@ function UsersBlock() {
                       >
                         {u.plan === "premium" ? "Business" : "Start"}
                       </span>
+                      {u.inTrial && (
+                        <span className="ml-1 inline-flex rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-300">
+                          Gratis 7d
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="p-3">
@@ -703,6 +712,11 @@ function CompaniesBlock() {
                   >
                     {c.plan === "premium" ? "Business" : "Start"}
                   </span>
+                  {c.inTrial && (
+                    <span className="ml-1 inline-flex rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-300">
+                      Gratis 7d
+                    </span>
+                  )}
                 </td>
                 <td className="p-3 text-right text-slate-200">{c.userCount}</td>
                 <td className="p-3 text-xs text-slate-400">

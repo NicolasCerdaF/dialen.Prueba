@@ -103,6 +103,8 @@ export const getMyUsage = createServerFn({ method: "GET" })
         breakdown: { suggestions: 0, automations: 0, insights: 0, llmEvents: 0 },
         period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
         period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
+        inTrial: false,
+        nextBillingAt: null,
       };
     }
 
@@ -118,6 +120,8 @@ export const getMyUsage = createServerFn({ method: "GET" })
       breakdown: snapshot.breakdown,
       period_start: snapshot.period_start,
       period_end: snapshot.period_end,
+      inTrial: snapshot.inTrial,
+      nextBillingAt: snapshot.nextBillingAt,
     };
   });
 
