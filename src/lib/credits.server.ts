@@ -3,6 +3,7 @@
 // Usage proxy: ai_suggestions + automation_runs (non-skipped) + director_insights + ai_credit_events.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveBillingPeriod, type CompanyBillingRow } from "@/lib/billing-period.server";
 import { PLAN_CATALOG, type PlanId } from "@/lib/plans.functions";
 import { normalizePlanId } from "@/lib/plans.server";
 
@@ -12,11 +13,7 @@ export const CREDITS_EXHAUSTED_MSG =
 /** Scopes where usage is already counted via ai_suggestions insert — skip ai_credit_events. */
 const PROXY_LLM_SCOPES = new Set(["ai-agents"]);
 
-export function getMonthPeriod(now = new Date()) {
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-  return { periodStart, periodEnd };
-}
+export { getMonthPeriod } from "@/lib/billing-period.server";
 
 export type CreditBreakdown = {
   suggestions: number;
@@ -36,11 +33,34 @@ export type CreditSnapshot = {
   breakdown: CreditBreakdown;
   period_start: string;
   period_end: string;
+  inTrial: boolean;
+  nextBillingAt: string | null;
 };
 
 function isMissingRelationError(message: string | undefined, relation: string): boolean {
   if (!message) return false;
   return message.includes(relation) || message.includes("does not exist");
+}
+
+export async function getCompanyBillingRow(
+  supabase: SupabaseClient,
+  companyId: string,
+): Promise<CompanyBillingRow | null> {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("trial_ends_at, billing_cycle_anchor, credit_period_started_at")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (error) {
+    if (
+      isMissingRelationError(error.message, "billing_cycle_anchor") ||
+      isMissingRelationError(error.message, "trial_ends_at")
+    ) {
+      return null;
+    }
+    throw new Error(error.message);
+  }
+  return (data as CompanyBillingRow | null) ?? null;
 }
 
 export async function getCompanyBonusCredits(
@@ -130,7 +150,8 @@ export async function getCreditSnapshot(
   companyId: string,
   plan: PlanId,
 ): Promise<CreditSnapshot> {
-  const { periodStart, periodEnd } = getMonthPeriod();
+  const billingRow = await getCompanyBillingRow(supabase, companyId);
+  const { periodStart, periodEnd, inTrial, nextBillingAt } = resolveBillingPeriod(billingRow);
   const monthlyAllowance = PLAN_CATALOG[plan]?.monthlyCredits ?? 0;
   const bonusCredits = await getCompanyBonusCredits(supabase, companyId);
   const breakdown = await countCompanyCreditUsage(supabase, companyId, periodStart);
@@ -151,6 +172,8 @@ export async function getCreditSnapshot(
     breakdown,
     period_start: periodStart,
     period_end: periodEnd,
+    inTrial,
+    nextBillingAt,
   };
 }
 
